@@ -1,6 +1,6 @@
 # b-plus-tree
 
-Simple b+ tree library imolementation
+Simple b+ tree library implementation
 
 ## матриалы по B+ tree
 
