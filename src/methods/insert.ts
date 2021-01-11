@@ -10,17 +10,13 @@ export function insert(this: BPlusTree, key: ValueType, value: any): boolean {
 
   // Ищем позицию для нового ключа
   let pos = 0
-  while (pos < leaf.key_num && leaf.keys[pos] < key) {
+  const leafCount = leaf.key_num
+  while (pos < leafCount && leaf.keys[pos] < key) {
     ++pos
   }
-
   // Вставляем ключ
-  for (let i = leaf.key_num; i >= pos + 1; i--) {
-    leaf.keys[i] = leaf.keys[i - 1]
-    leaf.pointers[i] = leaf.pointers[i - 1]
-  }
-  leaf.keys[pos] = key
-  leaf.pointers[pos] = value
+  leaf.keys.splice(pos, 0, key)
+  leaf.pointers.splice(pos, 0, value)
   ++leaf.key_num
 
   if (leaf.key_num == 2 * this.t) {
