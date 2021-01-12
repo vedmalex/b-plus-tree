@@ -16,3 +16,16 @@ http://pages.cs.wisc.edu/~dbbook/openAccess/thirdEdition/slides/slides3ed-englis
 http://www.veretennikov.org/CLB/Data/6921-16554-1-PB.pdf
 http://grusha-store.narod.ru/olderfiles/1/Obzor_metodov_polnotekstovogo_poiska.pdf
 https://fastss.csg.uzh.ch/ - алгоритмы быстрого поика по похожим элементам Fast Similarity Search in Large Dictionaries
+
+97
+
+  5696333
+97        5696333
+
+        5696333
+  477275       5696333
+97      477275
+
+        9654580
+  477275       5696333 9654580
+97      477275

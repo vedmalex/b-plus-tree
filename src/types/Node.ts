@@ -2,8 +2,9 @@ import { ValueType } from '../btree'
 import { max } from '../methods/max'
 import { min } from '../methods/min'
 
+let node = 0
 export class Node {
-  id: string
+  creation_order: number
   leaf: boolean // является ли узел листом
   key_num: number // количество ключей узла
   keys: ValueType[] // ключи узла
@@ -13,6 +14,7 @@ export class Node {
   left: Node // указатель на левого брата
   right: Node // указатель на правого брата
   constructor(leaf: boolean = false) {
+    this.creation_order = node++
     this.leaf = leaf
     this.keys = []
     this.pointers = []
@@ -35,5 +37,26 @@ export class Node {
   }
   max() {
     return max.call(this)
+  }
+  toJSON() {
+    if (this.leaf) {
+      return {
+        id: this.creation_order,
+        keys: [...this.keys],
+        key_num: this.key_num,
+        // pointers: this.pointers,
+        // left: this.left?.creation_order,
+        // right: this.right?.creation_order,
+      }
+    } else {
+      return {
+        id: this.creation_order,
+        keys: [...this.keys],
+        key_num: this.key_num,
+        // left: this.left?.creation_order,
+        // right: this.right?.creation_order,
+        children: this.children.map((c) => c.toJSON()),
+      }
+    }
   }
 }

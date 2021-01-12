@@ -8,6 +8,7 @@ export class BPlusTree {
   public t: number // минимальная степень дерева
   public root: Node // указатель на корень дерева
   public unique: boolean
+  history = []
   constructor(t: number, unique: boolean) {
     this.root = new Node(true)
     this.t = t
@@ -21,5 +22,13 @@ export class BPlusTree {
   }
   remove(key: ValueType) {
     return remove.call(this, key)
+  }
+  toJSON() {
+    return {
+      t: this.t,
+      unique: this.unique,
+      root: this.root.toJSON(),
+      // history: [...this.history],
+    }
   }
 }

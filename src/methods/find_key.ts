@@ -18,14 +18,15 @@ export function find_key(this: BPlusTree, key: ValueType) {
   let cur = this.root
   while (cur.leaf != true) {
     const leafCount = cur.key_num
-    let i = findIndex(cur.keys, key)
-    cur = cur.children[i]
-    // for (let i = 0; i <= leafCount; i++) {
-    //   if (i == leafCount || key < cur.keys[i]) {
-    //     cur = cur.children[i]
-    //     break
-    //   }
-    // }
+    // let i = findIndex(cur.keys, key)
+    // cur = cur.children[i + 1]
+    for (let i = 0; i <= leafCount; i++) {
+      if (i == leafCount || key < cur.keys[i]) {
+        cur = cur.children[i]
+        break
+      }
+    }
+    // cur = cur.children[i + 1]
   }
   return cur
 }
