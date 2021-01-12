@@ -1,15 +1,13 @@
 const fs = require('fs')
-var Benchmark = require('benchmark')
+const print = require('print-tree')
 var BPlusTree = require('./dist').BPlusTree
-var findIndex = require('./dist/methods/findIndex').findIndex
 var RBTree = require('bintrees').RBTree
-var linear = new Benchmark.Suite('Linear search by one element')
 
 const comparator = (a, b) => a[0] - b[0]
 const N = 15
 const MAX_RAND = 10000000
 const SAMPLES = 100
-const T = 1
+const T = 2
 
 const itemsToGet = JSON.parse(fs.readFileSync('test_data.json').toString())
 
@@ -34,7 +32,6 @@ simple.forEach((i)=>{
 })
 
 
-fs.writeFileSync('bpt-history.json', JSON.stringify(bpt.history))
 fs.writeFileSync('bpt.json', JSON.stringify(bpt.toJSON()))
 
 let f = bpt.find(-1);
@@ -50,7 +47,7 @@ simple.forEach((i)=>{
     let res = bpt.find(i)
     issues.push(i)
     console.log(i, res.left?.keys,res.keys, res.right?.keys)
-    // console.log(i, rbTree.find([i]))
+    bpt.print()
   }
 })
 
@@ -61,4 +58,13 @@ if(issues.length > 0){
   console.log('no issues found')
 }
 
-
+let result
+do {
+  bpt.print()
+  let max
+  max = bpt.max()
+  console.log(max)
+  result = bpt.remove(bpt.max())
+  const block = bpt.find(max)
+  console.log(block.keys.indexOf(max))
+} while(result)

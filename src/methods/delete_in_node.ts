@@ -2,92 +2,111 @@ import { BPlusTree } from '../types/BPlusTree'
 import { Node } from '../types/Node'
 import { ValueType } from '../btree'
 import { update } from './update'
+import { findPosInsert, findFast } from './find_key'
 
 export function delete_in_node(this: BPlusTree, node: Node, key: ValueType) {
+  if (key == 12) debugger
   if (node.keys.indexOf(key) == -1) {
     return
   }
 
   // Ищем позицию удаляемого ключа
-  let pos = 0
-  while (pos < node.key_num && node.keys[pos] < key) {
-    ++pos
-  }
+  let pos = findFast(node.keys, key)
+  // while (pos < node.key_num && node.keys[pos] < key) {
+  //   ++pos
+  // }
 
   // Удаляем ключ
-  for (let i = pos; i <= node.key_num - 1; i++) {
-    node.keys[i] = node.keys[i + 1]
-    node.pointers[i] = node.pointers[i + 1]
-  }
-  for (let i = pos + 1; i <= node.key_num; i++) {
-    node.children[i] = node.children[i + 1]
+  node.keys.splice(pos, 1)
+  node.pointers.splice(pos, 1)
+  if (!node.leaf) {
+    node.children.splice(pos + 1, 1)
   }
 
-  --node.key_num
+  node.key_num = node.keys.length
 
   if (node.key_num < this.t - 1) {
     const right_sibling = node.right
     const left_sibling = node.left
+
+    //1. слева есть откуда брать и количество элементов достаточно
     if (left_sibling != null && left_sibling.key_num > this.t - 1) {
-      --left_sibling.key_num
-      ++node.key_num
-
+      // занимаем крайний слева
       // Перемещаем максимальный из left_sibling ключ на первую позицию в tec
-      for (let i = 1; i <= node.key_num - 1; i++) {
-        node.keys[i] = node.keys[i - 1]
-        node.pointers[i] = node.pointers[i - 1]
-        node.children[i] = node.children[i - 1]
+      node.keys.unshift(left_sibling.keys.pop())
+      node.pointers.unshift(left_sibling.pointers.pop())
+      if (!node.leaf) {
+        node.children.unshift(left_sibling.children.pop())
       }
-      node.children[node.key_num] = node.children[node.key_num - 1]
-      node.keys[0] = left_sibling.keys[left_sibling.key_num]
-      node.pointers[0] = left_sibling.pointers[left_sibling.key_num]
-      node.children[0] = left_sibling.children[left_sibling.key_num + 1]
-
+      node.key_num = node.keys.length
+      left_sibling.key_num = left_sibling.keys.length
+      left_sibling.updateMinMax()
       update.call(node) // Обновить ключи на пути к корню
-    } else if (right_sibling != null && right_sibling.key_num > this.t - 1) {
+    }
+    // 2. крайний справа элемент есть и в нем достаточно элементов для займа
+    else if (right_sibling != null && right_sibling.key_num > this.t - 1) {
       --right_sibling.key_num
       ++node.key_num
 
       // Перемещаем минимальный из right_sibling ключ на последнюю позицию в tec
-      node.keys[node.key_num - 1] = right_sibling.keys[0]
-      node.pointers[node.key_num - 1] = right_sibling.pointers[0]
-      node.children[node.key_num - 1] = right_sibling.children[0]
 
-      update.call(node) // Обновить ключи на пути к корню
-    } else if (left_sibling != null) {
-      // Сливаем tec и left_sibling
-      for (let i = 0; i <= node.key_num - 1; i++) {
-        left_sibling.keys[left_sibling.key_num] = node.keys[i]
-        left_sibling.pointers[left_sibling.key_num] = node.pointers[i]
-        left_sibling.children[left_sibling.key_num + 1] = node.children[i]
-        ++left_sibling.key_num
+      node.keys.push(right_sibling.keys.shift())
+      node.pointers.push(right_sibling.pointers.shift())
+      if (!node.leaf) {
+        node.children.push(right_sibling.children.shift())
       }
-      left_sibling.children[left_sibling.key_num + 1] =
-        node.children[node.key_num]
-
-      // Перенаправляем right и left указатели
-      left_sibling.right = node.right
-      node.right.left = left_sibling
-
-      update.call(left_sibling) // Обновить ключи на пути к корню
-      delete_in_node.call(this, node, left_sibling.parent, node.min()) // Удаляем разделительный ключ в отце
-    } else {
-      // Сливаем tec и right_sibling
-      for (let i = 0; i <= node.key_num - 1; i++) {
-        node.keys[node.key_num] = right_sibling.keys[i]
-        node.pointers[node.key_num] = right_sibling.pointers[i]
-        node.children[node.key_num + 1] = right_sibling.children[i]
-        ++node.key_num
-      }
-      node.children[node.key_num + 1] =
-        right_sibling.children[right_sibling.key_num]
-
-      // Перенаправляем right и left указатели
-      right_sibling.right.left = node
-      node.right = right_sibling.right
-
+      node.key_num = node.keys.length
+      right_sibling.key_num = left_sibling.keys.length
+      right_sibling.updateMinMax()
       update.call(node) // Обновить ключи на пути к корню
-      delete_in_node.call(this, node, node.parent, right_sibling.min()) // Удаляем разделительный ключ в отце
     }
+    // занять не у кого
+    // слева не пустой элемент
+    else {
+      if (left_sibling != null) {
+        // Сливаем tec и left_sibling
+        left_sibling.keys.push(...node.keys)
+        left_sibling.pointers.push(...node.pointers)
+        if (!node.leaf) {
+          left_sibling.children.push(...node.children)
+        }
+
+        node.keys.length = 0
+        node.pointers.length = 0
+        if (!node.leaf) {
+          node.children.length = 0
+        }
+        // Перенаправляем right и left указатели
+        left_sibling.right = node.right
+        if (node.right) node.right.left = left_sibling
+
+        update.call(left_sibling) // Обновить ключи на пути к корню
+        left_sibling.updateMinMax()
+        delete_in_node.call(this, left_sibling.parent, node.min) // Удаляем разделительный ключ в отце
+      } else {
+        // Сливаем tec и right_sibling
+        node.keys.push(...right_sibling.keys)
+        node.pointers.push(...right_sibling.pointers)
+        if (!node.leaf) {
+          node.children.push(...right_sibling.children)
+        }
+
+        right_sibling.keys.length = 0
+        right_sibling.pointers.length = 0
+        if (!right_sibling.leaf) {
+          right_sibling.children.length = 0
+        }
+        // Перенаправляем right и left указатели
+        node.right = right_sibling.right
+        if (right_sibling.right) right_sibling.right.left = node
+
+        update.call(node) // Обновить ключи на пути к корню
+        delete_in_node.call(this, node, node.parent, node.min) // Удаляем разделительный ключ в отце
+      }
+    }
+    // if (this.root.key_num == 0) {
+    //   this.root = this.root.children[0]
+    // }
   }
+  node.commit()
 }

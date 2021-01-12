@@ -7,10 +7,8 @@ export function remove(this: BPlusTree, key: ValueType): boolean {
   if (leaf.keys.indexOf(key) == -1) {
     return false
   } else {
-    delete_in_node.call(leaf, key) // Удалить ключ из вершины
-    if (this.root.key_num == 1) {
-      this.root = this.root.children[0]
-    }
+    delete_in_node.call(this, leaf, key) // Удалить ключ из вершины
+    leaf.commit()
     return true
   }
 }

@@ -1,7 +1,20 @@
 import { BPlusTree } from '../types/BPlusTree'
 import { ValueType } from '../btree'
 
-export function findIndex(a: ValueType[], key: ValueType) {
+export function findPosInsert(a: ValueType[], key: ValueType) {
+  // l, r — левая и правая границы
+  let l = -1
+  let r = a.length
+  while (l < r - 1) {
+    // Запускаем цикл
+    let m = Math.ceil((l + r) / 2) // m — середина области поиска
+    if (a[m] > key) r = m
+    else l = m // Сужение границ
+  }
+  return r
+}
+
+export function findFast(a: ValueType[], key: ValueType) {
   // l, r — левая и правая границы
   let l = -1
   let r = a.length
@@ -17,16 +30,8 @@ export function findIndex(a: ValueType[], key: ValueType) {
 export function find_key(this: BPlusTree, key: ValueType) {
   let cur = this.root
   while (cur.leaf != true) {
-    const leafCount = cur.key_num
-    // let i = findIndex(cur.keys, key)
-    // cur = cur.children[i + 1]
-    for (let i = 0; i <= leafCount; i++) {
-      if (i == leafCount || key < cur.keys[i]) {
-        cur = cur.children[i]
-        break
-      }
-    }
-    // cur = cur.children[i + 1]
+    let i = findPosInsert(cur.keys, key)
+    cur = cur.children[i]
   }
   return cur
 }

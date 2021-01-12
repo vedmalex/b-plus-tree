@@ -1,8 +1,10 @@
 import { BPlusTree } from '../types/BPlusTree'
 import { Node } from '../types/Node'
+import { findPosInsert } from './find_key'
+import { max } from './max'
+import { min } from './min'
 
 export function split(this: BPlusTree, node: Node) {
-  this.history.push(['split', node.creation_order, this.toJSON()])
   let new_node = new Node() //Создаем новый узел
   // Перенаправляем right и left указатели
   new_node.right = node.right
@@ -41,7 +43,6 @@ export function split(this: BPlusTree, node: Node) {
     this.root.keys[0] = mid_key
     this.root.children[0] = node
     this.root.children[1] = new_node
-    // this.root.keys[0] = this.root.children[1].keys[0]
     this.root.key_num = 1
     node.parent = this.root
     new_node.parent = this.root
@@ -49,10 +50,7 @@ export function split(this: BPlusTree, node: Node) {
     const parent = node.parent
 
     // Ищем позицию mid_key в отце
-    let pos = 0
-    while (pos < parent.key_num && parent.keys[pos] < mid_key) {
-      ++pos
-    }
+    let pos = findPosInsert(parent.keys, mid_key)
 
     // Добавляем mid_key в отца и направляем ссылку из него на new_node
     for (let i = parent.key_num; i >= pos + 1; i--) {
