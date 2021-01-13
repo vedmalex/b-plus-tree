@@ -9,56 +9,70 @@ export function delete_in_node(this: BPlusTree, node: Node, key: ValueType) {
 
   node.remove(key)
   node.updateStatics()
-
   if (node.key_num < this.t - 1) {
-    const right_sibling = node.right
-    const left_sibling = node.left
+    reflow.call(this, node)
+  }
+  node.commit()
+  if (this.root.size == 1 && !this.root.leaf) {
+    this.root = this.root.children[0]
+  }
+}
 
-    //1. слева есть откуда брать и количество элементов достаточно
-    if (left_sibling?.key_num > this.t - 1) {
-      // занимаем крайний слева
-      const item = left_sibling.remove(left_sibling.max)
-      node.insert(item)
-      node.updateStatics()
-      left_sibling.updateStatics()
-    }
-    // 2. крайний справа элемент есть и в нем достаточно элементов для займа
-    else if (right_sibling?.key_num > this.t - 1) {
-      // Перемещаем минимальный из right_sibling ключ на последнюю позицию в tec
-      const item = right_sibling.remove(right_sibling.min)
-      node.insert(item)
-      node.updateStatics()
-      right_sibling.updateStatics()
-    }
-    // занять не у кого
-    // слева не пустой элемент
-    else {
-      if (left_sibling) {
-        while (!node.isEmpty) {
-          const item = node.remove(node.min)
-          left_sibling.insert(item)
-          node.updateStatics()
-          left_sibling.updateStatics()
-        }
+function reflow(this: BPlusTree, node: Node) {
+  const right_sibling = node.right
+  const left_sibling = node.left
 
-        left_sibling.removeSiblingAtRight()
-        left_sibling.updateStatics()
-        delete_in_node.call(this, left_sibling.parent, node.min) // Удаляем разделительный ключ в отце
-      } else if (right_sibling) {
-        while (!right_sibling.isEmpty) {
-          const item = right_sibling.remove(right_sibling.min)
-          node.insert(item)
-          right_sibling.updateStatics()
-          node.updateStatics()
-        }
+  //1. слева есть откуда брать и количество элементов достаточно
+  if (left_sibling?.key_num > this.t - 1) {
+    // занимаем крайний слева
+    const item = left_sibling.remove(left_sibling.max)
+    node.insert(item)
+    node.updateStatics()
+    left_sibling.updateStatics()
+  }
 
-        node.removeSiblingAtRight()
+  // 2. крайний справа элемент есть и в нем достаточно элементов для займа
+  else if (right_sibling?.key_num > this.t - 1) {
+    // Перемещаем минимальный из right_sibling ключ на последнюю позицию в tec
+    const item = right_sibling.remove(right_sibling.min)
+    node.insert(item)
+    node.updateStatics()
+    right_sibling.updateStatics()
+  }
+
+  // занять не у кого
+  // слева не пустой элемент
+  else {
+    if (left_sibling) {
+      while (!node.isEmpty) {
+        const item = node.remove(node.min)
+        left_sibling.insert(item)
         node.updateStatics()
-        delete_in_node.call(this, node.parent, right_sibling.min) // Удаляем разделительный ключ в отце
+        left_sibling.updateStatics()
       }
-    }
-    if (this.root.size == 1 && !this.root.leaf) {
-      this.root = this.root.children[0]
+
+      left_sibling.removeSiblingAtRight()
+      left_sibling.updateStatics()
+      reflow.call(this, left_sibling.parent)
+
+      // delete_in_node.call(this, left_sibling.parent, node.min) // Удаляем разделительный ключ в отце
+    } else if (right_sibling) {
+      while (!node.isEmpty) {
+        const item = node.remove(node.min)
+        right_sibling.insert(item)
+        node.updateStatics()
+        right_sibling.updateStatics()
+      }
+
+      right_sibling.removeSiblingAtLeft()
+      right_sibling.updateStatics()
+      const parent = node.parent
+      // удяляем узел из parenta и обновляем всё
+      parent.children.splice(parent.children.indexOf(node), 1)
+      parent.updateStatics()
+      // parent.commit()
+      reflow.call(this, right_sibling.parent)
+      // delete_in_node.call(this, right_sibling.parent, right_sibling.min) // Удаляем разделительный ключ в отце
     }
   }
 }

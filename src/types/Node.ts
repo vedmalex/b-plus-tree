@@ -76,15 +76,33 @@ export class Node {
   }
 
   removeSiblingAtRight() {
-    const a = this
-    const b = this.right
-    if (b.right) {
-      a.right = b.right
-      b.right.left = a
+    if (this.right) {
+      const a = this
+      const b = this.right
+      if (b?.right) {
+        a.right = b.right
+        b.right.left = a
+      }
+      b.left = undefined
+      b.right = undefined
+      a.right = undefined
     }
-    a.right = undefined
-    b.left = undefined
-    b.right = undefined
+  }
+
+  mergeWithLeftSibling() {}
+
+  removeSiblingAtLeft() {
+    if (this.leaf) {
+      const a = this
+      const b = this.left
+      if (b.left) {
+        a.left = b.left
+        b.left.right = a
+      }
+      a.left = undefined
+      b.right = undefined
+      b.left = undefined
+    }
   }
 
   insert(item: Node | [ValueType, any]) {
@@ -160,7 +178,7 @@ export class Node {
     if (this.isEmpty && this.parent && !this.parent.isEmpty) {
       const pos = this.parent.children.indexOf(this)
       if (pos >= 0) {
-        this.parent.children.splice(pos)
+        this.parent.children.splice(pos, 1)
         this.parent.commit()
         this.parent = undefined
         updated += 1

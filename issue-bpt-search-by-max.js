@@ -64,7 +64,7 @@ do {
   let max
   max = bpt.max()
   console.log(max)
-  result = bpt.remove(bpt.max())
+  result = bpt.remove(max)
   const block = bpt.find(max)
   console.log(block.keys.indexOf(max))
 } while(result)

@@ -7,30 +7,20 @@ const comparator = (a, b) => a[0] - b[0]
 const N = 15
 const MAX_RAND = 10000000
 const SAMPLES = 100
-const T = 2
+const T = 1
 
 const itemsToGet = JSON.parse(fs.readFileSync('test_data.json').toString())
 
 console.log(`N ${N} MAX_RAND ${MAX_RAND} SAMPLES ${SAMPLES} T ${T}`)
 
-let
-  arr=[],
-  bpt = new BPlusTree(T, true),
-  rbTree = new RBTree(comparator)
-for (let i = 0; i < N; i++) {
-  rbTree.insert([itemsToGet[i], i])
-  arr.push(itemsToGet[i])
-}
-// console.log(arr)
-let ordered = [...arr].sort((a,b)=> a-b)
-// console.log(ordered)
-const simple = arr.map(i => ordered.indexOf(i))
-console.log(simple)
+let bpt = new BPlusTree(T, true)
+
+const simple = [0, 9, 3, 14, 12, 13, 6, 10, 2, 1, 4, 8, 5, 11, 7]
+
 simple.forEach((i)=>{
   // if(i==11) debugger;
   bpt.insert(i, i)
 })
-
 
 fs.writeFileSync('bpt.json', JSON.stringify(bpt.toJSON()))
 
@@ -61,10 +51,10 @@ if(issues.length > 0){
 let result
 do {
   bpt.print()
-  let min
-  min = bpt.min()
-  console.log(min)
-  result = bpt.remove(min)
-  const block = bpt.find(min)
-  console.log(block.keys.indexOf(min))
-} while(result)
+  let cur
+  cur = simple.shift()
+  console.log(cur)
+  result = bpt.remove(cur)
+  const block = bpt.find(cur)
+  console.log(block.keys.indexOf(cur))
+} while(simple.length > 0)

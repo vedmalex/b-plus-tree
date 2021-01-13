@@ -8,7 +8,6 @@ export function remove(this: BPlusTree, key: ValueType): boolean {
     return false
   } else {
     delete_in_node.call(this, leaf, key) // Удалить ключ из вершины
-    leaf.commit()
     return true
   }
 }

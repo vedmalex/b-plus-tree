@@ -32,7 +32,7 @@ describe('split', () => {
         if (block.keys.indexOf(max) != -1)
           throw new Error(`not removed ${max}  ${last}`)
         last--
-      } while (last != 0 || result)
+      } while (last != 0 && result)
     }).not.toThrow()
     expect(last).toBe(0)
   })
@@ -63,15 +63,15 @@ describe('split', () => {
         if (block.keys.indexOf(min) != -1)
           throw new Error(`not removed ${min}  ${last}`)
         last--
-      } while (last != 0 || result)
+      } while (last != 0 && result)
     }).not.toThrow()
     expect(last).toBe(0)
   })
   it('remove in reverse order by max', () => {
     const bpt = new BPlusTree(2, true)
     expect(() =>
-      insertion.forEach((i, index) => {
-        bpt.insert(i, index)
+      insertion.forEach((i) => {
+        bpt.insert(i, i)
       }),
     ).not.toThrow()
 
@@ -82,13 +82,18 @@ describe('split', () => {
       })
     }).not.toThrow()
 
+    let last = insertion.length
     expect(() => {
-      insertion.forEach((item) => {
-        const result = bpt.remove(item)
-        if (!result) throw new Error(`unable to remove ${item}`)
-      })
+      let result
+      do {
+        let min = insertion.shift()
+        result = bpt.remove(min)
+        if (!result) throw new Error(`not found ${min} ${last}`)
+        const block = bpt.find(min)
+        if (block.keys.indexOf(min) != -1)
+          throw new Error(`not removed ${min}  ${last}`)
+        last--
+      } while (last != 0 && result)
     }).not.toThrow()
-
-    expect(bpt.toJSON()).toMatchSnapshot('B+Tree')
   })
 })
