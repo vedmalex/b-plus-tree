@@ -24,19 +24,21 @@ export class BPlusTree {
     return remove.call(this, key)
   }
   min() {
+    return this.root.min
     //первый элемент
-    let cur = this.root
-    while (!cur.leaf) {
-      cur = cur.children[0]
-    }
-    return cur.keys[0]
+    // let cur = this.root
+    // while (!cur.leaf) {
+    //   cur = cur.children[0]
+    // }
+    // return cur.keys[0]
   }
   max() {
-    let cur = this.root
-    while (!cur.leaf) {
-      cur = cur.children[cur.children.length - 1]
-    }
-    return cur.keys[cur.keys.length - 1]
+    return this.root.max
+    // let cur = this.root
+    // while (!cur.leaf) {
+    //   cur = cur.children[cur.children.length - 1]
+    // }
+    // return cur.keys[cur.keys.length - 1]
   }
   toJSON() {
     return {

@@ -6,14 +6,14 @@ let node = 0
 export class Node {
   _id = node++
   leaf: boolean // является ли узел листом
-  get key_num() {
-    return this._key_num
-  }
-  set key_num(v) {
-    if (v == -1) debugger
-    this._key_num = v
-  }
-  _key_num: number // количество ключей узла
+  // get key_num() {
+  //   return this._key_num
+  // }
+  // set key_num(v) {
+  //   if (v == -1) debugger
+  //   this._key_num = v
+  // }
+  key_num: number // количество ключей узла
   keys: ValueType[] // ключи узла
   parent: Node // указатель на отца
   children: Node[] // указатели на детей узла
@@ -30,22 +30,31 @@ export class Node {
     this.children = []
   }
   commit() {
-    this.updateMinMax()
-    if (this.leaf && this.pointers.length != this.key_num) {
-      this.pointers.length = this.key_num
-    }
-    if (this.keys.length != this.key_num) {
-      this.keys.length = this.key_num
-    }
-    if (!this.leaf && this.children.length != this.key_num + 1) {
-      this.children.length = this.key_num + 1
-    }
+    // if (
+    //   this.leaf &&
+    //   this.pointers?.length &&
+    //   this.pointers.length != this.key_num
+    // ) {
+    //   this.pointers.length = this.key_num
+    // }
+    // if (this.keys && this.keys.length != this.key_num) {
+    //   this.keys.length = this.key_num
+    // }
+    // if (
+    //   !this.leaf &&
+    //   this.children?.length &&
+    //   this.children?.length != this.key_num + 1
+    // ) {
+    //   this.children.length = this.key_num + 1
+    // }
     if (this.key_num == 0) {
-      const pos = this.parent.children.indexOf(this)
-      this.parent.children.splice(pos, 1)
-      this.parent.keys.splice(pos - 1, 1)
-      //каскадно удалять узлы...
-      this.parent.key_num -= 1
+      if (this.parent) {
+        const pos = this.parent.children.indexOf(this)
+        this.parent.children.splice(pos, 1)
+        this.parent.keys.splice(pos - 1, 1)
+        //каскадно удалять узлы...
+        this.parent.key_num -= 1
+      }
       if (this.left) this.left.right = this.right
       if (this.right) this.right.left = this.left
       delete this.left
@@ -56,9 +65,15 @@ export class Node {
       delete this.children
       delete this.key_num
       delete this.keys
+    } else {
+      this.updateMetrics()
     }
   }
-  updateMinMax() {
+  updateKeyNum() {
+    this.key_num = this.leaf ? this.keys.length : this.children.length
+  }
+  updateMetrics() {
+    this.updateKeyNum()
     const old_min = this.min
     const old_max = this.max
     if (this.leaf) {
@@ -69,7 +84,7 @@ export class Node {
       this.min = min(this)
     }
     if (this.parent && (old_min != this.min || old_max != this.max)) {
-      this.parent.updateMinMax()
+      this.parent.updateMetrics()
     }
   }
 

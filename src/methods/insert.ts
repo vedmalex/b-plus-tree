@@ -6,6 +6,7 @@ import { min } from './min'
 import { max } from './max'
 
 export function insert(this: BPlusTree, key: ValueType, value: any): boolean {
+  if (key == 11) debugger
   let leaf = this.find(key)
   if (leaf.keys.indexOf(key) > -1) {
     if (this.unique) return false
@@ -17,12 +18,12 @@ export function insert(this: BPlusTree, key: ValueType, value: any): boolean {
   // Вставляем ключ
   leaf.keys.splice(pos, 0, key)
   leaf.pointers.splice(pos, 0, value)
-  leaf.key_num = leaf.keys.length
+  leaf.updateKeyNum()
 
   if (leaf.key_num == 2 * this.t) {
     // t — степень дерева
     split.call(this, leaf) // Разбиваем узел
   }
-  leaf.updateMinMax()
+  leaf.updateMetrics()
   return true
 }

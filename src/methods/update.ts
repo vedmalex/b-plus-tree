@@ -1,11 +1,8 @@
 import { Node } from '../types/Node'
 
 export function update(this: Node) {
-  // обновляем крайние значения
-
   // обновляем все верхние уровни
   let a = this.parent
-
   while (a != null) {
     // обновляем со второго потомка
     for (let i = 0; i < a.key_num; i++) {

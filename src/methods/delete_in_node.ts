@@ -5,16 +5,13 @@ import { update } from './update'
 import { findPosInsert, findFast } from './find_key'
 
 export function delete_in_node(this: BPlusTree, node: Node, key: ValueType) {
-  if (key == 12) debugger
+  if (key == 13) debugger
   if (node.keys.indexOf(key) == -1) {
     return
   }
 
   // Ищем позицию удаляемого ключа
   let pos = findFast(node.keys, key)
-  // while (pos < node.key_num && node.keys[pos] < key) {
-  //   ++pos
-  // }
 
   // Удаляем ключ
   node.keys.splice(pos, 1)
@@ -23,7 +20,7 @@ export function delete_in_node(this: BPlusTree, node: Node, key: ValueType) {
     node.children.splice(pos + 1, 1)
   }
 
-  node.key_num = node.keys.length
+  node.updateKeyNum()
 
   if (node.key_num < this.t - 1) {
     const right_sibling = node.right
@@ -38,16 +35,13 @@ export function delete_in_node(this: BPlusTree, node: Node, key: ValueType) {
       if (!node.leaf) {
         node.children.unshift(left_sibling.children.pop())
       }
-      node.key_num = node.keys.length
-      left_sibling.key_num = left_sibling.keys.length
-      left_sibling.updateMinMax()
+
+      left_sibling.updateMetrics()
+      node.updateMetrics()
       update.call(node) // Обновить ключи на пути к корню
     }
     // 2. крайний справа элемент есть и в нем достаточно элементов для займа
     else if (right_sibling != null && right_sibling.key_num > this.t - 1) {
-      --right_sibling.key_num
-      ++node.key_num
-
       // Перемещаем минимальный из right_sibling ключ на последнюю позицию в tec
 
       node.keys.push(right_sibling.keys.shift())
@@ -55,9 +49,9 @@ export function delete_in_node(this: BPlusTree, node: Node, key: ValueType) {
       if (!node.leaf) {
         node.children.push(right_sibling.children.shift())
       }
-      node.key_num = node.keys.length
-      right_sibling.key_num = left_sibling.keys.length
-      right_sibling.updateMinMax()
+
+      right_sibling.updateMetrics()
+      node.updateMetrics()
       update.call(node) // Обновить ключи на пути к корню
     }
     // занять не у кого
@@ -80,8 +74,8 @@ export function delete_in_node(this: BPlusTree, node: Node, key: ValueType) {
         left_sibling.right = node.right
         if (node.right) node.right.left = left_sibling
 
+        left_sibling.updateMetrics()
         update.call(left_sibling) // Обновить ключи на пути к корню
-        left_sibling.updateMinMax()
         delete_in_node.call(this, left_sibling.parent, node.min) // Удаляем разделительный ключ в отце
       } else {
         // Сливаем tec и right_sibling
@@ -100,6 +94,7 @@ export function delete_in_node(this: BPlusTree, node: Node, key: ValueType) {
         node.right = right_sibling.right
         if (right_sibling.right) right_sibling.right.left = node
 
+        node.updateMetrics()
         update.call(node) // Обновить ключи на пути к корню
         delete_in_node.call(this, node, node.parent, node.min) // Удаляем разделительный ключ в отце
       }
