@@ -1,7 +1,10 @@
 import { BPlusTree } from './types/BPlusTree'
 import Timer from './utils/time'
 
-export type ValueType = number | string | boolean
+export type ValueType = number | string
+// для поддержки boolean нужно значения ключей обрабатывать
+// спец функцией чтобы получать или строку или что-то еще
+// | boolean
 const MAX_NUM = 1000000
 const SAMPLES = 10
 const bt = new BPlusTree(100, true)

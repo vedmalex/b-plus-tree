@@ -4,13 +4,14 @@ import { ValueType } from '../btree'
 import { remove } from '../methods/remove'
 import { insert } from '../methods/insert'
 import { find_key } from '../methods/find_key'
+import { updateValue } from '../methods/updateValue'
 
 export class BPlusTree {
   public t: number // минимальная степень дерева
   public root: Node // указатель на корень дерева
   public unique: boolean
   constructor(t: number, unique: boolean) {
-    this.root = new Node(true)
+    this.root = Node.createLeaf()
     this.t = t
     this.unique = unique
   }
@@ -25,20 +26,16 @@ export class BPlusTree {
   }
   min() {
     return this.root.min
-    //первый элемент
-    // let cur = this.root
-    // while (!cur.leaf) {
-    //   cur = cur.children[0]
-    // }
-    // return cur.keys[0]
   }
   max() {
     return this.root.max
-    // let cur = this.root
-    // while (!cur.leaf) {
-    //   cur = cur.children[cur.children.length - 1]
-    // }
-    // return cur.keys[cur.keys.length - 1]
+  }
+  isNodeFull(node: Node) {
+    updateValue
+    const res =
+      (node.leaf ? node.keys.length : node.children.length) > this.t * 2
+    node.isFull = res
+    return res
   }
   toJSON() {
     return {

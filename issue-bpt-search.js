@@ -25,7 +25,7 @@ for (let i = 0; i < N; i++) {
 let ordered = [...arr].sort((a,b)=> a-b)
 // console.log(ordered)
 const simple = arr.map(i => ordered.indexOf(i))
-// console.log(simple)
+console.log(simple)
 simple.forEach((i)=>{
   // if(i==11) debugger;
   bpt.insert(i, i)
