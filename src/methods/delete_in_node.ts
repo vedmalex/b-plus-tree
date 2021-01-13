@@ -45,8 +45,8 @@ export function delete_in_node(this: BPlusTree, node: Node, key: ValueType) {
         left_sibling.updateStatics()
         delete_in_node.call(this, left_sibling.parent, node.min) // Удаляем разделительный ключ в отце
       } else if (right_sibling) {
-        while (right_sibling?.isEmpty) {
-          const item = right_sibling.remove(node.min)
+        while (!right_sibling.isEmpty) {
+          const item = right_sibling.remove(right_sibling.min)
           node.insert(item)
           right_sibling.updateStatics()
           node.updateStatics()
@@ -54,7 +54,7 @@ export function delete_in_node(this: BPlusTree, node: Node, key: ValueType) {
 
         node.removeSiblingAtRight()
         node.updateStatics()
-        delete_in_node.call(this, node, node.parent, node.min) // Удаляем разделительный ключ в отце
+        delete_in_node.call(this, node.parent, right_sibling.min) // Удаляем разделительный ключ в отце
       }
     }
     if (this.root.size == 1 && !this.root.leaf) {

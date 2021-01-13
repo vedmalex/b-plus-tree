@@ -15,9 +15,9 @@ describe('node is work', () => {
   it('if leaf is created: pointers is initiated', () => {
     const node = Node.createLeaf()
     expect(node).toHaveProperty('min')
-    expect(node.min).toBeNull()
+    expect(node.min).toBeUndefined()
     expect(node).toHaveProperty('max')
-    expect(node.max).toBeNull()
+    expect(node.max).toBeUndefined()
     expect(node).toHaveProperty('isFull')
     expect(node.isFull).toBeFalsy()
     expect(node).toHaveProperty('isEmpty')
