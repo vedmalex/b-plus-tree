@@ -9,7 +9,7 @@ export function split(this: BPlusTree, node: Node) {
   // Перенаправляем right и left указатели
   node.addSiblingAtRight(new_node)
 
-  // поскольку элемент уже извлек, продолжаем с того же индекса
+  // продолжаем
   if (node.leaf) {
     const keys = node.keys.splice(this.t)
     const values = node.pointers.splice(this.t)

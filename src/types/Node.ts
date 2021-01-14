@@ -4,13 +4,151 @@ import { max } from '../methods/max'
 import { findPosInsert } from '../methods/findPosInsert'
 import { updateValue } from '../methods/updateValue'
 import { findFast } from '../methods/findFast'
-import { update } from '../methods/update'
 
 export function nodeComparator(a, b) {
   return a.min - b.min
 }
+
+export function addSibling(
+  a: Chainable,
+  b: Chainable,
+  order: 'right' | 'left',
+) {
+  const right = order
+  const left = order == 'left' ? 'right' : 'left'
+  if (a[right]) {
+    b[right] = a[right]
+    b[right][left] = b
+  }
+  a[right] = b
+  b[left] = a
+}
+
+export function removeSibling(a: Chainable, order: 'right' | 'left') {
+  const right = order
+  const left = order == 'left' ? 'right' : 'left'
+  if (a[right]) {
+    const b = a[right]
+    if (b[right]) {
+      a[right] = b[right]
+      b[right][left] = a
+    }
+    a[right] = undefined
+    b[left] = undefined
+    b[right] = undefined
+  }
+}
+
+export class Chainable {
+  left: Chainable
+  right: Chainable
+
+  addSiblingAtRight(b) {
+    addSibling(this, b, 'right')
+  }
+
+  addSiblingAtLeft(b) {
+    addSibling(this, b, 'left')
+  }
+
+  removeSiblingAtRight() {
+    removeSibling(this, 'right')
+  }
+
+  removeSiblingAtLeft() {
+    removeSibling(this, 'left')
+  }
+
+  mergeWithLeftSibling() {}
+  borrowLeft() {}
+}
+
+export type RuleInput = {
+  deps?: Array<keyof StaticNodeInfo>
+  condition?: (obj: Node) => boolean
+  run: (obj: Node) => any
+}
+export class Rule {
+  deps?: Array<keyof StaticNodeInfo>
+  condition?: (obj: Node) => boolean
+  run: (obj: Node) => any
+  constructor({ deps, run, condition }: RuleInput) {
+    this.deps = deps
+    this.run = run
+    this.condition = condition
+  }
+}
+
+export interface StaticNodeInfo<T = any> {
+  size: T
+  key_num: T
+  isEmpty: T
+  min: T
+  max: T
+  keys: T
+}
+
+export class NodeStatics implements StaticNodeInfo<Rule> {
+  size = new Rule({
+    deps: ['keys'],
+    run: (obj: Node) => (obj.leaf ? obj.keys.length : obj.children.length),
+  })
+  key_num = new Rule({ deps: ['keys'], run: (obj: Node) => obj.keys.length })
+  isEmpty = new Rule({ deps: ['size'], run: (obj: Node) => obj.size == 0 })
+  min = new Rule({
+    deps: ['keys'],
+    run: (obj) => (obj.leaf ? obj.keys[0] ?? undefined : min(obj)),
+  })
+  max = new Rule({
+    deps: ['keys'],
+    run: (obj) =>
+      obj.leaf ? obj.keys[obj.key_num - 1] ?? undefined : max(obj),
+  })
+  keys = new Rule({
+    condition: (obj) => !obj.leaf,
+    run: (root) => root.children.slice(1).map((c) => c.min),
+  })
+}
+
+export const NodeRuleEngine = new NodeStatics()
+
+export function updateMetric(
+  node: Node,
+  metric: keyof StaticNodeInfo | '*',
+  batch: boolean = false,
+) {
+  if (metric == '*') {
+    const metrics: Array<keyof StaticNodeInfo> = [
+      'keys',
+      'size',
+      'key_num',
+      'isEmpty',
+      'max',
+      'min',
+    ]
+    const result = metrics
+      .map((metric) => updateMetric(node, metric, true))
+      .reduce((r, c) => r + c, 0)
+    return result
+  } else if (
+    NodeRuleEngine[metric] &&
+    (NodeRuleEngine[metric].condition?.(node) ?? true)
+  ) {
+    const rule = NodeRuleEngine[metric]
+    if (rule.deps && !batch) {
+      rule.deps.forEach((dep) => {
+        updateMetric(node, dep, batch)
+      })
+    }
+    return updateValue(node, metric, rule.run)
+  } else {
+    // nothing to change
+    return 0
+  }
+}
+
 let node = 0
-export class Node {
+export class Node extends Chainable implements StaticNodeInfo {
   static createLeaf() {
     return new Node(true)
   }
@@ -27,13 +165,6 @@ export class Node {
   leaf: boolean // является ли узел листом
   key_num: number // количество ключей узла
   size: number // значимый размер узла
-  // get keys() {
-  //   return this._keys
-  // }
-  // set keys(v) {
-  //   if (v == undefined) debugger
-  //   this._keys = v
-  // }
   keys: ValueType[] // ключи узла
   parent: Node // указатель на отца
   children: Node[] // указатели на детей узла
@@ -45,6 +176,7 @@ export class Node {
   isFull: boolean
   isEmpty: boolean
   private constructor(leaf: boolean) {
+    super()
     if (leaf == undefined) throw new Error('leaf type expected')
     this.leaf = leaf
     this.keys = []
@@ -63,46 +195,6 @@ export class Node {
 
   insertMany(...items: (Node | [ValueType, any])[]) {
     items.forEach((item) => this.insert(item))
-  }
-
-  addSiblingAtRight(b) {
-    const a = this
-    if (a.right) {
-      b.right = a.right
-      b.right.left = b
-    }
-    a.right = b
-    b.left = a
-  }
-
-  removeSiblingAtRight() {
-    if (this.right) {
-      const a = this
-      const b = this.right
-      if (b?.right) {
-        a.right = b.right
-        b.right.left = a
-      }
-      b.left = undefined
-      b.right = undefined
-      a.right = undefined
-    }
-  }
-
-  mergeWithLeftSibling() {}
-
-  removeSiblingAtLeft() {
-    if (this.leaf) {
-      const a = this
-      const b = this.left
-      if (b.left) {
-        a.left = b.left
-        b.left.right = a
-      }
-      a.left = undefined
-      b.right = undefined
-      b.left = undefined
-    }
   }
 
   insert(item: Node | [ValueType, any]) {
@@ -147,32 +239,11 @@ export class Node {
       return res
     }
   }
-  //TODO:
-  borrowLeft() {}
+
   updateStatics() {
-    let updated = 0
-    updated += updateValue(this, 'size', (obj) =>
-      obj.leaf ? obj.keys.length : obj.children.length,
-    )
-    updated += updateValue(this, 'key_num', (obj) => obj.keys.length)
-    updated += updateValue(this, 'isEmpty', (obj) => obj.size == 0)
-    updated += updateValue(this, 'min', (obj) =>
-      obj.leaf ? obj.keys[0] ?? undefined : min(obj),
-    )
-    updated += updateValue(this, 'max', (obj) =>
-      obj.leaf ? obj.keys[obj.key_num - 1] ?? undefined : max(obj),
-    )
-    updated += updateValue(this, 'isEmpty', (obj) => obj.size == 0)
-    if (updated && this.parent) {
-      this.parent.updateStatics()
-    }
-    if (!this.leaf) {
-      updated += updateValue(this, 'keys', (root) =>
-        root.children.slice(1).map((c) => c.min),
-      )
-    }
-    return updated
+    return updateMetric(this, '*')
   }
+
   commit() {
     let updated = this.updateStatics()
     if (this.isEmpty && this.parent && !this.parent.isEmpty) {

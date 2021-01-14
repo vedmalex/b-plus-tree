@@ -52,7 +52,6 @@ function reflow(this: BPlusTree, node: Node) {
       }
 
       left_sibling.removeSiblingAtRight()
-      left_sibling.updateStatics()
       reflow.call(this, left_sibling.parent)
 
       // delete_in_node.call(this, left_sibling.parent, node.min) // Удаляем разделительный ключ в отце
@@ -65,7 +64,6 @@ function reflow(this: BPlusTree, node: Node) {
       }
 
       right_sibling.removeSiblingAtLeft()
-      right_sibling.updateStatics()
       const parent = node.parent
       // удяляем узел из parenta и обновляем всё
       parent.children.splice(parent.children.indexOf(node), 1)
