@@ -63,92 +63,252 @@ export class Chainable {
   borrowLeft() {}
 }
 
-export type RuleInput = {
-  deps?: Array<keyof StaticNodeInfo>
-  condition?: (obj: Node) => boolean
-  run: (obj: Node) => any
+export enum VertexColor {
+  gray = 1,
+  blue = 2,
+  red = 3,
 }
-export class Rule {
-  deps?: Array<keyof StaticNodeInfo>
-  condition?: (obj: Node) => boolean
-  run: (obj: Node) => any
-  constructor({ deps, run, condition }: RuleInput) {
+
+export type RuleInput<T> = {
+  name?: string
+  field?: 'none' | keyof T
+  deps?: Array<keyof T>
+  condition?: (obj: T) => boolean
+  run: (obj: T) => any
+}
+
+export class Rule<T extends object> {
+  type: 'action' | 'setter' = 'action'
+  field: keyof T
+  name: string
+  deps?: Array<keyof T>
+  condition?: (obj: T) => boolean
+  run: (obj: T) => any
+  constructor({ deps, run, condition, field, name }: RuleInput<T>) {
+    this.type = field ? 'setter' : 'action'
     this.deps = deps
     this.run = run
     this.condition = condition
+    if (field != 'none') this.field = field
+    this.name = name
+    if (!name) {
+      this.name = `${this.type} for ${field}`
+    }
   }
 }
 
-export interface StaticNodeInfo<T = any> {
-  size: T
-  key_num: T
-  isEmpty: T
-  min: T
-  max: T
-  keys: T
-}
-
-export class NodeStatics implements StaticNodeInfo<Rule> {
-  size = new Rule({
+const rules: Array<Rule<Node>> = [
+  new Rule({
+    field: 'keys',
+    condition: (obj: Node) => !obj.leaf,
+    run: (root: Node) => root.children.slice(1).map((c) => c.min),
+  }),
+  new Rule({
+    field: 'size',
     deps: ['keys'],
     run: (obj: Node) => (obj.leaf ? obj.keys.length : obj.children.length),
-  })
-  key_num = new Rule({ deps: ['keys'], run: (obj: Node) => obj.keys.length })
-  isEmpty = new Rule({ deps: ['size'], run: (obj: Node) => obj.size == 0 })
-  min = new Rule({
+  }),
+  new Rule({
+    field: 'key_num',
     deps: ['keys'],
-    run: (obj) => (obj.leaf ? obj.keys[0] ?? undefined : min(obj)),
-  })
-  max = new Rule({
+    run: (obj: Node) => obj.keys.length,
+  }),
+  new Rule({
+    field: 'isEmpty',
+    deps: ['size'],
+    run: (obj: Node) => obj.size == 0,
+  }),
+  new Rule({
+    field: 'min',
     deps: ['keys'],
-    run: (obj) =>
+    run: (obj: Node) => (obj.leaf ? obj.keys[0] ?? undefined : min(obj)),
+  }),
+  new Rule({
+    field: 'max',
+    deps: ['keys'],
+    run: (obj: Node) =>
       obj.leaf ? obj.keys[obj.key_num - 1] ?? undefined : max(obj),
-  })
-  keys = new Rule({
-    condition: (obj) => !obj.leaf,
-    run: (root) => root.children.slice(1).map((c) => c.min),
-  })
-}
+  }),
+  new Rule({
+    name: 'move last children to parent',
+    deps: ['key_num', 'size'],
+    condition: (obj: Node) =>
+      obj.key_num == 0 && obj.size == 1 && obj.parent && !obj.leaf,
+    run: (obj: Node) => {
+      const child = obj.children.pop()
+      const parent = obj.parent
+      parent.insert(child)
+      obj.commit()
+      parent.commit()
+    },
+  }),
+  new Rule({
+    name: 'ack parent that here is only one children',
+    condition: (obj: Node) => obj.parent?.size == 1,
+    run: (obj: Node) => obj.parent.commit(),
+  }),
+]
 
-export const NodeRuleEngine = new NodeStatics()
+export class RuleRunner<T extends object> {
+  dependencies: { [key: string]: Array<keyof T> }
+  notifiers: { [key: string]: Array<keyof T> }
+  setters: { [key: string]: Rule<T> }
+  rules: { [key: string]: Rule<T> }
+  public fields: Array<keyof T>
+  public actions: Array<string>
+  constructor(rules: Array<Rule<T>>) {
+    // задать порядок выполнения правил в автоматическом режиме
+    // отсортировать по порядку
+    // отследить работу правил
+    // перенести логику работы с деревом в правила
 
-export function updateMetric(
-  node: Node,
-  metric: keyof StaticNodeInfo | '*',
-  batch: boolean = false,
-) {
-  if (metric == '*') {
-    const metrics: Array<keyof StaticNodeInfo> = [
-      'keys',
-      'size',
-      'key_num',
-      'isEmpty',
-      'max',
-      'min',
-    ]
-    const result = metrics
-      .map((metric) => updateMetric(node, metric, true))
-      .reduce((r, c) => r + c, 0)
-    return result
-  } else if (
-    NodeRuleEngine[metric] &&
-    (NodeRuleEngine[metric].condition?.(node) ?? true)
-  ) {
-    const rule = NodeRuleEngine[metric]
-    if (rule.deps && !batch) {
-      rule.deps.forEach((dep) => {
-        updateMetric(node, dep, batch)
-      })
+    // обновление зависимостей как-то записывать
+    // чтобы не было каскадных обновлений
+
+    // допилить остальное..
+    // вызывать после обновление ключевого поля, обновления зависимых полей.
+    // проставить что мы должны работать в режиме обновления какие поля за текущий запуск обработаны
+    //
+    this.notifiers = {}
+    this.dependencies = {}
+    this.fields = []
+    this.setters = {}
+    this.actions = []
+    this.rules = {}
+    rules.forEach((cur) => {
+      if (cur.type == 'setter') {
+        this.fields.push(cur.field)
+        if (!this.setters[cur.field as string]) {
+          this.setters[cur.field as string] = cur
+        } else {
+          throw new Error(`duplicate rule ${cur.field}`)
+        }
+      } else if (cur.type == 'action') {
+        if (!this.rules[cur.name]) {
+          this.rules[cur.name] = cur
+        } else {
+          throw new Error(`duplicate action ${cur.name}`)
+        }
+        this.actions.push(cur.name)
+      }
+    })
+    this.initDependencies()
+  }
+  /**
+   * ищем зависимость
+   */
+  initDependencies() {
+    const color: { [key: string]: number } = {}
+    this.dependencies = this.fields.reduce((g, c) => {
+      g[c as string] = this.setters[c as string].deps
+      color[c as string] = 0 /* white */
+      return g
+    }, {})
+
+    this.findLoops(color)
+
+    this.fields.forEach((f) => {
+      if (color[f as string] != 1) {
+        this.getDeps(f)
+      }
+    })
+  }
+
+  private findLoops(color: { [key: string]: number }) {
+    const loop = []
+
+    const loops = this.fields.reduce((res, f) => {
+      const isLoop = this.dfs(f as string, color)
+      if (isLoop == 1) {
+        loop.push(f)
+      }
+      this.dfs(f as string, color)
+      return res
+    }, 0)
+
+    if (loops > 0) {
+      throw new Error(`cyclic dependecy loop found ${loop.join(',')}`)
     }
-    return updateValue(node, metric, rule.run)
-  } else {
-    // nothing to change
+  }
+
+  dfs(v: string, color: { [key: string]: number }) {
+    color[v] = 1 /* gray */
+    for (let i = 0; i < this.dependencies[v]?.length; i++) {
+      let f = this.fields[i]
+      if (!color[f as string]) {
+        this.dfs(v, color)
+      }
+      if (color[f as string] == 1) {
+        return 1
+      }
+    }
+    color[v] = 2
     return 0
+  }
+
+  getDeps(f: keyof T, field?: keyof T) {
+    const dependency = this.dependencies[f as string]
+    field = field ?? f
+    if (dependency?.length > 0) {
+      for (let i = 0; i < dependency.length; i++) {
+        const f = dependency[i]
+        this.getDeps(f, field)
+        if (!this.notifiers[f as string]) this.notifiers[f as string] = []
+        this.notifiers[f as string].push(field)
+      }
+    }
+  }
+
+  updateFields(obj: T, metric: keyof T | '*', batch: boolean = false) {
+    if (metric == '*') {
+      const metrics = this.fields
+      const result = metrics
+        .map((metric) => this.updateFields(obj, metric, true))
+        .reduce((r, c) => r + c, 0)
+      return result
+    } else if (
+      this.setters[metric as string] &&
+      (this.setters[metric as string].condition?.(obj) ?? true)
+    ) {
+      const rule = this.setters[metric as string]
+      if (rule.deps && !batch) {
+        rule.deps.forEach((dep) => {
+          this.updateFields(obj, dep, batch)
+        })
+      }
+      return updateValue<T>(obj, metric, rule.run)
+    } else {
+      // nothing to change
+      return 0
+    }
+  }
+
+  executeAction(obj: T, name: string) {
+    const action = this.actions[name]
+    if (obj && name && action) {
+      if (action.condition?.(obj)) {
+        if (action.deps) {
+          action.deps.forEach((dep) => {
+            this.updateFields(obj, dep, true)
+          })
+        }
+        return action.run(obj) ?? 1
+      }
+    } else {
+      return 0
+    }
+  }
+  executeAllActions(obj: T) {
+    return this.actions
+      .map((name) => this.executeAction(obj, name))
+      .reduce((r, c) => r + c, 0)
   }
 }
 
+export const ruleRunner = new RuleRunner<Node>(rules)
+
 let node = 0
-export class Node extends Chainable implements StaticNodeInfo {
+export class Node extends Chainable {
   static createLeaf() {
     return new Node(true)
   }
@@ -241,33 +401,14 @@ export class Node extends Chainable implements StaticNodeInfo {
   }
 
   updateStatics() {
-    return updateMetric(this, '*')
+    return ruleRunner.updateFields(this, '*')
   }
 
   commit() {
-    let updated = this.updateStatics()
-    if (this.isEmpty && this.parent && !this.parent.isEmpty) {
-      const pos = this.parent.children.indexOf(this)
-      if (pos >= 0) {
-        this.parent.children.splice(pos, 1)
-        this.parent.commit()
-        this.parent = undefined
-        updated += 1
-      }
-    }
-    if (this.parent?.size == 1) {
-      updated += this.parent.commit()
-    }
-    if (this.key_num == 0 && this.size == 1 && this.parent && !this.leaf) {
-      const child = this.children.pop()
-      const parent = this.parent
-      parent.insert(child)
-      this.commit()
-      parent.commit()
-      updated += 1
-    }
-    return updated
+    this.updateStatics()
+    return ruleRunner.executeAllActions(this)
   }
+  moveChildtoParent() {}
 
   toJSON() {
     if (this.leaf) {
