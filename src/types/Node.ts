@@ -2,12 +2,10 @@ import { ValueType } from '../btree'
 import { min } from '../methods/min'
 import { max } from '../methods/max'
 import { findPosInsert } from '../methods/findPosInsert'
-import { updateValue } from '../methods/updateValue'
 import { findFast } from '../methods/findFast'
-
-export function nodeComparator(a, b) {
-  return a.min - b.min
-}
+import { RuleRunner } from './RuleRunner'
+import { Rule } from './Rule'
+import { Chainable } from './Chainable'
 
 export function addSibling(
   a: Chainable,
@@ -39,62 +37,10 @@ export function removeSibling(a: Chainable, order: 'right' | 'left') {
   }
 }
 
-export class Chainable {
-  left: Chainable
-  right: Chainable
-
-  addSiblingAtRight(b) {
-    addSibling(this, b, 'right')
-  }
-
-  addSiblingAtLeft(b) {
-    addSibling(this, b, 'left')
-  }
-
-  removeSiblingAtRight() {
-    removeSibling(this, 'right')
-  }
-
-  removeSiblingAtLeft() {
-    removeSibling(this, 'left')
-  }
-
-  mergeWithLeftSibling() {}
-  borrowLeft() {}
-}
-
 export enum VertexColor {
   gray = 1,
   blue = 2,
   red = 3,
-}
-
-export type RuleInput<T> = {
-  name?: string
-  field?: 'none' | keyof T
-  deps?: Array<keyof T>
-  condition?: (obj: T) => boolean
-  run: (obj: T) => any
-}
-
-export class Rule<T extends object> {
-  type: 'action' | 'setter' = 'action'
-  field: keyof T
-  name: string
-  deps?: Array<keyof T>
-  condition?: (obj: T) => boolean
-  run: (obj: T) => any
-  constructor({ deps, run, condition, field, name }: RuleInput<T>) {
-    this.type = field ? 'setter' : 'action'
-    this.deps = deps
-    this.run = run
-    this.condition = condition
-    if (field != 'none') this.field = field
-    this.name = name
-    if (!name) {
-      this.name = `${this.type} for ${field}`
-    }
-  }
 }
 
 const rules: Array<Rule<Node>> = [
@@ -148,163 +94,6 @@ const rules: Array<Rule<Node>> = [
     run: (obj: Node) => obj.parent.commit(),
   }),
 ]
-
-export class RuleRunner<T extends object> {
-  dependencies: { [key: string]: Array<keyof T> }
-  notifiers: { [key: string]: Array<keyof T> }
-  setters: { [key: string]: Rule<T> }
-  rules: { [key: string]: Rule<T> }
-  public fields: Array<keyof T>
-  public actions: Array<string>
-  constructor(rules: Array<Rule<T>>) {
-    // задать порядок выполнения правил в автоматическом режиме
-    // отсортировать по порядку
-    // отследить работу правил
-    // перенести логику работы с деревом в правила
-
-    // обновление зависимостей как-то записывать
-    // чтобы не было каскадных обновлений
-
-    // допилить остальное..
-    // вызывать после обновление ключевого поля, обновления зависимых полей.
-    // проставить что мы должны работать в режиме обновления какие поля за текущий запуск обработаны
-    //
-    this.notifiers = {}
-    this.dependencies = {}
-    this.fields = []
-    this.setters = {}
-    this.actions = []
-    this.rules = {}
-    rules.forEach((cur) => {
-      if (cur.type == 'setter') {
-        this.fields.push(cur.field)
-        if (!this.setters[cur.field as string]) {
-          this.setters[cur.field as string] = cur
-        } else {
-          throw new Error(`duplicate rule ${cur.field}`)
-        }
-      } else if (cur.type == 'action') {
-        if (!this.rules[cur.name]) {
-          this.rules[cur.name] = cur
-        } else {
-          throw new Error(`duplicate action ${cur.name}`)
-        }
-        this.actions.push(cur.name)
-      }
-    })
-    this.initDependencies()
-  }
-  /**
-   * ищем зависимость
-   */
-  initDependencies() {
-    const color: { [key: string]: number } = {}
-    this.dependencies = this.fields.reduce((g, c) => {
-      g[c as string] = this.setters[c as string].deps
-      color[c as string] = 0 /* white */
-      return g
-    }, {})
-
-    this.findLoops(color)
-
-    this.fields.forEach((f) => {
-      if (color[f as string] != 1) {
-        this.getDeps(f)
-      }
-    })
-  }
-
-  private findLoops(color: { [key: string]: number }) {
-    const loop = []
-
-    const loops = this.fields.reduce((res, f) => {
-      const isLoop = this.dfs(f as string, color)
-      if (isLoop == 1) {
-        loop.push(f)
-      }
-      this.dfs(f as string, color)
-      return res
-    }, 0)
-
-    if (loops > 0) {
-      throw new Error(`cyclic dependecy loop found ${loop.join(',')}`)
-    }
-  }
-
-  dfs(v: string, color: { [key: string]: number }) {
-    color[v] = 1 /* gray */
-    for (let i = 0; i < this.dependencies[v]?.length; i++) {
-      let f = this.fields[i]
-      if (!color[f as string]) {
-        this.dfs(v, color)
-      }
-      if (color[f as string] == 1) {
-        return 1
-      }
-    }
-    color[v] = 2
-    return 0
-  }
-
-  getDeps(f: keyof T, field?: keyof T) {
-    const dependency = this.dependencies[f as string]
-    field = field ?? f
-    if (dependency?.length > 0) {
-      for (let i = 0; i < dependency.length; i++) {
-        const f = dependency[i]
-        this.getDeps(f, field)
-        if (!this.notifiers[f as string]) this.notifiers[f as string] = []
-        this.notifiers[f as string].push(field)
-      }
-    }
-  }
-
-  updateFields(obj: T, metric: keyof T | '*', batch: boolean = false) {
-    if (metric == '*') {
-      const metrics = this.fields
-      const result = metrics
-        .map((metric) => this.updateFields(obj, metric, true))
-        .reduce((r, c) => r + c, 0)
-      return result
-    } else if (
-      this.setters[metric as string] &&
-      (this.setters[metric as string].condition?.(obj) ?? true)
-    ) {
-      const rule = this.setters[metric as string]
-      if (rule.deps && !batch) {
-        rule.deps.forEach((dep) => {
-          this.updateFields(obj, dep, batch)
-        })
-      }
-      return updateValue<T>(obj, metric, rule.run)
-    } else {
-      // nothing to change
-      return 0
-    }
-  }
-
-  executeAction(obj: T, name: string) {
-    const action = this.actions[name]
-    if (obj && name && action) {
-      if (action.condition?.(obj)) {
-        if (action.deps) {
-          action.deps.forEach((dep) => {
-            this.updateFields(obj, dep, true)
-          })
-        }
-        return action.run(obj) ?? 1
-      }
-    } else {
-      return 0
-    }
-  }
-  executeAllActions(obj: T) {
-    return this.actions
-      .map((name) => this.executeAction(obj, name))
-      .reduce((r, c) => r + c, 0)
-  }
-}
-
 export const ruleRunner = new RuleRunner<Node>(rules)
 
 let node = 0
@@ -321,7 +110,7 @@ export class Node extends Chainable {
     root.updateStatics()
     return root
   }
-  _id = node++
+  id = node++
   leaf: boolean // является ли узел листом
   key_num: number // количество ключей узла
   size: number // значимый размер узла
@@ -413,7 +202,7 @@ export class Node extends Chainable {
   toJSON() {
     if (this.leaf) {
       return {
-        id: this._id,
+        id: this.id,
         keys: [...this.keys].map((i) => (typeof i == 'number' ? i : 'empty')),
         key_num: this.key_num,
         min: this.min,
@@ -424,7 +213,7 @@ export class Node extends Chainable {
       }
     } else {
       return {
-        id: this._id,
+        id: this.id,
         keys: [...this.keys].map((i) => (typeof i == 'number' ? i : 'empty')),
         key_num: this.key_num,
         min: this.min,
