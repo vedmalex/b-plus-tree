@@ -1,5 +1,4 @@
 import 'jest'
-import { split } from '../split'
 import { BPlusTree } from '../../types/BPlusTree'
 
 const insertion = [0, 9, 3, 14, 12, 13, 6, 10, 2, 1, 4, 8, 5, 11, 7]

@@ -3,9 +3,9 @@ export type SetterInput<T> = {
   // поле
   field: keyof T
   // от кого зависит
-  subscribesTo?: Array<keyof T>
+  subscribesTo?: keyof T | Array<keyof T>
   //зависимые
-  subjectFor?: Array<keyof T>
+  subjectFor?: keyof T | Array<keyof T>
   //условие
   condition?: (obj: T) => boolean
   //что

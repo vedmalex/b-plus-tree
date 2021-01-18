@@ -37,6 +37,17 @@ describe('Rule', () => {
     ).not.toThrowError()
   })
 
+  it('initialize rules with arrays', () => {
+    expect(() =>
+      Rule.createSetter<DTO>({
+        field: 'name',
+        run: (obj) => `Mr. ${obj.name}`,
+        subjectFor: 'fullName',
+        subscribesTo: ['name'],
+      }),
+    ).not.toThrow()
+  })
+
   it('initialize setter', () => {
     const condition = (obj: DTO) => !obj.id
     const run = (obj: DTO) => (obj.id = idGen++)

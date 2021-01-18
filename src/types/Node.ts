@@ -43,6 +43,17 @@ export enum VertexColor {
   red = 3,
 }
 
+const runCommit = (obj: Node) => {
+  const child = obj.children.pop()
+  const parent = obj.parent
+  parent.insert(child)
+  obj.commit()
+  parent.commit()
+}
+
+const runCondition = (obj: Node) =>
+  obj.key_num == 0 && obj.size == 1 && obj.parent && !obj.leaf
+
 const rules: Array<Rule<Node>> = [
   Rule.createSetter<Node>({
     field: 'keys',
@@ -77,17 +88,17 @@ const rules: Array<Rule<Node>> = [
   }),
   Rule.createAction({
     fields: ['key_num', 'size'],
-    method: ['update', 'delete', 'create'],
+    method: 'delete',
+    hooks: 'before',
+    condition: runCondition,
+    run: runCommit,
+  }),
+  Rule.createAction({
+    fields: ['key_num', 'size'],
+    method: ['update', 'create'],
     hooks: 'after',
-    condition: (obj: Node) =>
-      obj.key_num == 0 && obj.size == 1 && obj.parent && !obj.leaf,
-    run: (obj: Node) => {
-      const child = obj.children.pop()
-      const parent = obj.parent
-      parent.insert(child)
-      obj.commit()
-      parent.commit()
-    },
+    condition: runCondition,
+    run: runCommit,
   }),
   Rule.createAction({
     method: ['update', 'create'],
@@ -96,6 +107,7 @@ const rules: Array<Rule<Node>> = [
     run: (obj: Node) => obj.parent.commit(),
   }),
 ]
+
 export const ruleRunner = new RuleRunner<Node>(rules)
 
 let node = 0

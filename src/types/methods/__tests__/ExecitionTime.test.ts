@@ -3,6 +3,7 @@ import { ValidateHookPerMethod as validator } from '../ExecutionTme'
 
 describe('execution time applyance', () => {
   it('works', () => {
+    expect(validator('run', 'instead')).toBeTruthy()
     expect(validator('create', 'before')).toBeFalsy()
     expect(validator('create', 'instead')).toBeTruthy()
     expect(validator('create', 'after')).toBeTruthy()
@@ -26,6 +27,5 @@ describe('execution time applyance', () => {
     expect(validator('clone', 'before')).toBeTruthy()
     expect(validator('run', 'after')).toBeFalsy()
     expect(validator('run', 'before')).toBeFalsy()
-    expect(validator('run ', 'instead')).toBeTruthy()
   })
 })

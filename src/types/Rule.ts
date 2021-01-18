@@ -47,8 +47,12 @@ export class Rule<T extends object> {
     this.type = type
     this.field = field
     if (type == 'setter') {
-      this.subscribesTo = new Set(subscribesTo)
-      this.subjectFor = new Set(subjectFor)
+      this.subscribesTo = Array.isArray(subscribesTo)
+        ? new Set(subscribesTo)
+        : new Set(subscribesTo ? [subscribesTo] : undefined)
+      this.subjectFor = Array.isArray(subjectFor)
+        ? new Set(subjectFor)
+        : new Set(subjectFor ? [subjectFor] : undefined)
     } else {
       if (!method) {
         method = 'run'

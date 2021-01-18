@@ -14,7 +14,8 @@ export class RuleRunner<T extends { id?: number }> {
   subscriptions: Map<keyof T, Set<keyof T>>
   subjects: Map<keyof T, Set<keyof T>>
   setters: Map<keyof T, Rule<T>>
-  actions: Map<string, Rule<T>>
+  actions: Map<string, Set<Rule<T>> | Rule<T>>
+  // actions: Map<string, Rule<T>>
   hooks: Map<ActionHookTime, Map<ActionHookMethod, Set<Rule<T>>>>
   methods: Map<string, Rule<T>>
   factory: (obj: Partial<T>) => T
@@ -50,7 +51,13 @@ export class RuleRunner<T extends { id?: number }> {
         if (!this.actions.has(cur.name)) {
           this.actions.set(cur.name, cur)
         } else {
-          throw new Error(`duplicate action ${cur.name}`)
+          const _cur = this.actions.get(cur.name)
+          if (_cur instanceof Set) {
+            _cur.add(cur)
+          } else {
+            this.actions.set(cur.name, new Set([_cur, cur]))
+          }
+          // throw new Error(`duplicate action ${cur.name}`)
         }
       }
     })
@@ -100,17 +107,25 @@ export class RuleRunner<T extends { id?: number }> {
 
   initExecutationTime() {
     this.actions.forEach((rule) => {
-      rule.hooks.forEach((hook) => {
-        if (!this.hooks.has(hook)) {
-          this.hooks.set(hook, new Map())
+      if (rule instanceof Set) {
+        rule.forEach((r) => this._initExecutationTime(r))
+      } else {
+        this._initExecutationTime(rule)
+      }
+    })
+  }
+
+  private _initExecutationTime(rule: Rule<T>) {
+    rule.hooks.forEach((hook) => {
+      if (!this.hooks.has(hook)) {
+        this.hooks.set(hook, new Map())
+      }
+      const methods = this.hooks.get(hook)
+      rule.method.forEach((method) => {
+        if (!methods.has(method)) {
+          methods.set(method, new Set())
         }
-        const methods = this.hooks.get(hook)
-        rule.method.forEach((method) => {
-          if (!methods.has(method)) {
-            methods.set(method, new Set())
-          }
-          methods.get(method).add(rule)
-        })
+        methods.get(method).add(rule)
       })
     })
   }
@@ -167,13 +182,13 @@ export class RuleRunner<T extends { id?: number }> {
 
   update(obj: T, update: T, ensure: boolean = false) {
     let result: T = this.method(obj as T, 'update', ensure, (obj) => {
-      // if (this.factory) {
-      //   res = this.factory(obj)
-      // } else {
-      //   res = obj as T
-      // }
-      const res = { ...obj, ...update }
-      this.updateFields(obj, '*', true)
+      let res
+      if (this.factory) {
+        res = this.factory({ ...obj, ...update })
+      } else {
+        res = { ...obj, ...update } as T
+      }
+      this.updateFields(obj, Object.keys(update) as Array<keyof T>, true)
       return res
     })
 
@@ -182,12 +197,12 @@ export class RuleRunner<T extends { id?: number }> {
 
   patch(obj: T, update: Partial<T>, ensure: boolean = false) {
     let result: T = this.method(obj as T, 'update', ensure, (obj) => {
-      // if (this.factory) {
-      //   res = this.factory(obj)
-      // } else {
-      //   res = obj as T
-      // }
-      const res = { ...obj, ...update }
+      let res
+      if (this.factory) {
+        res = this.factory({ ...obj, ...update })
+      } else {
+        res = { ...obj, ...update } as T
+      }
       this.updateFields(obj, Object.keys(update) as Array<keyof T>, true)
       return res
     })
@@ -196,12 +211,14 @@ export class RuleRunner<T extends { id?: number }> {
 
   clone(obj: T, ensure: boolean = false) {
     let result: T = this.method(obj as T, 'update', ensure, (obj) => {
-      // if (this.factory) {
-      //   res = this.factory(obj)
-      // } else {
-      //   res = obj as T
-      // }
-      return { ...obj }
+      let res
+      if (this.factory) {
+        res = this.factory(obj)
+      } else {
+        res = obj as T
+      }
+      this.updateFields(obj, Object.keys(res) as Array<keyof T>, true)
+      return res
     })
     return result
   }
@@ -214,7 +231,6 @@ export class RuleRunner<T extends { id?: number }> {
       //   res = obj as T
       // }
       obj[deleted] = true
-
       return obj
     })
     return result
@@ -394,11 +410,11 @@ export class RuleRunner<T extends { id?: number }> {
 
   updateFields(
     obj: T,
+    // array of fields that is need to be updated
     metric: keyof T | Array<keyof T> | '*',
     batch: boolean = false,
   ) {
     if (metric == '*') {
-      const metrics = this.setters
       let result = 0
       this.fieldOrder.forEach((metric) => {
         result += this.updateFields(obj, metric, true)
@@ -441,26 +457,41 @@ export class RuleRunner<T extends { id?: number }> {
     }
   }
 
-  executeAction(obj: T, name: string, ensure: boolean = false) {
+  executeAction(obj: T, name: string, ensure: boolean = false){
     const hasAction = this.actions.has(name)
     if (obj && name && hasAction) {
       const action = this.actions.get(name)
-      this.actions.get(name)
-      if (action.condition?.(obj) ?? true) {
-        if (ensure) {
-          if (action.subscribesTo) {
-            action.subscribesTo.forEach((dep) => {
-              this.updateFields(obj, dep, true)
-            })
-          }
-        }
-        return action.run(obj) ? 1 : 0
+      if (action instanceof Set) {
+        let res = 0
+        action.forEach(
+          (a) => (res += this._executeAction(obj, name, ensure, a)),
+        )
+        return res
+      } else {
+        return this._executeAction(obj, name, ensure, action)
       }
     } else {
       return 0
     }
   }
-
+  private _executeAction(
+    obj: T,
+    name: string,
+    ensure: boolean,
+    action: Rule<T>,
+  ) {
+    this.actions.get(name)
+    if (action.condition?.(obj) ?? true) {
+      if (ensure) {
+        if (action.subscribesTo) {
+          action.subscribesTo.forEach((dep) => {
+            this.updateFields(obj, dep, true)
+          })
+        }
+      }
+      return action.run(obj) ? 1 : 0
+    }
+  }
   executeAllActions(obj: T) {
     let result = 0
     this.actions.forEach((_r, name) => {
