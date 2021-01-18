@@ -44,40 +44,41 @@ export enum VertexColor {
 }
 
 const rules: Array<Rule<Node>> = [
-  new Rule({
+  Rule.createSetter<Node>({
     field: 'keys',
     condition: (obj: Node) => !obj.leaf,
     run: (root: Node) => root.children.slice(1).map((c) => c.min),
   }),
-  new Rule({
+  Rule.createSetter<Node>({
     field: 'size',
-    deps: ['keys'],
+    subscribesTo: ['keys'],
     run: (obj: Node) => (obj.leaf ? obj.keys.length : obj.children.length),
   }),
-  new Rule({
+  Rule.createSetter<Node>({
     field: 'key_num',
-    deps: ['keys'],
+    subscribesTo: ['keys'],
     run: (obj: Node) => obj.keys.length,
   }),
-  new Rule({
+  Rule.createSetter({
     field: 'isEmpty',
-    deps: ['size'],
+    subscribesTo: ['size'],
     run: (obj: Node) => obj.size == 0,
   }),
-  new Rule({
+  Rule.createSetter({
     field: 'min',
-    deps: ['keys'],
+    subscribesTo: ['keys'],
     run: (obj: Node) => (obj.leaf ? obj.keys[0] ?? undefined : min(obj)),
   }),
-  new Rule({
+  Rule.createSetter({
     field: 'max',
-    deps: ['keys'],
+    subscribesTo: ['keys'],
     run: (obj: Node) =>
       obj.leaf ? obj.keys[obj.key_num - 1] ?? undefined : max(obj),
   }),
-  new Rule({
-    name: 'move last children to parent',
-    deps: ['key_num', 'size'],
+  Rule.createAction({
+    fields: ['key_num', 'size'],
+    method: ['update', 'delete', 'create'],
+    hooks: 'after',
     condition: (obj: Node) =>
       obj.key_num == 0 && obj.size == 1 && obj.parent && !obj.leaf,
     run: (obj: Node) => {
@@ -88,8 +89,9 @@ const rules: Array<Rule<Node>> = [
       parent.commit()
     },
   }),
-  new Rule({
-    name: 'ack parent that here is only one children',
+  Rule.createAction({
+    method: ['update', 'create'],
+    hooks: 'after',
     condition: (obj: Node) => obj.parent?.size == 1,
     run: (obj: Node) => obj.parent.commit(),
   }),

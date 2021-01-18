@@ -49,8 +49,8 @@ const loops = fields.reduce((res, f) => {
   isLoop = dfs(f)
   if (isLoop == 1) {
     loop.push(f)
+    res += 1
   }
-  dfs(f)
   return res
 }, 0)
 

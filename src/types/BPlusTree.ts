@@ -4,7 +4,6 @@ import { ValueType } from '../btree'
 import { remove } from '../methods/remove'
 import { insert } from '../methods/insert'
 import { find_key } from '../methods/find_key'
-import { updateValue } from '../methods/updateValue'
 
 export class BPlusTree {
   public t: number // минимальная степень дерева
@@ -31,7 +30,6 @@ export class BPlusTree {
     return this.root.max
   }
   isNodeFull(node: Node) {
-    updateValue
     const res =
       (node.leaf ? node.keys.length : node.children.length) > this.t * 2
     node.isFull = res

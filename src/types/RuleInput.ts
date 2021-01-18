@@ -1,7 +1,27 @@
-export type RuleInput<T> = {
+import { ActionHookTime, ActionHookMethod } from './methods/ExecutionTme'
+export type SetterInput<T> = {
+  // поле
+  field: keyof T
+  // от кого зависит
+  subscribesTo?: Array<keyof T>
+  //зависимые
+  subjectFor?: Array<keyof T>
+  //условие
+  condition?: (obj: T) => boolean
+  //что
+  run: (obj: T) => any
+}
+
+export type ActionInput<T> = {
+  // название метода или действия
   name?: string
-  field?: 'none' | keyof T
-  deps?: Array<keyof T>
+  //действие после дествия над каким-то полем
+  fields?: Array<keyof T> | keyof T
+  // событие
+  method?: Array<ActionHookMethod> | ActionHookMethod
+  // когда выполнять
+  hooks?: Array<ActionHookTime> | ActionHookTime
+  //условие
   condition?: (obj: T) => boolean
   run: (obj: T) => any
 }
