@@ -400,27 +400,41 @@ export class RuleRunner<T extends { id?: number }> {
     if (metric == '*') {
       const metrics = this.setters
       let result = 0
-      metrics.forEach((_r, metric) => {
+      this.fieldOrder.forEach((metric) => {
         result += this.updateFields(obj, metric, true)
       })
       return result
     } else if (Array.isArray(metric)) {
       let result = 0
-      metric.forEach((m) => {
-        result += this.updateFields(obj, m, true)
-      })
+      const toUpdate = metric.filter((f) => this.fieldOrder.includes(f))
+      if (toUpdate.length > 0) {
+        this.fieldOrder
+          .filter((f) => toUpdate.includes(f))
+          .forEach((m) => {
+            if (metric.indexOf(m) > -1) {
+              result += this.updateFields(obj, m, true)
+            }
+          })
+      }
       return result
     } else if (
       this.setters.has(metric) &&
       (this.setters.get(metric).condition?.(obj) ?? true)
     ) {
-      const rule = this.setters.get(metric)
-      if (rule.subscribesTo && !batch) {
-        rule.subscribesTo.forEach((dep) => {
-          this.updateFields(obj, dep, batch)
-        })
+      const lock = this.lock(obj, metric)
+      if (lock) {
+        const rule = this.setters.get(metric)
+        if (rule.subscribesTo && !batch) {
+          rule.subscribesTo.forEach((dep) => {
+            this.updateFields(obj, dep, batch)
+          })
+        }
+        const result = updateValue<T>(obj, metric, rule.run)
+        this.unlock(obj, metric)
+        return result
+      } else {
+        return 0
       }
-      return updateValue<T>(obj, metric, rule.run)
     } else {
       // nothing to change
       return 0
