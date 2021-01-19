@@ -14,7 +14,7 @@ describe('Rule', () => {
   it('initialize action', () => {
     const condition = (obj: DTO) => !obj.id
     const run = (obj: DTO) => (obj.id = idGen++)
-    const rule = Rule.createSetter<DTO>({
+    const [rule] = Rule.createSetter<DTO>({
       field: 'age',
       condition,
       run,
@@ -29,8 +29,7 @@ describe('Rule', () => {
     const run = (obj: DTO) => (obj.id = idGen++)
     expect(() =>
       Rule.createAction<DTO>({
-        hooks: 'after',
-        method: ['create', 'clone'],
+        on: ['after:clone', 'after:create'],
         condition,
         run,
       }),
@@ -52,7 +51,7 @@ describe('Rule', () => {
     const condition = (obj: DTO) => !obj.id
     const run = (obj: DTO) => (obj.id = idGen++)
     const field = 'name'
-    const rule = Rule.createSetter<DTO>({
+    const [rule] = Rule.createSetter<DTO>({
       condition,
       run,
       field,
@@ -66,7 +65,7 @@ describe('Rule', () => {
     const condition = (obj: DTO) => !obj.id
     const run = (obj: DTO) => (obj.id = idGen++)
     const field = 'name'
-    const rule = Rule.createSetter<DTO>({
+    const [rule] = Rule.createSetter<DTO>({
       field,
       condition,
       run,

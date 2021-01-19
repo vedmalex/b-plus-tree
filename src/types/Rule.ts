@@ -3,94 +3,115 @@ import {
   ActionHookMethod,
   ValidateHookPerMethod,
 } from './methods/ExecutionTme'
-import { SetterInput, ActionInput, GetSetInput } from './RuleInput'
+import { SetterInput, ActionInput, GetSetInput, MethodInput } from './RuleInput'
 
+// один рул одно правило и один вызов
+// если много, то метод создает пачку
+
+export type RuleInput<T extends object> = {
+  name?: string
+  run: (obj: T) => any
+  field?: keyof T
+  subscribesTo?: keyof T | Array<keyof T>
+  subjectFor?: keyof T | Array<keyof T>
+  condition?: (obj: T) => boolean
+  method?: 'get' | 'set' | 'create' | 'update' | 'patch' | 'clone' | 'delete'
+  hooks?: 'before' | 'after' | 'instead'
+  type: 'action' | 'setter'
+}
 export class Rule<T extends object> {
-  static createAction<T extends object>(inp: ActionInput<T>) {
-    return new Rule({ ...inp, type: 'action' })
+  static createMethod<T extends object>(inp: MethodInput<T>): Array<Rule<T>> {
+    const result = new Rule(inp.run, inp.condition)
+    result.initMethod(inp.name)
+    return [result]
   }
-  static createProperty<T extends object>(inp: GetSetInput<T>) {
-    return new Rule({ ...inp, type: 'action', hooks: 'instead' })
+  static createAction<T extends object>(inp: ActionInput<T>): Array<Rule<T>> {
+    const result = new Rule(inp.run, inp.condition)
+    if (Array.isArray(inp.on)) {
+      const result = []
+      inp.on.forEach((on) => {
+        result.push(...Rule.createAction({ ...inp, on }))
+      })
+    } else {
+      const [hook = 'instead', method] = inp.on.split(':')
+      result.initAction(hook as ActionHookTime, method as ActionHookMethod)
+    }
+    return [result]
   }
-  static createSetter<T extends object>(inp: SetterInput<T>) {
-    return new Rule({ ...inp, type: 'setter' })
+  static createProperty<T extends object>(inp: GetSetInput<T>): Array<Rule<T>> {
+    const result = new Rule(inp.run, inp.condition)
+    result.initProperty(inp.field, inp.method)
+    return [result]
+  }
+  static createSetter<T extends object>(inp: SetterInput<T>): Array<Rule<T>> {
+    const result = new Rule(inp.run, inp.condition)
+    result.initSetter(inp.field, inp.subscribesTo, inp.subjectFor)
+    return [result]
   }
   type: 'action' | 'setter' = 'action'
   field: keyof T
-  /**
-   * create   - если создается через фабрику
-   * update - передаем весь объект
-   * patch - патчим объект
-   * delete - перед удаление что нужно сделать
-   * clone - клонируем объект
-   * работа с полями
-   * read - тут можно создать getter и setter и вызывать этот метод
-   * readonly - прячем поле и создаем getter
-   *  делаем вид что читаем
-   * writeonly - прячем поле извне? и открываем на запись?
-   */
-  method: Set<ActionHookMethod>
-  hooks: Set<ActionHookTime>
+  method: ActionHookMethod
+  hooks: ActionHookTime
   name: string
   subscribesTo?: Set<keyof T>
   subjectFor?: Set<keyof T>
   condition?: (obj: T) => boolean
   run: (obj: T) => any
-  private constructor({
-    name,
-    field,
-    subscribesTo,
-    subjectFor,
-    condition,
-    run,
-    method,
-    hooks,
-    type,
-  }: Partial<SetterInput<T> & ActionInput<T> & { type: 'action' | 'setter' }>) {
-    this.type = type
-    this.field = field
-    if (type == 'setter') {
-      this.subscribesTo = Array.isArray(subscribesTo)
-        ? new Set(subscribesTo)
-        : new Set(subscribesTo ? [subscribesTo] : undefined)
-      this.subjectFor = Array.isArray(subjectFor)
-        ? new Set(subjectFor)
-        : new Set(subjectFor ? [subjectFor] : undefined)
-    } else {
-      if (!method) {
-        method = 'run'
-        hooks = 'instead'
-      } else if (!hooks) {
-        throw new Error('if event set then time must be set as well')
-      }
-      this.method = new Set(Array.isArray(method) ? method : [method])
-      this.hooks = new Set(Array.isArray(hooks) ? hooks : [hooks])
-    }
+
+  private constructor(run: (obj: T) => any, condition?: (obj: T) => boolean) {
     this.run = run
     this.condition = condition
-    if (type == 'setter') {
-      this.name = `${type} for ${field}`
-    } else if (type == 'action') {
-      if (name) {
-        this.name = name
-      } else {
-        this.name = `${type} on ${hooks} ${method}`
-      }
-      const insconsistence = []
-      this.method.forEach((ev) => {
-        this.hooks.forEach((ti) => {
-          if (!ValidateHookPerMethod(ev, ti)) {
-            insconsistence.push([ev, ti])
-          }
-        })
-      })
-      if (insconsistence.length > 0) {
-        throw Error(
-          `inconsistent event and its time combination for ${insconsistence
-            .map(([ev, ti]) => `${ev} ${ti}`)
-            .join(', ')}`,
-        )
-      }
+  }
+
+  private initAction(hook: ActionHookTime, method: ActionHookMethod) {
+    this.type = 'action'
+    this.name = `action on ${hook} ${method}`
+    this.method = method
+    this.hooks = hook
+    this.checkConsistency()
+  }
+
+  private initMethod(name: string) {
+    this.type = 'action'
+    this.name = name
+    this.hooks = 'instead'
+    this.method = 'run'
+    this.checkConsistency()
+  }
+
+  private initProperty(field: keyof T, method: ActionHookMethod) {
+    this.type = 'action'
+    this.field = field
+    this.name = `${method}ter method for field: ${field}`
+    this.hooks = 'before'
+    this.method = method
+    this.checkConsistency()
+  }
+
+  private initSetter(
+    field: keyof T,
+    subscribesTo: keyof T | Array<keyof T>,
+    subjectFor: keyof T | Array<keyof T>,
+  ) {
+    this.type = 'setter'
+    this.field = field
+    this.subscribesTo = Array.isArray(subscribesTo)
+      ? new Set(subscribesTo)
+      : new Set(subscribesTo ? [subscribesTo] : undefined)
+    this.subjectFor = Array.isArray(subjectFor)
+      ? new Set(subjectFor)
+      : new Set(subjectFor ? [subjectFor] : undefined)
+    this.name = `setter for ${field}`
+  }
+
+  private checkConsistency() {
+    const insconsistence = []
+    if (!ValidateHookPerMethod(this.method, this.hooks)) {
+      throw Error(
+        `inconsistent event and its time combination for ${this.method} ${this.hooks}`,
+      )
+    }
+    if (insconsistence.length > 0) {
     }
   }
 }

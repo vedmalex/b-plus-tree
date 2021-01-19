@@ -54,7 +54,7 @@ const fullName = Rule.createSetter<DTO>({
   },
 })
 
-const activate = Rule.createAction<DTO>({
+const activate = Rule.createMethod<DTO>({
   name: 'activate user',
   condition: (obj) => !obj.active,
   run: (obj) => (obj.active = true),
@@ -68,40 +68,35 @@ export type TransacationRecord<T> = {
 }
 
 const create = Rule.createAction<DTO>({
-  hooks: 'after',
-  method: 'create',
+  on: 'after:create',
   run: (obj) => {
     obj.createdAt = new Date().toJSON()
   },
 })
 
 const updated = Rule.createAction<DTO>({
-  hooks: 'after',
-  method: 'update',
+  on: 'after:update',
   run: (obj) => {
     obj.createdAt = new Date().toJSON()
   },
 })
 
 const deleteDto = Rule.createAction<DTO>({
-  hooks: 'before',
-  method: 'delete',
+  on: 'before:delete',
   run: (obj) => {
     obj.createdAt = new Date().toJSON()
   },
 })
 
 const patch = Rule.createAction<DTO>({
-  hooks: 'after',
-  method: 'patch',
+  on: 'after:patch',
   run: (obj) => {
     obj.createdAt = new Date().toJSON()
   },
 })
 
 const clone = Rule.createAction<DTO>({
-  hooks: 'after',
-  method: 'clone',
+  on: 'after:clone',
   run: (obj) => {
     obj.id = id++
     obj.createdAt = new Date().toJSON()
@@ -141,8 +136,15 @@ const titleSet = Rule.createProperty<DTO>({
   },
 })
 
-const setters = [autoIncrementId]
-const actions = [activate, create, updated, patch, deleteDto, clone]
+const setters = [...autoIncrementId]
+const actions = [
+  ...activate,
+  ...create,
+  ...updated,
+  ...patch,
+  ...deleteDto,
+  ...clone,
+]
 
 describe('Rule runner', () => {
   it('accept rules', () => {
@@ -151,7 +153,7 @@ describe('Rule runner', () => {
   })
   it('not accept dupes in rules', () => {
     expect(() => {
-      new RuleRunner<DTO>([autoIncrementId, autoIncrementId])
+      new RuleRunner<DTO>([...autoIncrementId, ...autoIncrementId])
     }).toThrow()
   })
   it('accept actions', () => {
@@ -160,7 +162,7 @@ describe('Rule runner', () => {
   })
   it('accept dupes in actions', () => {
     expect(
-      () => new RuleRunner<DTO>([activate, activate]),
+      () => new RuleRunner<DTO>([...activate, ...activate]),
     ).not.toThrow()
   })
   it('run action', () => {
@@ -172,14 +174,14 @@ describe('Rule runner', () => {
   })
   it('clone', () => {
     let runner = new RuleRunner<DTO>([
-      autoIncrementId,
-      fullName,
-      activate,
-      create,
-      updated,
-      patch,
-      deleteDto,
-      clone,
+      ...autoIncrementId,
+      ...fullName,
+      ...activate,
+      ...create,
+      ...updated,
+      ...patch,
+      ...deleteDto,
+      ...clone,
     ])
     expect(runner.fieldOrder.length).toBe(5)
     expect(runner.setters.size).toBe(2)
@@ -196,15 +198,15 @@ describe('Rule runner', () => {
   })
   it('loop', () => {
     let runner = new RuleRunner<DTO>([
-      autoIncrementId,
-      fullName,
-      activate,
-      create,
-      updated,
-      patch,
-      deleteDto,
-      clone,
-      loopIncrement,
+      ...autoIncrementId,
+      ...fullName,
+      ...activate,
+      ...create,
+      ...updated,
+      ...patch,
+      ...deleteDto,
+      ...clone,
+      ...loopIncrement,
     ])
     expect(runner.fieldOrder.length).toBe(7)
     expect(runner.setters.size).toBe(3)
@@ -220,10 +222,22 @@ describe('Rule runner', () => {
     expect(user.createdAt).not.toBeUndefined()
   })
 
-  it('properties', () => {
-    let runner = new RuleRunner<DTO>([titleSet, titleGet])
+  it('properties get/set', () => {
+    let runner = new RuleRunner<DTO>([...titleSet, ...titleGet])
     let user = runner.create({ name: 'Ivan' })
     user.title = 'Ivanius'
     expect(user.title).toBe('Mr./Mrs/Ms Ivanius')
+  })
+  it('properties set', () => {
+    let runner = new RuleRunner<DTO>([...titleSet])
+    let user = runner.create({ name: 'Ivan' })
+    user.title = 'Ivanius'
+    expect(user.title).toBe('Mr./Mrs/Ms Ivanius')
+  })
+  it('properties get', () => {
+    let runner = new RuleRunner<DTO>([...titleGet])
+    let user = runner.create({ name: 'Ivan' })
+    user.title = 'Ivanius'
+    expect(user.title).toBe('Ivanius')
   })
 })

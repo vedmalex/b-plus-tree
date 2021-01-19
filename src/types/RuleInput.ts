@@ -1,5 +1,9 @@
-import { ActionHookTime, ActionHookMethod } from './methods/ExecutionTme'
-export type SetterInput<T> = {
+import {
+  ActionHookTime,
+  ActionHookMethod,
+  FullEventName,
+} from './methods/ExecutionTme'
+export type SetterInput<T extends object> = {
   // поле
   field: keyof T
   // от кого зависит
@@ -12,7 +16,7 @@ export type SetterInput<T> = {
   run: (obj: T) => any
 }
 
-export type GetSetInput<T> = {
+export type GetSetInput<T extends object> = {
   //действие после дествия над каким-то полем
   field: keyof T
   method: 'get' | 'set'
@@ -21,13 +25,16 @@ export type GetSetInput<T> = {
   run: (obj: T) => any
 }
 
-export type ActionInput<T> = {
+export type ActionInput<T extends object> = {
+  on: FullEventName | Array<FullEventName>
+  //условие
+  condition?: (obj: T) => boolean
+  run: (obj: T) => any
+}
+
+export type MethodInput<T extends object> = {
   // название метода или действия
-  name?: string
-  // событие
-  method?: Array<ActionHookMethod> | ActionHookMethod
-  // когда выполнять
-  hooks?: Array<ActionHookTime> | ActionHookTime
+  name: string
   //условие
   condition?: (obj: T) => boolean
   run: (obj: T) => any

@@ -81,7 +81,7 @@ export class RuleRunner<T extends { id?: number }> {
   }
 
   private _initProp(setter: Rule<T>) {
-    if (setter.method.has('get') && setter.hooks.has('instead')) {
+    if (setter.method == 'get' && setter.hooks == 'before') {
       if (this.props.has(setter.field)) {
         const cur = this.props.get(setter.field)
         if (cur.get instanceof Set) {
@@ -97,7 +97,7 @@ export class RuleRunner<T extends { id?: number }> {
       } else {
         this.props.set(setter.field, { get: new Set([setter]) })
       }
-    } else if (setter.method.has('set') && setter.hooks.has('instead')) {
+    } else if (setter.method == 'set' && setter.hooks == 'before') {
       if (this.props.has(setter.field)) {
         const cur = this.props.get(setter.field)
         if (cur.set instanceof Set) {
@@ -132,11 +132,13 @@ export class RuleRunner<T extends { id?: number }> {
         let value = obj[hprop]
         if (props.get?.size > 0) {
           // const res = { ...obj, [hprop]: value }
+          self.removeProp(prop, obj)
           const res = obj
           props.get.forEach((g) => {
             self.executeAction(res, g.name)
           })
-          value = res[hprop]
+          value = res[prop]
+          self.createProp(prop, obj)
         }
         return value
       },
@@ -171,18 +173,14 @@ export class RuleRunner<T extends { id?: number }> {
   }
 
   private _initExecutationTime(rule: Rule<T>) {
-    rule.hooks.forEach((hook) => {
-      if (!this.hooks.has(hook)) {
-        this.hooks.set(hook, new Map())
-      }
-      const methods = this.hooks.get(hook)
-      rule.method.forEach((method) => {
-        if (!methods.has(method)) {
-          methods.set(method, new Set())
-        }
-        methods.get(method).add(rule)
-      })
-    })
+    if (!this.hooks.has(rule.hooks)) {
+      this.hooks.set(rule.hooks, new Map())
+    }
+    const methods = this.hooks.get(rule.hooks)
+    if (!methods.has(rule.method)) {
+      methods.set(rule.method, new Set())
+    }
+    methods.get(rule.method).add(rule)
   }
 
   private method(
@@ -551,7 +549,7 @@ export class RuleRunner<T extends { id?: number }> {
     }
   }
 
-  executeAction(obj: T, name: string, ensure: boolean = false) {
+  executeAction(obj: T, name: string, ensure: boolean = false): number {
     const hasAction = this.actions.has(name)
     if (obj && name && hasAction) {
       const action = this.actions.get(name)

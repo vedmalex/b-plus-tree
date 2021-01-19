@@ -43,64 +43,52 @@ export enum VertexColor {
   red = 3,
 }
 
-const runCommit = (obj: Node) => {
-  const child = obj.children.pop()
-  const parent = obj.parent
-  parent.insert(child)
-  obj.commit()
-  parent.commit()
-}
-
-const runCondition = (obj: Node) =>
-  obj.key_num == 0 && obj.size == 1 && obj.parent && !obj.leaf
-
 const rules: Array<Rule<Node>> = [
-  Rule.createSetter<Node>({
+  ...Rule.createSetter<Node>({
     field: 'keys',
     condition: (obj: Node) => !obj.leaf,
     run: (root: Node) => root.children.slice(1).map((c) => c.min),
   }),
-  Rule.createSetter<Node>({
+  ...Rule.createSetter<Node>({
     field: 'size',
     subscribesTo: ['keys'],
     run: (obj: Node) => (obj.leaf ? obj.keys.length : obj.children.length),
   }),
-  Rule.createSetter<Node>({
+  ...Rule.createSetter<Node>({
     field: 'key_num',
     subscribesTo: ['keys'],
     run: (obj: Node) => obj.keys.length,
   }),
-  Rule.createSetter({
+  ...Rule.createSetter({
     field: 'isEmpty',
     subscribesTo: ['size'],
     run: (obj: Node) => obj.size == 0,
   }),
-  Rule.createSetter({
+  ...Rule.createSetter({
     field: 'min',
     subscribesTo: ['keys'],
     run: (obj: Node) => (obj.leaf ? obj.keys[0] ?? undefined : min(obj)),
   }),
-  Rule.createSetter({
+  ...Rule.createSetter({
     field: 'max',
     subscribesTo: ['keys'],
     run: (obj: Node) =>
       obj.leaf ? obj.keys[obj.key_num - 1] ?? undefined : max(obj),
   }),
-  Rule.createAction({
-    method: 'delete',
-    hooks: 'before',
-    condition: runCondition,
-    run: runCommit,
+  ...Rule.createAction({
+    on: ['after:update', 'after:delete', 'before:delete'],
+    condition: (obj: Node) =>
+      obj.key_num == 0 && obj.size == 1 && obj.parent && !obj.leaf,
+    run: (obj: Node) => {
+      const child = obj.children.pop()
+      const parent = obj.parent
+      parent.insert(child)
+      obj.commit()
+      parent.commit()
+    },
   }),
-  Rule.createAction({
-    method: ['update', 'create'],
-    hooks: 'after',
-    condition: runCondition,
-    run: runCommit,
-  }),
-  Rule.createAction({
-    method: ['update', 'create'],
-    hooks: 'after',
+  ...Rule.createAction({
+    on: ['after:update', 'after:delete'],
     condition: (obj: Node) => obj.parent?.size == 1,
     run: (obj: Node) => obj.parent.commit(),
   }),

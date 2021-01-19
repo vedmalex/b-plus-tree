@@ -10,17 +10,47 @@ export type ActionHookMethod =
 
 export type ActionHookTime = 'before' | 'after' | 'instead'
 
+export type FullEventName =
+  | 'before:create'
+  | ':create'
+  | 'after:create'
+  //
+  | 'before:update'
+  | ':update'
+  | 'after:update'
+  //
+  | 'before:patch'
+  | ':patch'
+  | 'after:patch'
+  //
+  | 'before:clone'
+  | ':clone'
+  | 'after:clone'
+  //
+  | 'before:delete'
+  | ':delete'
+  | 'after:delete'
+  //
+  | ':run'
+  //
+  | 'before:set'
+  | 'after:set'
+  //
+  | 'before:get'
+  | 'after:get'
+//
+
 export const PossibleHookPerMethod = new Map<
   ActionHookMethod,
   Set<ActionHookTime>
 >([
-  ['create', new Set<ActionHookTime>(['instead', 'after'])],
-  ['set', new Set<ActionHookTime>(['instead'])],
-  ['get', new Set<ActionHookTime>(['instead'])],
-  ['update', new Set<ActionHookTime>(['instead', 'after', 'before'])],
+  ['set', new Set<ActionHookTime>(['before'])],
+  ['get', new Set<ActionHookTime>(['before'])],
+  ['create', new Set<ActionHookTime>(['instead', 'before', 'after'])],
+  ['update', new Set<ActionHookTime>(['instead', 'before', 'after'])],
   ['patch', new Set<ActionHookTime>(['instead', 'before', 'after'])],
-  ['delete', new Set<ActionHookTime>(['instead', 'before'])],
-  ['clone', new Set<ActionHookTime>(['instead', 'after', 'before'])],
+  ['clone', new Set<ActionHookTime>(['instead', 'before', 'after'])],
+  ['delete', new Set<ActionHookTime>(['instead', 'before', 'after'])],
   ['run', new Set<ActionHookTime>(['instead'])],
 ])
 

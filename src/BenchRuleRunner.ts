@@ -50,7 +50,7 @@ const fullName = Rule.createSetter<DTO>({
   },
 })
 
-const activate = Rule.createAction<DTO>({
+const activate = Rule.createMethod<DTO>({
   name: 'activate user',
   condition: (obj) => !obj.active,
   run: (obj) => (obj.active = true),
@@ -65,40 +65,28 @@ export type TransacationRecord<T> = {
 const changelog: Map<ID, Set<TransacationRecord<DTO>>> = new Map()
 
 const create = Rule.createAction<DTO>({
-  hooks: 'after',
-  method: 'create',
-  run: (obj) => {
-    obj.createdAt = new Date().toJSON()
-  },
-})
-
-const updated = Rule.createAction<DTO>({
-  hooks: 'after',
-  method: 'update',
+  on: 'after:create',
   run: (obj) => {
     obj.createdAt = new Date().toJSON()
   },
 })
 
 const deleteDto = Rule.createAction<DTO>({
-  hooks: 'before',
-  method: 'delete',
+  on: 'before:delete',
   run: (obj) => {
     obj.createdAt = new Date().toJSON()
   },
 })
 
 const patch = Rule.createAction<DTO>({
-  hooks: 'after',
-  method: 'patch',
+  on: ['after:patch', 'after:update'],
   run: (obj) => {
     obj.createdAt = new Date().toJSON()
   },
 })
 
 const clone = Rule.createAction<DTO>({
-  hooks: 'after',
-  method: 'clone',
+  on: 'after:clone',
   run: (obj) => {
     obj.id = id++
     obj.createdAt = new Date().toJSON()
@@ -106,14 +94,13 @@ const clone = Rule.createAction<DTO>({
 })
 
 let runner = new RuleRunner<DTO>([
-  autoIncrementId,
-  fullName,
-  activate,
-  create,
-  updated,
-  patch,
-  deleteDto,
-  clone,
+  ...autoIncrementId,
+  ...fullName,
+  ...activate,
+  ...create,
+  ...patch,
+  ...deleteDto,
+  ...clone,
 ])
 
 class User {
