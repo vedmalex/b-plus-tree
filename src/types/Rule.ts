@@ -3,11 +3,14 @@ import {
   ActionHookMethod,
   ValidateHookPerMethod,
 } from './methods/ExecutionTme'
-import { SetterInput, ActionInput } from './RuleInput'
+import { SetterInput, ActionInput, GetSetInput } from './RuleInput'
 
 export class Rule<T extends object> {
   static createAction<T extends object>(inp: ActionInput<T>) {
     return new Rule({ ...inp, type: 'action' })
+  }
+  static createProperty<T extends object>(inp: GetSetInput<T>) {
+    return new Rule({ ...inp, type: 'action', hooks: 'instead' })
   }
   static createSetter<T extends object>(inp: SetterInput<T>) {
     return new Rule({ ...inp, type: 'setter' })

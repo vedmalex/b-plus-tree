@@ -9,6 +9,7 @@ type DTO = {
   birthDate?: string
   fullName?: string
   secondName?: string
+  title?: string
   lastName?: string
   active?: boolean
   createdAt?: string
@@ -60,12 +61,11 @@ const activate = Rule.createAction<DTO>({
 })
 
 export type TransacationRecord<T> = {
-  action: 'create' | 'update' | 'patch' | 'delete' | 'clone'
-  old: T
-  current: T
+  action: 'create' | 'update' | 'patch' | 'delete' | 'clone' | 'get' | 'set'
+  old?: T
+  current?: T
   time: string
 }
-const changelog: Map<ID, Set<TransacationRecord<DTO>>> = new Map()
 
 const create = Rule.createAction<DTO>({
   hooks: 'after',
@@ -105,6 +105,39 @@ const clone = Rule.createAction<DTO>({
   run: (obj) => {
     obj.id = id++
     obj.createdAt = new Date().toJSON()
+  },
+})
+
+const changelog: Map<ID, Set<TransacationRecord<DTO>>> = new Map()
+
+// создавать через метод
+const titleGet = Rule.createProperty<DTO>({
+  method: 'get',
+  field: 'title',
+  run: (obj) => {
+    if (!changelog.has(obj.id)) {
+      changelog.set(obj.id, new Set())
+    }
+    changelog.get(obj.id).add({
+      action: 'get',
+      time: new Date().toJSON(),
+    })
+    // return value not used at all
+  },
+})
+
+const titleSet = Rule.createProperty<DTO>({
+  method: 'set',
+  field: 'title',
+  run: (obj) => {
+    if (!changelog.has(obj.id)) {
+      changelog.set(obj.id, new Set())
+    }
+    changelog.get(obj.id).add({
+      action: 'set',
+      time: new Date().toJSON(),
+    })
+    obj.title = `Mr./Mrs/Ms ${obj.title}`
   },
 })
 
@@ -185,5 +218,12 @@ describe('Rule runner', () => {
     expect(user.id).not.toBeUndefined()
     expect(user.fullName).toBe('Ivan Gorky')
     expect(user.createdAt).not.toBeUndefined()
+  })
+
+  it('properties', () => {
+    let runner = new RuleRunner<DTO>([titleSet, titleGet])
+    let user = runner.create({ name: 'Ivan' })
+    user.title = 'Ivanius'
+    expect(user.title).toBe('Mr./Mrs/Ms Ivanius')
   })
 })

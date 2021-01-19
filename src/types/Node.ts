@@ -87,14 +87,12 @@ const rules: Array<Rule<Node>> = [
       obj.leaf ? obj.keys[obj.key_num - 1] ?? undefined : max(obj),
   }),
   Rule.createAction({
-    fields: ['key_num', 'size'],
     method: 'delete',
     hooks: 'before',
     condition: runCondition,
     run: runCommit,
   }),
   Rule.createAction({
-    fields: ['key_num', 'size'],
     method: ['update', 'create'],
     hooks: 'after',
     condition: runCondition,

@@ -88,19 +88,27 @@ export class RuleRunner<T extends { id?: number }> {
           cur.get.add(setter)
         } else {
           const old = cur.get
-          cur.get = new Set([old, setter])
+          if (old) {
+            cur.get = new Set([old, setter])
+          } else {
+            cur.get = new Set([setter])
+          }
         }
       } else {
-        this.props.set(setter.field, { set: new Set([setter]) })
+        this.props.set(setter.field, { get: new Set([setter]) })
       }
     } else if (setter.method.has('set') && setter.hooks.has('instead')) {
       if (this.props.has(setter.field)) {
         const cur = this.props.get(setter.field)
-        if (cur.get instanceof Set) {
-          cur.get.add(setter)
+        if (cur.set instanceof Set) {
+          cur.set.add(setter)
         } else {
-          const old = cur.get
-          cur.get = new Set([old, setter])
+          const old = cur.set
+          if (old) {
+            cur.set = new Set([old, setter])
+          } else {
+            cur.set = new Set([setter])
+          }
         }
       } else {
         this.props.set(setter.field, { set: new Set([setter]) })
@@ -117,30 +125,38 @@ export class RuleRunner<T extends { id?: number }> {
     }
     obj[this.hiddenProps.get(prop)] = obj[prop]
     delete obj[prop]
+    const self = this
+    const hprop = self.hiddenProps.get(prop)
     Object.defineProperty(obj, prop, {
       get() {
-        let value = obj[this.hiddenProps.get(prop)]
+        let value = obj[hprop]
         if (props.get?.size > 0) {
-          const res = { ...obj, [prop]: value }
+          // const res = { ...obj, [hprop]: value }
+          const res = obj
           props.get.forEach((g) => {
-            this.executeAction(res, g.name)
+            self.executeAction(res, g.name)
           })
-          value = res[prop]
+          value = res[hprop]
         }
         return value
       },
       set(value: any) {
         if (props.set?.size > 0) {
-          const res = { ...obj, [prop]: value }
+          // const res = { ...obj, [hprop]: value }
+          self.removeProp(prop, obj)
+          obj[prop] = value
+
           props.set.forEach((g) => {
-            this.executeAction(res, g.name)
+            self.executeAction(obj, g.name)
           })
-          value = res[prop]
+          value = obj[prop]
+          self.createProp(prop, obj)
+        } else {
+          obj[hprop] = value
         }
-        obj[this.hiddenProps.get(prop)] = value
       },
       enumerable: true,
-      configurable: false,
+      configurable: true,
     })
   }
 
@@ -206,21 +222,36 @@ export class RuleRunner<T extends { id?: number }> {
   }
 
   createProperties(obj: T) {
-    this.hiddenProps.forEach((prop, key) => {
-      if (!obj[prop]) {
-        this.defineProperty(obj, key)
-      }
+    this.props.forEach((_, key) => {
+      this.createProp(key, obj)
     })
   }
 
+  private createProp(key: keyof T, obj: T) {
+    if (this.hiddenProps.has(key)) {
+      if (!obj[this.hiddenProps.get(key)]) {
+        this.defineProperty(obj, key)
+      }
+    } else {
+      this.defineProperty(obj, key)
+    }
+  }
+
   removeProperties(obj: T) {
-    this.hiddenProps.forEach((prop, key) => {
-      if (obj[prop]) {
+    this.props.forEach((_, key) => {
+      this.removeProp(key, obj)
+    })
+  }
+
+  private removeProp(key: keyof T, obj: T) {
+    if (this.hiddenProps.has(key)) {
+      const prop = this.hiddenProps.get(key)
+      if (obj.hasOwnProperty(prop)) {
         delete obj[key]
         obj[key] = obj[prop]
         delete obj[prop]
       }
-    })
+    }
   }
 
   create(obj: Partial<T>, ensure: boolean = false) {

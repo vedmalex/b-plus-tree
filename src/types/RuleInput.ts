@@ -12,11 +12,18 @@ export type SetterInput<T> = {
   run: (obj: T) => any
 }
 
+export type GetSetInput<T> = {
+  //действие после дествия над каким-то полем
+  field: keyof T
+  method: 'get' | 'set'
+  //условие
+  condition?: (obj: T) => boolean
+  run: (obj: T) => any
+}
+
 export type ActionInput<T> = {
   // название метода или действия
   name?: string
-  //действие после дествия над каким-то полем
-  fields?: Array<keyof T> | keyof T
   // событие
   method?: Array<ActionHookMethod> | ActionHookMethod
   // когда выполнять
