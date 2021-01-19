@@ -17,6 +17,8 @@ export class RuleRunner<T extends { id?: number }> {
   actions: Map<string, Set<Rule<T>> | Rule<T>>
   // actions: Map<string, Rule<T>>
   hooks: Map<ActionHookTime, Map<ActionHookMethod, Set<Rule<T>>>>
+  //property getter and setters
+  props: Map<keyof T, { set?: Set<Rule<T>>; get?: Set<Rule<T>> }>
   methods: Map<string, Rule<T>>
   factory: (obj: Partial<T>) => T
   hiddenProps: Map<keyof T, symbol>
@@ -45,7 +47,7 @@ export class RuleRunner<T extends { id?: number }> {
         if (!this.setters.has(cur.field)) {
           this.setters.set(cur.field, cur)
         } else {
-          throw new Error(`duplicate rule ${cur.field}`)
+          throw new Error(`duplicate setter for field ${cur.field}`)
         }
       } else if (cur.type == 'action') {
         if (!this.actions.has(cur.name)) {
@@ -67,23 +69,60 @@ export class RuleRunner<T extends { id?: number }> {
     this.reorderSetterByWeight()
   }
 
-  initProperties() {}
+  initProperties() {
+    this.props = new Map<keyof T, { set?: Set<Rule<T>>; get?: Set<Rule<T>> }>()
+    this.actions.forEach((setter) => {
+      if (setter instanceof Set) {
+        setter.forEach((set) => this._initProp(set))
+      } else {
+        this._initProp(setter)
+      }
+    })
+  }
+
+  private _initProp(setter: Rule<T>) {
+    if (setter.method.has('get') && setter.hooks.has('instead')) {
+      if (this.props.has(setter.field)) {
+        const cur = this.props.get(setter.field)
+        if (cur.get instanceof Set) {
+          cur.get.add(setter)
+        } else {
+          const old = cur.get
+          cur.get = new Set([old, setter])
+        }
+      } else {
+        this.props.set(setter.field, { set: new Set([setter]) })
+      }
+    } else if (setter.method.has('set') && setter.hooks.has('instead')) {
+      if (this.props.has(setter.field)) {
+        const cur = this.props.get(setter.field)
+        if (cur.get instanceof Set) {
+          cur.get.add(setter)
+        } else {
+          const old = cur.get
+          cur.get = new Set([old, setter])
+        }
+      } else {
+        this.props.set(setter.field, { set: new Set([setter]) })
+      }
+    }
+  }
+
   //TODO: прикрутить обязательно
-  private defineProperty(
-    obj,
-    prop: keyof T,
-    get: Set<Rule<T>>,
-    set: Set<Rule<T>>,
-  ) {
-    this.hiddenProps.set(prop, Symbol(prop as string))
+  // как геттер и сеттер
+  private defineProperty(obj: T, prop: keyof T) {
+    const props = this.props.get(prop)
+    if (!this.hiddenProps.has(prop)) {
+      this.hiddenProps.set(prop, Symbol(prop as string))
+    }
     obj[this.hiddenProps.get(prop)] = obj[prop]
     delete obj[prop]
     Object.defineProperty(obj, prop, {
       get() {
         let value = obj[this.hiddenProps.get(prop)]
-        if (get?.size > 0) {
+        if (props.get?.size > 0) {
           const res = { ...obj, [prop]: value }
-          get.forEach((g) => {
+          props.get.forEach((g) => {
             this.executeAction(res, g.name)
           })
           value = res[prop]
@@ -91,9 +130,9 @@ export class RuleRunner<T extends { id?: number }> {
         return value
       },
       set(value: any) {
-        if (set?.size > 0) {
+        if (props.set?.size > 0) {
           const res = { ...obj, [prop]: value }
-          set.forEach((g) => {
+          props.set.forEach((g) => {
             this.executeAction(res, g.name)
           })
           value = res[prop]
@@ -166,6 +205,24 @@ export class RuleRunner<T extends { id?: number }> {
     return result
   }
 
+  createProperties(obj: T) {
+    this.hiddenProps.forEach((prop, key) => {
+      if (!obj[prop]) {
+        this.defineProperty(obj, key)
+      }
+    })
+  }
+
+  removeProperties(obj: T) {
+    this.hiddenProps.forEach((prop, key) => {
+      if (obj[prop]) {
+        delete obj[key]
+        obj[key] = obj[prop]
+        delete obj[prop]
+      }
+    })
+  }
+
   create(obj: Partial<T>, ensure: boolean = false) {
     let result: T = this.method(obj as T, 'create', ensure, (obj) => {
       let res: T
@@ -174,6 +231,7 @@ export class RuleRunner<T extends { id?: number }> {
       } else {
         res = obj as T
       }
+      this.createProperties(obj)
       this.updateFields(obj, '*', true)
       return res
     })
@@ -182,41 +240,50 @@ export class RuleRunner<T extends { id?: number }> {
 
   update(obj: T, update: T, ensure: boolean = false) {
     let result: T = this.method(obj as T, 'update', ensure, (obj) => {
-      let res
-      if (this.factory) {
-        res = this.factory({ ...obj, ...update })
-      } else {
-        res = { ...obj, ...update } as T
+      const fields = Object.keys(update)
+      let updated: Array<keyof T> = []
+      fields.forEach((field) => {
+        if (obj[field] != update[field]) {
+          obj[field] = update[field]
+          updated.push(field as keyof T)
+        }
+      })
+      if (updated.length > 0) {
+        this.updateFields(obj, updated, true)
       }
-      this.updateFields(obj, Object.keys(update) as Array<keyof T>, true)
-      return res
+      return obj
     })
 
     return result
   }
 
   patch(obj: T, update: Partial<T>, ensure: boolean = false) {
-    let result: T = this.method(obj as T, 'update', ensure, (obj) => {
-      let res
-      if (this.factory) {
-        res = this.factory({ ...obj, ...update })
-      } else {
-        res = { ...obj, ...update } as T
+    let result: T = this.method(obj as T, 'patch', ensure, (obj) => {
+      const fields = Object.keys(update)
+      let updated: Array<keyof T> = []
+      fields.forEach((field) => {
+        if (obj[field] != update[field]) {
+          obj[field] = update[field]
+          updated.push(field as keyof T)
+        }
+      })
+      if (updated.length > 0) {
+        this.updateFields(obj, updated, true)
       }
-      this.updateFields(obj, Object.keys(update) as Array<keyof T>, true)
-      return res
+      return obj
     })
     return result
   }
 
   clone(obj: T, ensure: boolean = false) {
-    let result: T = this.method(obj as T, 'update', ensure, (obj) => {
+    let result: T = this.method(obj as T, 'clone', ensure, (obj) => {
       let res
       if (this.factory) {
         res = this.factory(obj)
       } else {
         res = obj as T
       }
+      this.createProperties(obj)
       this.updateFields(obj, Object.keys(res) as Array<keyof T>, true)
       return res
     })
@@ -224,15 +291,11 @@ export class RuleRunner<T extends { id?: number }> {
   }
 
   delete(obj: T, ensure: boolean = true) {
-    let result: T = this.method(obj as T, 'update', ensure, (obj) => {
-      // if (this.factory) {
-      //   res = this.factory(obj)
-      // } else {
-      //   res = obj as T
-      // }
+    let result: T = this.method(obj as T, 'delete', ensure, (obj) => {
       obj[deleted] = true
       return obj
     })
+    this.removeProperties(obj)
     return result
   }
 
@@ -457,7 +520,7 @@ export class RuleRunner<T extends { id?: number }> {
     }
   }
 
-  executeAction(obj: T, name: string, ensure: boolean = false){
+  executeAction(obj: T, name: string, ensure: boolean = false) {
     const hasAction = this.actions.has(name)
     if (obj && name && hasAction) {
       const action = this.actions.get(name)
