@@ -61,8 +61,8 @@ while ((i = it.next()) !== null) {
 }
 console.log(res)
 
-const start = bpt.find_node(from)
-const end = bpt.find_node(to)
+const start = bpt.find(from)
+const end = bpt.find(to)
 let cur = start
 const result = start.keys.filter((i) => from <= i && i <= to)
 do {
@@ -125,8 +125,9 @@ linear
     console.log('Fastest is ' + this.filter('fastest').map('name'))
   })
 
-// linear.run()
+linear.run()
 //
+console.log('interval search by one element')
 
 var range = new Benchmark.Suite('range search by one element')
 
@@ -154,8 +155,8 @@ range
     }
   })
   .add('bpltree', () => {
-    const start = bpt.find_node(from)
-    const end = bpt.find_node(to)
+    const start = bpt.find(from)
+    const end = bpt.find(to)
     let cur = start
     const result = start.keys.filter((i) => from <= i && i <= to)
     do {
