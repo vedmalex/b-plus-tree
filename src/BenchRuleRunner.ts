@@ -52,7 +52,7 @@ const fullName = Rule.createSetter<DTO>({
 
 const activate = Rule.createMethod<DTO>({
   name: 'activate user',
-  condition: (obj) => !obj.active,
+  // condition: (obj) => !obj.active,
   run: (obj) => (obj.active = true),
 })
 

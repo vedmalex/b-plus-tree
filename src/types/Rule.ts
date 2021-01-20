@@ -21,7 +21,7 @@ export type RuleInput<T extends object> = {
 }
 export class Rule<T extends object> {
   static createMethod<T extends object>(inp: MethodInput<T>): Array<Rule<T>> {
-    const result = new Rule(inp.run, inp.condition)
+    const result = new Rule(inp.run)
     result.initMethod(inp.name)
     return [result]
   }
@@ -51,12 +51,12 @@ export class Rule<T extends object> {
   type: 'action' | 'setter' = 'action'
   field: keyof T
   method: ActionHookMethod
-  hooks: ActionHookTime
+  hook: ActionHookTime
   name: string
   subscribesTo?: Set<keyof T>
   subjectFor?: Set<keyof T>
   condition?: (obj: T) => boolean
-  run: (obj: T) => any
+  run: (obj: T, ...args) => any
 
   private constructor(run: (obj: T) => any, condition?: (obj: T) => boolean) {
     this.run = run
@@ -67,14 +67,14 @@ export class Rule<T extends object> {
     this.type = 'action'
     this.name = `action on ${hook} ${method}`
     this.method = method
-    this.hooks = hook
+    this.hook = hook
     this.checkConsistency()
   }
 
   private initMethod(name: string) {
     this.type = 'action'
     this.name = name
-    this.hooks = 'instead'
+    this.hook = 'instead'
     this.method = 'run'
     this.checkConsistency()
   }
@@ -83,7 +83,7 @@ export class Rule<T extends object> {
     this.type = 'action'
     this.field = field
     this.name = `${method}ter method for field: ${field}`
-    this.hooks = 'before'
+    this.hook = 'before'
     this.method = method
     this.checkConsistency()
   }
@@ -106,9 +106,9 @@ export class Rule<T extends object> {
 
   private checkConsistency() {
     const insconsistence = []
-    if (!ValidateHookPerMethod(this.method, this.hooks)) {
+    if (!ValidateHookPerMethod(this.method, this.hook)) {
       throw Error(
-        `inconsistent event and its time combination for ${this.method} ${this.hooks}`,
+        `inconsistent event and its time combination for ${this.method} ${this.hook}`,
       )
     }
     if (insconsistence.length > 0) {

@@ -36,6 +36,5 @@ export type MethodInput<T extends object> = {
   // название метода или действия
   name: string
   //условие
-  condition?: (obj: T) => boolean
-  run: (obj: T) => any
+  run: (this: T, ...args) => any
 }

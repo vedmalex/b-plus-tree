@@ -1,10 +1,11 @@
 import { updateValue } from './methods/updateValue'
+import isArrow from 'isarrow'
 import { Rule } from './Rule'
 import { ActionHookTime, ActionHookMethod } from './methods/ExecutionTme'
 
 export const deleted = Symbol('deleted')
 export const state = Symbol('state')
-
+export const methods = Symbol('methods')
 /**
  * нужно прикрепить его к дереву
  * здесь можно использовать сложные структуры типа связанные сущности и прочее..
@@ -41,6 +42,8 @@ export class RuleRunner<T extends { id?: number }> {
     this.actions = new Map()
     this.runners = new Map()
     this.hooks = new Map()
+    this.methods = new Map()
+    this.props = new Map()
     this.hiddenProps = new Map()
     rules.forEach((cur) => {
       if (cur.type == 'setter') {
@@ -50,38 +53,42 @@ export class RuleRunner<T extends { id?: number }> {
           throw new Error(`duplicate setter for field ${cur.field}`)
         }
       } else if (cur.type == 'action') {
-        if (!this.actions.has(cur.name)) {
-          this.actions.set(cur.name, cur)
-        } else {
-          const _cur = this.actions.get(cur.name)
-          if (_cur instanceof Set) {
-            _cur.add(cur)
+        if (cur.method != 'run' && cur.method != 'get' && cur.method != 'set') {
+          if (!this.actions.has(cur.name)) {
+            this.actions.set(cur.name, cur)
           } else {
-            this.actions.set(cur.name, new Set([_cur, cur]))
+            const _cur = this.actions.get(cur.name)
+            if (_cur instanceof Set) {
+              _cur.add(cur)
+            } else {
+              this.actions.set(cur.name, new Set([_cur, cur]))
+            }
+            // throw new Error(`duplicate action ${cur.name}`)
           }
-          // throw new Error(`duplicate action ${cur.name}`)
+        } else {
+          if (cur.method == 'get' || cur.method == 'set') {
+            this._initProp(cur)
+          } else if (cur.method == 'run') {
+            this._initMethod(cur)
+          }
         }
       }
     })
     this.initDependencies()
     this.initExecutationTime()
-    this.initProperties()
     this.reorderSetterByWeight()
   }
 
-  initProperties() {
-    this.props = new Map<keyof T, { set?: Set<Rule<T>>; get?: Set<Rule<T>> }>()
-    this.actions.forEach((setter) => {
-      if (setter instanceof Set) {
-        setter.forEach((set) => this._initProp(set))
-      } else {
-        this._initProp(setter)
-      }
-    })
+  private _initMethod(cur: Rule<T>) {
+    if (!this.methods.has(cur.name)) {
+      this.methods.set(cur.name, cur)
+    } else {
+      throw new Error(`method ${cur.name} already exists`)
+    }
   }
 
   private _initProp(setter: Rule<T>) {
-    if (setter.method == 'get' && setter.hooks == 'before') {
+    if (setter.method == 'get' && setter.hook == 'before') {
       if (this.props.has(setter.field)) {
         const cur = this.props.get(setter.field)
         if (cur.get instanceof Set) {
@@ -97,7 +104,7 @@ export class RuleRunner<T extends { id?: number }> {
       } else {
         this.props.set(setter.field, { get: new Set([setter]) })
       }
-    } else if (setter.method == 'set' && setter.hooks == 'before') {
+    } else if (setter.method == 'set' && setter.hook == 'before') {
       if (this.props.has(setter.field)) {
         const cur = this.props.get(setter.field)
         if (cur.set instanceof Set) {
@@ -116,8 +123,35 @@ export class RuleRunner<T extends { id?: number }> {
     }
   }
 
-  //TODO: прикрутить обязательно
-  // как геттер и сеттер
+  private injectMethods(obj: T) {
+    if (!obj.hasOwnProperty(methods)) {
+      obj[methods] = true
+      const self = this
+      this.methods.forEach((method, name) => {
+        this.injectMethod(obj, name, method)
+      })
+    }
+  }
+
+  private injectMethod(obj: T, name: string, method: Rule<T>) {
+    obj[name] = function (...args) {
+      if (isArrow(method.run)) {
+        return method.run(obj, ...args)
+      } else {
+        return method.run.apply(obj, args)
+      }
+    }
+  }
+
+  private ejectMethods(obj: T) {
+    if (obj.hasOwnProperty(methods)) {
+      this.methods.forEach((method, name) => {
+        delete obj[name]
+      })
+      delete obj[methods]
+    }
+  }
+
   private defineProperty(obj: T, prop: keyof T) {
     const props = this.props.get(prop)
     if (!this.hiddenProps.has(prop)) {
@@ -132,27 +166,28 @@ export class RuleRunner<T extends { id?: number }> {
         let value = obj[hprop]
         if (props.get?.size > 0) {
           // const res = { ...obj, [hprop]: value }
-          self.removeProp(prop, obj)
+          self.ejectProperty(prop, obj)
           const res = obj
-          props.get.forEach((g) => {
-            self.executeAction(res, g.name)
+          props.get.forEach((rule) => {
+            self.executeAction(res, rule)
           })
           value = res[prop]
-          self.createProp(prop, obj)
+          self.injectProperty(prop, obj)
         }
         return value
       },
       set(value: any) {
         if (props.set?.size > 0) {
           // const res = { ...obj, [hprop]: value }
-          self.removeProp(prop, obj)
+          self.ejectProperty(prop, obj)
           obj[prop] = value
 
-          props.set.forEach((g) => {
-            self.executeAction(obj, g.name)
+          props.set.forEach((rule) => {
+            self.executeAction(obj, rule)
           })
+
           value = obj[prop]
-          self.createProp(prop, obj)
+          self.injectProperty(prop, obj)
         } else {
           obj[hprop] = value
         }
@@ -173,17 +208,18 @@ export class RuleRunner<T extends { id?: number }> {
   }
 
   private _initExecutationTime(rule: Rule<T>) {
-    if (!this.hooks.has(rule.hooks)) {
-      this.hooks.set(rule.hooks, new Map())
+    if (!this.hooks.has(rule.hook)) {
+      this.hooks.set(rule.hook, new Map())
     }
-    const methods = this.hooks.get(rule.hooks)
+    const methods = this.hooks.get(rule.hook)
     if (!methods.has(rule.method)) {
       methods.set(rule.method, new Set())
     }
     methods.get(rule.method).add(rule)
   }
 
-  private method(
+  //подключить методы к объектам
+  private runMethodByTemplate(
     obj: T,
     action: ActionHookMethod,
     ensure: boolean,
@@ -194,7 +230,7 @@ export class RuleRunner<T extends { id?: number }> {
       const before = this.hooks.get('before')
       if (before.has(action)) {
         before.get(action).forEach((rule) => {
-          this.executeAction(obj, rule.name, ensure)
+          this.executeAction(obj, rule, ensure)
         })
       }
     }
@@ -203,7 +239,7 @@ export class RuleRunner<T extends { id?: number }> {
     const instead = hasInstead ? this.hooks.get('instead').get(action) : null
     if (hasInstead && instead) {
       instead.forEach((rule) => {
-        this.executeAction(result, rule.name, ensure)
+        this.executeAction(result, rule, ensure)
       })
     } else {
       result = handler(obj) ?? obj
@@ -212,20 +248,20 @@ export class RuleRunner<T extends { id?: number }> {
       const after = this.hooks.get('after')
       if (after.has(action)) {
         after.get(action).forEach((rule) => {
-          this.executeAction(result, rule.name, ensure)
+          this.executeAction(result, rule, ensure)
         })
       }
     }
     return result
   }
 
-  createProperties(obj: T) {
+  injectProperties(obj: T) {
     this.props.forEach((_, key) => {
-      this.createProp(key, obj)
+      this.injectProperty(key, obj)
     })
   }
 
-  private createProp(key: keyof T, obj: T) {
+  private injectProperty(key: keyof T, obj: T) {
     if (this.hiddenProps.has(key)) {
       if (!obj[this.hiddenProps.get(key)]) {
         this.defineProperty(obj, key)
@@ -235,13 +271,13 @@ export class RuleRunner<T extends { id?: number }> {
     }
   }
 
-  removeProperties(obj: T) {
+  ejectProperties(obj: T) {
     this.props.forEach((_, key) => {
-      this.removeProp(key, obj)
+      this.ejectProperty(key, obj)
     })
   }
 
-  private removeProp(key: keyof T, obj: T) {
+  private ejectProperty(key: keyof T, obj: T) {
     if (this.hiddenProps.has(key)) {
       const prop = this.hiddenProps.get(key)
       if (obj.hasOwnProperty(prop)) {
@@ -253,78 +289,106 @@ export class RuleRunner<T extends { id?: number }> {
   }
 
   create(obj: Partial<T>, ensure: boolean = false) {
-    let result: T = this.method(obj as T, 'create', ensure, (obj) => {
-      let res: T
-      if (this.factory) {
-        res = this.factory(obj)
-      } else {
-        res = obj as T
-      }
-      this.createProperties(obj)
-      this.updateFields(obj, '*', true)
-      return res
-    })
+    let result: T = this.runMethodByTemplate(
+      obj as T,
+      'create',
+      ensure,
+      (obj) => {
+        let res: T
+        if (this.factory) {
+          res = this.factory(obj)
+        } else {
+          res = obj as T
+        }
+        this.injectProperties(obj)
+        this.injectMethods(obj)
+        this.updateFields(obj, '*', true)
+        return res
+      },
+    )
     return result
   }
 
   update(obj: T, update: T, ensure: boolean = false) {
-    let result: T = this.method(obj as T, 'update', ensure, (obj) => {
-      const fields = Object.keys(update)
-      let updated: Array<keyof T> = []
-      fields.forEach((field) => {
-        if (obj[field] != update[field]) {
-          obj[field] = update[field]
-          updated.push(field as keyof T)
+    let result: T = this.runMethodByTemplate(
+      obj as T,
+      'update',
+      ensure,
+      (obj) => {
+        const fields = Object.keys(update)
+        let updated: Array<keyof T> = []
+        fields.forEach((field) => {
+          if (obj[field] != update[field]) {
+            obj[field] = update[field]
+            updated.push(field as keyof T)
+          }
+        })
+        if (updated.length > 0) {
+          this.updateFields(obj, updated, true)
         }
-      })
-      if (updated.length > 0) {
-        this.updateFields(obj, updated, true)
-      }
-      return obj
-    })
+        return obj
+      },
+    )
 
     return result
   }
 
   patch(obj: T, update: Partial<T>, ensure: boolean = false) {
-    let result: T = this.method(obj as T, 'patch', ensure, (obj) => {
-      const fields = Object.keys(update)
-      let updated: Array<keyof T> = []
-      fields.forEach((field) => {
-        if (obj[field] != update[field]) {
-          obj[field] = update[field]
-          updated.push(field as keyof T)
+    let result: T = this.runMethodByTemplate(
+      obj as T,
+      'patch',
+      ensure,
+      (obj) => {
+        const fields = Object.keys(update)
+        let updated: Array<keyof T> = []
+        fields.forEach((field) => {
+          if (obj[field] != update[field]) {
+            obj[field] = update[field]
+            updated.push(field as keyof T)
+          }
+        })
+        if (updated.length > 0) {
+          this.updateFields(obj, updated, true)
         }
-      })
-      if (updated.length > 0) {
-        this.updateFields(obj, updated, true)
-      }
-      return obj
-    })
+        return obj
+      },
+    )
     return result
   }
 
   clone(obj: T, ensure: boolean = false) {
-    let result: T = this.method(obj as T, 'clone', ensure, (obj) => {
-      let res
-      if (this.factory) {
-        res = this.factory(obj)
-      } else {
-        res = obj as T
-      }
-      this.createProperties(obj)
-      this.updateFields(obj, Object.keys(res) as Array<keyof T>, true)
-      return res
-    })
+    let result: T = this.runMethodByTemplate(
+      obj as T,
+      'clone',
+      ensure,
+      (obj) => {
+        let res
+        if (this.factory) {
+          res = this.factory(obj)
+        } else {
+          res = obj as T
+        }
+        this.injectProperties(obj)
+        this.injectMethods(obj)
+        this.updateFields(obj, Object.keys(res) as Array<keyof T>, true)
+        return res
+      },
+    )
     return result
   }
 
   delete(obj: T, ensure: boolean = true) {
-    let result: T = this.method(obj as T, 'delete', ensure, (obj) => {
-      obj[deleted] = true
-      return obj
-    })
-    this.removeProperties(obj)
+    let result: T = this.runMethodByTemplate(
+      obj as T,
+      'delete',
+      ensure,
+      (obj) => {
+        obj[deleted] = true
+        return obj
+      },
+    )
+    this.ejectProperties(obj)
+    this.ejectMethods(obj)
     return result
   }
 
@@ -549,45 +613,26 @@ export class RuleRunner<T extends { id?: number }> {
     }
   }
 
-  executeAction(obj: T, name: string, ensure: boolean = false): number {
-    const hasAction = this.actions.has(name)
-    if (obj && name && hasAction) {
-      const action = this.actions.get(name)
-      if (action instanceof Set) {
-        let res = 0
-        action.forEach(
-          (a) => (res += this._executeAction(obj, name, ensure, a)),
-        )
-        return res
-      } else {
-        return this._executeAction(obj, name, ensure, action)
-      }
+  execute(obj: T, name: string, ...args) {
+    if (this.methods.has(name)) {
+      this.executeAction(obj, this.methods.get(name), args)
     } else {
-      return 0
+      throw new Error(`no such method ${name}`)
     }
   }
-  private _executeAction(
-    obj: T,
-    name: string,
-    ensure: boolean,
-    action: Rule<T>,
-  ) {
-    this.actions.get(name)
-    if (action.condition?.(obj) ?? true) {
-      if (ensure) {
-        if (action.subscribesTo) {
-          action.subscribesTo.forEach((dep) => {
-            this.updateFields(obj, dep, true)
-          })
-        }
-      }
-      return action.run(obj) ? 1 : 0
+
+  private executeAction(obj: T, rule: Rule<T>, ...args): number {
+    if (isArrow(rule.run)) {
+      return rule.run(obj, ...args)
+    } else {
+      return rule.run.apply(obj, args)
     }
   }
-  executeAllActions(obj: T) {
-    let result = 0
-    this.actions.forEach((_r, name) => {
-      result += this.executeAction(obj, name)
+
+  executeAllActions(obj: T, ...args): Map<string, any> {
+    let result = new Map<string, any>()
+    this.methods.forEach((rule, name) => {
+      result.set(name, this.executeAction(obj, rule, ...args))
     })
     return result
   }

@@ -56,8 +56,9 @@ const fullName = Rule.createSetter<DTO>({
 
 const activate = Rule.createMethod<DTO>({
   name: 'activate user',
-  condition: (obj) => !obj.active,
-  run: (obj) => (obj.active = true),
+  run: (obj) => {
+    obj.active = true
+  },
 })
 
 export type TransacationRecord<T> = {
@@ -163,13 +164,14 @@ describe('Rule runner', () => {
   it('accept dupes in actions', () => {
     expect(
       () => new RuleRunner<DTO>([...activate, ...activate]),
-    ).not.toThrow()
+    ).toThrow()
   })
   it('run action', () => {
     let runner = new RuleRunner<DTO>(actions)
     let user: DTO = { ...user1 } as DTO
-    const result = runner.executeAction(user, 'activate user')
-    expect(result).toBe(1)
+
+    const result = runner.execute(user, 'activate user')
+    expect(result).toBeUndefined()
     expect(user.active).toBeTruthy()
   })
   it('clone', () => {
@@ -186,10 +188,10 @@ describe('Rule runner', () => {
     expect(runner.fieldOrder.length).toBe(5)
     expect(runner.setters.size).toBe(2)
     expect(runner.hooks.get('after').size).toBe(4)
-    expect(runner.actions.size).toBe(6)
-    expect(runner.hooks.size).toBe(3)
+    expect(runner.actions.size).toBe(5)
+    expect(runner.methods.size).toBe(1)
+    expect(runner.hooks.size).toBe(2)
     expect(runner.hooks.get('after').size).toBe(4)
-    expect(runner.hooks.get('instead').size).toBe(1)
     expect(runner.hooks.get('before').size).toBe(1)
     let user = runner.create({ name: 'Ivan', lastName: 'Gorky' })
     expect(user.id).not.toBeUndefined()
@@ -211,10 +213,10 @@ describe('Rule runner', () => {
     expect(runner.fieldOrder.length).toBe(7)
     expect(runner.setters.size).toBe(3)
     expect(runner.hooks.get('after').size).toBe(4)
-    expect(runner.actions.size).toBe(6)
-    expect(runner.hooks.size).toBe(3)
+    expect(runner.actions.size).toBe(5)
+    expect(runner.hooks.size).toBe(2)
+    expect(runner.methods.size).toBe(1)
     expect(runner.hooks.get('after').size).toBe(4)
-    expect(runner.hooks.get('instead').size).toBe(1)
     expect(runner.hooks.get('before').size).toBe(1)
     let user = runner.create({ name: 'Ivan', lastName: 'Gorky' })
     expect(user.id).not.toBeUndefined()
