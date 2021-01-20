@@ -33,11 +33,12 @@ export class Rule<T extends object> {
       inp.on.forEach((on) => {
         result.push(...Rule.createAction({ ...inp, on }))
       })
+      return result
     } else {
       const [hook = 'instead', method] = inp.on.split(':')
       result.initAction(hook as ActionHookTime, method as ActionHookMethod)
+      return [result]
     }
-    return [result]
   }
   static createProperty<T extends object>(inp: GetSetInput<T>): Array<Rule<T>> {
     const result = new Rule(inp.run, inp.condition)

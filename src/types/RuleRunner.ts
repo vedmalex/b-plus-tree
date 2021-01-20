@@ -1,6 +1,7 @@
 import { updateValue } from './methods/updateValue'
 import { Rule } from './Rule'
 import { ActionHookTime, ActionHookMethod } from './methods/ExecutionTme'
+import { remove } from '../methods/remove'
 
 export const deleted = Symbol('deleted')
 export const state = Symbol('state')
@@ -621,17 +622,33 @@ export class RuleRunner<T extends { id?: number }> {
   }
 
   private executeAction(obj: T, rule: Rule<T>, ...args): number {
-    if (rule.runIsArrow) {
-      return rule.run(obj, ...args)
-    } else {
-      return rule.run.apply(obj, args)
+    let allow = true
+    if (rule.condition) {
+      if (rule.conditionIsArrow) {
+        allow = rule.condition(obj)
+      } else {
+        allow = rule.condition.apply(obj, args)
+      }
+    }
+    if (allow) {
+      if (rule.runIsArrow) {
+        return rule.run(obj, ...args)
+      } else {
+        return rule.run.apply(obj, args)
+      }
     }
   }
 
   executeAllActions(obj: T, ...args): Map<string, any> {
     let result = new Map<string, any>()
-    this.methods.forEach((rule, name) => {
-      result.set(name, this.executeAction(obj, rule, ...args))
+    this.actions.forEach((rule, name) => {
+      if (rule instanceof Set) {
+        rule.forEach((r) => {
+          result.set(name, this.executeAction(obj, r, ...args))
+        })
+      } else {
+        result.set(name, this.executeAction(obj, rule, ...args))
+      }
     })
     return result
   }

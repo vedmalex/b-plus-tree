@@ -87,9 +87,11 @@ const rules: Array<Rule<Node>> = [
       parent.commit()
     },
   }),
+
   ...Rule.createAction({
     on: ['after:update', 'after:delete'],
-    condition: (obj: Node) => obj.parent?.size == 1,
+    condition: (obj: Node) => obj.parent?.size > 0,
+    // condition: (obj: Node) => obj.parent?.size == 1,
     run: (obj: Node) => obj.parent.commit(),
   }),
 ]
@@ -174,18 +176,27 @@ export class Node extends Chainable {
     this.updateStatics()
   }
 
-  remove(key: ValueType): Node | [ValueType, any] {
-    if (this.leaf) {
-      const pos = findFast(this.keys, key)
-      const res: [ValueType, any] = [key, this.pointers.splice(pos, 1)[0]]
-      this.keys.splice(pos, 1)
+  remove(item: ValueType | Node): Node | [ValueType, any] {
+    if (item instanceof Node) {
+      const pos = this.children.indexOf(item)
+      this.children.splice(pos, 1)
+      item.parent = undefined
       this.updateStatics()
-      return res
+      return item
     } else {
-      const pos = findPosInsert(this.keys, key)
-      const res = this.children.splice(pos, 1)[0]
-      this.updateStatics()
-      return res
+      if (this.leaf) {
+        const pos = findFast(this.keys, item)
+        const res: [ValueType, any] = [item, this.pointers.splice(pos, 1)[0]]
+        this.keys.splice(pos, 1)
+        this.updateStatics()
+        return res
+      } else {
+        const pos = findPosInsert(this.keys, item)
+        const res = this.children.splice(pos, 1)[0]
+        res.parent = undefined
+        this.updateStatics()
+        return res
+      }
     }
   }
 
