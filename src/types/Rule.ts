@@ -3,6 +3,7 @@ import {
   ActionHookMethod,
   ValidateHookPerMethod,
 } from './methods/ExecutionTme'
+import isArrow from 'isarrow'
 import { SetterInput, ActionInput, GetSetInput, MethodInput } from './RuleInput'
 
 // один рул одно правило и один вызов
@@ -55,12 +56,17 @@ export class Rule<T extends object> {
   name: string
   subscribesTo?: Set<keyof T>
   subjectFor?: Set<keyof T>
+
   condition?: (obj: T) => boolean
+  conditionIsArrow: boolean
   run: (obj: T, ...args) => any
+  runIsArrow: boolean
 
   private constructor(run: (obj: T) => any, condition?: (obj: T) => boolean) {
     this.run = run
     this.condition = condition
+    this.runIsArrow = isArrow(this.run)
+    this.conditionIsArrow = isArrow(this.condition)
   }
 
   private initAction(hook: ActionHookTime, method: ActionHookMethod) {

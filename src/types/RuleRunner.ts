@@ -1,5 +1,4 @@
 import { updateValue } from './methods/updateValue'
-import isArrow from 'isarrow'
 import { Rule } from './Rule'
 import { ActionHookTime, ActionHookMethod } from './methods/ExecutionTme'
 
@@ -135,7 +134,7 @@ export class RuleRunner<T extends { id?: number }> {
 
   private injectMethod(obj: T, name: string, method: Rule<T>) {
     obj[name] = function (...args) {
-      if (isArrow(method.run)) {
+      if (method.runIsArrow) {
         return method.run(obj, ...args)
       } else {
         return method.run.apply(obj, args)
@@ -622,7 +621,7 @@ export class RuleRunner<T extends { id?: number }> {
   }
 
   private executeAction(obj: T, rule: Rule<T>, ...args): number {
-    if (isArrow(rule.run)) {
+    if (rule.runIsArrow) {
       return rule.run(obj, ...args)
     } else {
       return rule.run.apply(obj, args)
