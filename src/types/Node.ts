@@ -31,7 +31,6 @@ export function removeSibling(a: Chainable, order: 'right' | 'left') {
       a[right] = b[right]
       b[right][left] = a
     }
-    a[right] = undefined
     b[left] = undefined
     b[right] = undefined
   }
@@ -182,6 +181,8 @@ export class Node extends Chainable {
       const pos = this.children.indexOf(item)
       this.children.splice(pos, 1)
       item.parent = undefined
+      item.removeSiblingAtLeft()
+      item.removeSiblingAtRight()
       this.updateStatics()
       return item
     } else {

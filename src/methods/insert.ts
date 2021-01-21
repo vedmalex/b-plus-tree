@@ -1,10 +1,6 @@
 import { BPlusTree } from '../types/BPlusTree'
 import { ValueType } from '../btree'
 import { split } from './split'
-import { findPosInsert } from './findPosInsert'
-import { min } from './min'
-import { max } from './max'
-import { reflow } from './reflow'
 
 export function insert(this: BPlusTree, key: ValueType, value: any): boolean {
   let leaf = this.find(key)

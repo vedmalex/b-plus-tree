@@ -117,13 +117,14 @@ export function reflow(this: BPlusTree, node: Node) {
             node.updateStatics()
             left_sibling.updateStatics()
           }
-          // (node.parent.children.indexOf(node))
-          left_sibling.removeSiblingAtRight()
+          // node.removeSiblingAtLeft()
           const parent = node.parent
-          node.parent.remove(node)
+          if (parent) {
+            parent.remove(node)
+          }
           node.commit()
-          reflow.call(this, left_sibling.parent)
           reflow.call(this, parent)
+          reflow.call(this, left_sibling.parent)
           // delete_in_node.call(this, left_sibling.parent, node.min) // Удаляем разделительный ключ в отце
         } else if (right_sibling) {
           while (!node.isEmpty) {
@@ -132,14 +133,22 @@ export function reflow(this: BPlusTree, node: Node) {
             node.updateStatics()
             right_sibling.updateStatics()
           }
-
-          right_sibling.removeSiblingAtLeft()
+          // node.removeSiblingAtRight()
           const parent = node.parent
-          node.parent.remove(node)
+          if (parent) {
+            parent.remove(node)
+          }
           node.commit()
-          reflow.call(this, right_sibling.parent)
           reflow.call(this, parent)
+          reflow.call(this, right_sibling.parent)
           // delete_in_node.call(this, right_sibling.parent, right_sibling.min) // Удаляем разделительный ключ в отце
+        } else if (node.isEmpty) {
+          const parent = node.parent
+          if (parent) {
+            parent.remove(node)
+          }
+          reflow.call(this, parent)
+          node.commit()
         }
       }
     } else {
