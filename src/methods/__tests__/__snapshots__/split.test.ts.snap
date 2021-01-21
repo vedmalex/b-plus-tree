@@ -13,12 +13,15 @@ Object {
               0,
               1,
             ],
+            "leaf": true,
+            "left": undefined,
             "max": 1,
             "min": 0,
             "pointers": Array [
               0,
               9,
             ],
+            "right": 4,
           },
           Object {
             "id": 4,
@@ -27,12 +30,15 @@ Object {
               2,
               3,
             ],
+            "leaf": true,
+            "left": 0,
             "max": 3,
             "min": 2,
             "pointers": Array [
               8,
               2,
             ],
+            "right": 7,
           },
         ],
         "id": 2,
@@ -40,8 +46,11 @@ Object {
         "keys": Array [
           2,
         ],
+        "leaf": false,
+        "left": undefined,
         "max": 3,
         "min": 0,
+        "right": 9,
       },
       Object {
         "children": Array [
@@ -52,12 +61,15 @@ Object {
               4,
               5,
             ],
+            "leaf": true,
+            "left": 4,
             "max": 5,
             "min": 4,
             "pointers": Array [
               10,
               12,
             ],
+            "right": 8,
           },
           Object {
             "id": 8,
@@ -67,6 +79,8 @@ Object {
               7,
               8,
             ],
+            "leaf": true,
+            "left": 7,
             "max": 8,
             "min": 6,
             "pointers": Array [
@@ -74,6 +88,7 @@ Object {
               14,
               11,
             ],
+            "right": 1,
           },
         ],
         "id": 9,
@@ -81,8 +96,11 @@ Object {
         "keys": Array [
           6,
         ],
+        "leaf": false,
+        "left": 2,
         "max": 8,
         "min": 4,
+        "right": 5,
       },
       Object {
         "children": Array [
@@ -94,6 +112,8 @@ Object {
               10,
               11,
             ],
+            "leaf": true,
+            "left": 8,
             "max": 11,
             "min": 9,
             "pointers": Array [
@@ -101,6 +121,7 @@ Object {
               7,
               13,
             ],
+            "right": 3,
           },
           Object {
             "id": 3,
@@ -110,6 +131,8 @@ Object {
               13,
               14,
             ],
+            "leaf": true,
+            "left": 1,
             "max": 14,
             "min": 12,
             "pointers": Array [
@@ -117,6 +140,7 @@ Object {
               5,
               3,
             ],
+            "right": undefined,
           },
         ],
         "id": 5,
@@ -124,8 +148,11 @@ Object {
         "keys": Array [
           12,
         ],
+        "leaf": false,
+        "left": 9,
         "max": 14,
         "min": 9,
+        "right": undefined,
       },
     ],
     "id": 6,
@@ -134,8 +161,11 @@ Object {
       4,
       9,
     ],
+    "leaf": false,
+    "left": undefined,
     "max": 14,
     "min": 0,
+    "right": undefined,
   },
   "t": 2,
   "unique": true,

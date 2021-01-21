@@ -18,7 +18,6 @@ describe('split', () => {
         if (result == -1) throw new Error(`not found ${item}`)
       })
     }).not.toThrow()
-
     expect(bpt.toJSON()).toMatchSnapshot('B+Tree')
   })
 })
