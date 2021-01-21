@@ -1,0 +1,5 @@
+N 200000 T 500
+insert took 2726.368425
+find took 0.001533615 ms per one
+no issues found
+remove all item one by one took 0.05914251566 ms per one
