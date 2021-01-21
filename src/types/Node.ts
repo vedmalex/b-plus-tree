@@ -14,8 +14,8 @@ export function addSibling(
 ) {
   const right = order
   const left = order == 'left' ? 'right' : 'left'
+  b[right] = a[right]
   if (a[right]) {
-    b[right] = a[right]
     b[right][left] = b
   }
   a[right] = b
@@ -27,8 +27,8 @@ export function removeSibling(a: Chainable, order: 'right' | 'left') {
   const left = order == 'left' ? 'right' : 'left'
   if (a[right]) {
     const b = a[right]
+    a[right] = b[right]
     if (b[right]) {
-      a[right] = b[right]
       b[right][left] = a
     }
     b[left] = undefined
@@ -42,11 +42,36 @@ export enum VertexColor {
   red = 3,
 }
 
+const left = new Map<number, Node>()
+const right = new Map<number, Node>()
+
 const rules: Array<Rule<Node>> = [
+  // ...Rule.createProperty<Node>({
+  //   field: 'left',
+  //   method: 'set',
+  //   run: (node) => {
+  //     if (!node.left) debugger
+  //     left.set(node.id, node.left)
+  //   },
+  // }),
+  // ...Rule.createProperty<Node>({
+  //   field: 'right',
+  //   method: 'set',
+  //   run: (node) => {
+  //     if (!node.right) debugger
+  //     right.set(node.id, node.right)
+  //   },
+  // }),
   ...Rule.createSetter<Node>({
     field: 'keys',
     condition: (obj: Node) => !obj.leaf,
     run: (root: Node) => root.children.slice(1).map((c) => c.min),
+  }),
+  ...Rule.createSetter<Node>({
+    field: 'isFull',
+    subscribesTo: ['size'],
+    run: (node) =>
+      (node.leaf ? node.keys.length : node.children.length) > node.t * 2,
   }),
   ...Rule.createSetter<Node>({
     field: 'size',
@@ -100,19 +125,20 @@ export const ruleRunner = new RuleRunner<Node>(rules)
 
 let node = 0
 export class Node extends Chainable {
-  static createLeaf() {
-    return new Node(true)
+  static createLeaf(t: number) {
+    return ruleRunner.create(new Node(true, t))
   }
-  static createNode() {
-    return new Node(false)
+  static createNode(t: number) {
+    return ruleRunner.create(new Node(false, t))
   }
-  static createRootFrom(...node: Array<Node>) {
-    const root = Node.createNode()
+  static createRootFrom(t: number, ...node: Array<Node>) {
+    const root = Node.createNode(t)
     root.insertMany(...node)
     root.updateStatics()
     return root
   }
   id = node++
+  t: number
   leaf: boolean // является ли узел листом
   key_num: number // количество ключей узла
   size: number // значимый размер узла
@@ -126,7 +152,7 @@ export class Node extends Chainable {
   max: ValueType
   isFull: boolean
   isEmpty: boolean
-  private constructor(leaf: boolean) {
+  private constructor(leaf: boolean, t: number) {
     super()
     if (leaf == undefined) throw new Error('leaf type expected')
     this.leaf = leaf
@@ -142,6 +168,7 @@ export class Node extends Chainable {
     this.isEmpty = true
     this.min = undefined
     this.max = undefined
+    this.t = t
   }
 
   insertMany(...items: (Node | [ValueType, any])[]) {
@@ -181,8 +208,8 @@ export class Node extends Chainable {
       const pos = this.children.indexOf(item)
       this.children.splice(pos, 1)
       item.parent = undefined
-      item.removeSiblingAtLeft()
-      item.removeSiblingAtRight()
+      item.right?.removeSiblingAtLeft()
+      item.left?.removeSiblingAtRight()
       this.updateStatics()
       return item
     } else {
@@ -216,23 +243,25 @@ export class Node extends Chainable {
     if (this.leaf) {
       return {
         id: this.id,
+        leaf: this.leaf,
         keys: [...this.keys].map((i) => (typeof i == 'number' ? i : 'empty')),
         key_num: this.key_num,
         min: this.min,
         max: this.max,
         pointers: this.pointers,
-        // left: this.left?.creation_order,
-        // right: this.right?.creation_order,
+        left: this.left?.id,
+        right: this.right?.id,
       }
     } else {
       return {
         id: this.id,
+        leaf: this.leaf,
         keys: [...this.keys].map((i) => (typeof i == 'number' ? i : 'empty')),
         key_num: this.key_num,
         min: this.min,
         max: this.max,
-        // left: this.left?.creation_order,
-        // right: this.right?.creation_order,
+        left: this.left?.id,
+        right: this.right?.id,
         children: this.children.map((c) => c.toJSON()),
       }
     }

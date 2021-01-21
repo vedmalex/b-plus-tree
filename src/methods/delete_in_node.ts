@@ -10,9 +10,7 @@ export function delete_in_node(this: BPlusTree, node: Node, key: ValueType) {
 
   node.remove(key)
   node.updateStatics()
-  // if (node.key_num < this.t - 1) {
   reflow.call(this, node)
-  // }
   node.commit()
   if (this.root.size == 1 && !this.root.leaf) {
     this.root = this.root.children[0]

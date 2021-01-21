@@ -10,7 +10,7 @@ export class BPlusTree {
   public root: Node // указатель на корень дерева
   public unique: boolean
   constructor(t: number, unique: boolean) {
-    this.root = Node.createLeaf()
+    this.root = Node.createLeaf(t)
     this.t = t
     this.unique = unique
   }
@@ -29,12 +29,6 @@ export class BPlusTree {
   max() {
     return this.root.max
   }
-  isNodeFull(node: Node) {
-    const res =
-      (node.leaf ? node.keys.length : node.children.length) > this.t * 2
-    node.isFull = res
-    return res
-  }
   toJSON() {
     return {
       t: this.t,
@@ -45,11 +39,13 @@ export class BPlusTree {
   print() {
     print(
       this.toJSON().root,
-      (node) =>
-        `${node.id} <${node.min ?? ''}:${node.max ?? ''}> ${JSON.stringify(
-          node.keys,
-        )}`,
-      (node) => node.children,
+      (node: Node) =>
+        `${node.leaf ? 'L' : 'N'}${node.id} <${node.min ?? ''}:${
+          node.max ?? ''
+        }> ${JSON.stringify(node.keys)} L:${node.leaf ? 'L' : 'N'}${
+          node.left ?? '-'
+        } R:${node.leaf ? 'L' : 'N'}${node.right ?? '-'}`,
+      (node: Node) => node.children,
     )
   }
 }

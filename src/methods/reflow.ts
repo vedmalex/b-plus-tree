@@ -92,12 +92,10 @@ export function reflow(this: BPlusTree, node: Node) {
       const right_sibling = node.right
       const left_sibling = node.left
       //1. слева есть откуда брать и количество элементов достаточно
-      // if ( left_sibling?.key_num > this.t - 1) {
       if (canBorrowLeft.call(this, node)) {
         borrowLeft.call(this, node)
       }
       // 2. крайний справа элемент есть и в нем достаточно элементов для займа
-      // else if (right_sibling?.key_num > this.t - 1) {
       else if (canBorrowRight.call(this, node)) {
         borrowRight.call(this, node)
       }
@@ -117,7 +115,7 @@ export function reflow(this: BPlusTree, node: Node) {
             node.updateStatics()
             left_sibling.updateStatics()
           }
-          // node.removeSiblingAtLeft()
+          left_sibling.removeSiblingAtRight()
           const parent = node.parent
           if (parent) {
             parent.remove(node)
@@ -125,7 +123,6 @@ export function reflow(this: BPlusTree, node: Node) {
           node.commit()
           reflow.call(this, parent)
           reflow.call(this, left_sibling.parent)
-          // delete_in_node.call(this, left_sibling.parent, node.min) // Удаляем разделительный ключ в отце
         } else if (right_sibling) {
           while (!node.isEmpty) {
             const item = node.remove(node.min)
@@ -133,7 +130,7 @@ export function reflow(this: BPlusTree, node: Node) {
             node.updateStatics()
             right_sibling.updateStatics()
           }
-          // node.removeSiblingAtRight()
+          right_sibling.removeSiblingAtLeft()
           const parent = node.parent
           if (parent) {
             parent.remove(node)
@@ -141,9 +138,10 @@ export function reflow(this: BPlusTree, node: Node) {
           node.commit()
           reflow.call(this, parent)
           reflow.call(this, right_sibling.parent)
-          // delete_in_node.call(this, right_sibling.parent, right_sibling.min) // Удаляем разделительный ключ в отце
         } else if (node.isEmpty) {
           const parent = node.parent
+          node.right?.removeSiblingAtLeft()
+          node.left?.removeSiblingAtRight()
           if (parent) {
             parent.remove(node)
           }

@@ -6,7 +6,7 @@ import { reflow } from './reflow'
 
 export function split(this: BPlusTree, node: Node) {
   //Создаем новый узел
-  let new_node = node.leaf ? Node.createLeaf() : Node.createNode()
+  let new_node = node.leaf ? Node.createLeaf(this.t) : Node.createNode(this.t)
   // Перенаправляем right и left указатели
   node.addSiblingAtRight(new_node)
 
@@ -24,13 +24,12 @@ export function split(this: BPlusTree, node: Node) {
   new_node.updateStatics()
 
   if (node == this.root) {
-    this.root = Node.createRootFrom(node, new_node)
+    this.root = Node.createRootFrom(this.t, node, new_node)
   } else {
     const parent = node.parent
     parent.insert(new_node)
-    reflow.call(this, new_node)
-    // if (parent.size >= this.t) {
-    if (parent.size >= 2 * this.t) {
+    // reflow.call(this, new_node)
+    if (parent.size >= this.t * 2) {
       split.call(this, parent)
     }
   }
