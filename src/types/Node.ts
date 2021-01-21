@@ -82,6 +82,7 @@ const rules: Array<Rule<Node>> = [
     run: (obj: Node) => {
       const child = obj.children.pop()
       const parent = obj.parent
+      parent.remove(obj)
       parent.insert(child)
       obj.commit()
       parent.commit()

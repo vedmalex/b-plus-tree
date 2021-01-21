@@ -58,13 +58,15 @@ if(issues.length > 0){
   console.log('no issues found')
 }
 
+bpt.print()
+
 let result
 do {
-  bpt.print()
   let min
   min = bpt.min()
-  console.log(min)
+  console.log(`\nremove ${min}`)
   result = bpt.remove(min)
   const block = bpt.find(min)
   console.log(block.keys.indexOf(min))
+  bpt.print()
 } while(result)

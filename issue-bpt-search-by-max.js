@@ -4,7 +4,7 @@ var BPlusTree = require('./dist').BPlusTree
 var RBTree = require('bintrees').RBTree
 
 const comparator = (a, b) => a[0] - b[0]
-const N = 15
+const N = 20
 const MAX_RAND = 10000000
 const SAMPLES = 100
 const T = 2
@@ -27,8 +27,9 @@ let ordered = [...arr].sort((a,b)=> a-b)
 const simple = arr.map(i => ordered.indexOf(i))
 console.log(simple)
 simple.forEach((i)=>{
-  // if(i==11) debugger;
+  bpt.print()
   bpt.insert(i, i)
+  console.log(`\ninsert ${i}`)
 })
 
 
@@ -58,13 +59,15 @@ if(issues.length > 0){
   console.log('no issues found')
 }
 
+bpt.print()
+
 let result
 do {
-  bpt.print()
   let max
   max = bpt.max()
-  console.log(max)
+  console.log(`\nremove ${max}`)
   result = bpt.remove(max)
   const block = bpt.find(max)
   console.log(block.keys.indexOf(max))
+  bpt.print()
 } while(result)

@@ -48,13 +48,15 @@ if(issues.length > 0){
   console.log('no issues found')
 }
 
+bpt.print()
+
 let result
 do {
-  bpt.print()
   let cur
   cur = simple.shift()
-  console.log(cur)
+  console.log(`\nremove ${cur}`)
   result = bpt.remove(cur)
   const block = bpt.find(cur)
   console.log(block.keys.indexOf(cur))
+  bpt.print()
 } while(simple.length > 0)

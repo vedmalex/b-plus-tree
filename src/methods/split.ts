@@ -2,6 +2,7 @@ import { BPlusTree } from '../types/BPlusTree'
 import { Node } from '../types/Node'
 import { findPosInsert } from './findPosInsert'
 import { ValueType } from '../btree'
+import { reflow } from './reflow'
 
 export function split(this: BPlusTree, node: Node) {
   //Создаем новый узел
@@ -27,8 +28,10 @@ export function split(this: BPlusTree, node: Node) {
   } else {
     const parent = node.parent
     parent.insert(new_node)
+    // if (parent.size >= this.t) {
     if (parent.size == 2 * this.t) {
       split.call(this, parent)
+      reflow.call(this)
     }
   }
   // фиксируем размеры массива освобождая память
