@@ -9,7 +9,7 @@ const N = 20
 // const SAMPLES = 1000
 const T = 2
 
-const itemsToGet = JSON.parse(fs.readFileSync('test_data.json').toString())
+const itemsToGet = JSON.parse(fs.readFileSync('dev/test_data.json').toString())
 
 console.log(`N ${N} T ${T}`)
 

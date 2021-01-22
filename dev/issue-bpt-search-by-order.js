@@ -9,7 +9,7 @@ const T = 500
 
 const timer = new Timer()
 
-const itemsToGet = JSON.parse(fs.readFileSync('test_data.json').toString())
+const itemsToGet = JSON.parse(fs.readFileSync('dev/test_data.json').toString())
 
 console.log(`N ${N} T ${T}`)
 let

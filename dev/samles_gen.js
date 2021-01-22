@@ -24,7 +24,7 @@ const randomize = (list, )=>{
   return result;
 }
 
-fs.writeFileSync('test_data.json',
+fs.writeFileSync('dev/test_data.json',
 JSON.stringify(randomize(result)));
 
 
