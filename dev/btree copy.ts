@@ -1,5 +1,5 @@
-import { BPlusTree } from './types/BPlusTree'
-import Timer from './utils/time'
+import { BPlusTree } from '../src/types/BPlusTree'
+import Timer from '../src/utils/time'
 
 export type ValueType = number | string | boolean
 const MAX_NUM = 1000000

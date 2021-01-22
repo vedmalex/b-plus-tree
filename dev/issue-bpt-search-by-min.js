@@ -1,6 +1,6 @@
 const fs = require('fs')
 const print = require('print-tree')
-var BPlusTree = require('./dist').BPlusTree
+var BPlusTree = require('../dist').BPlusTree
 var RBTree = require('bintrees').RBTree
 
 const comparator = (a, b) => a[0] - b[0]

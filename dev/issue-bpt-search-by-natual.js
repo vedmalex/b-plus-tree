@@ -1,37 +1,35 @@
 const fs = require('fs')
 const print = require('print-tree')
-var BPlusTree = require('./dist').BPlusTree
+var BPlusTree = require('../dist').BPlusTree
 var RBTree = require('bintrees').RBTree
 
 const comparator = (a, b) => a[0] - b[0]
 const N = 20
-const MAX_RAND = 10000000
-const SAMPLES = 100
-const T = 1
+// const MAX_RAND = 10000000
+// const SAMPLES = 1000
+const T = 2
 
 const itemsToGet = JSON.parse(fs.readFileSync('test_data.json').toString())
 
-console.log(`N ${N} MAX_RAND ${MAX_RAND} SAMPLES ${SAMPLES} T ${T}`)
+console.log(`N ${N} T ${T}`)
+
+// const simple = [0, 9, 3, 14, 12, 13, 6, 10, 2, 1, 4, 8, 5, 11, 7]
 
 let
   arr=[],
-  bpt = new BPlusTree(T, true),
-  rbTree = new RBTree(comparator)
+  bpt = new BPlusTree(T, true)
 for (let i = 0; i < N; i++) {
-  rbTree.insert([itemsToGet[i], i])
   arr.push(itemsToGet[i])
 }
-// console.log(arr)
 let ordered = [...arr].sort((a,b)=> a-b)
 // console.log(ordered)
 const simple = arr.map(i => ordered.indexOf(i))
-console.log(simple)
+
 simple.forEach((i)=>{
   bpt.print()
   bpt.insert(i, i)
   console.log(`\ninsert ${i}`)
 })
-
 
 fs.writeFileSync('bpt.json', JSON.stringify(bpt.toJSON()))
 
@@ -44,7 +42,7 @@ do {
 const issues = []
 simple.forEach((i)=>{
   let res = bpt.find(i)
-  if(res.keys.indexOf(i) == -1){
+  if(res.keys.indexOf(i) == -1) {
     let res = bpt.find(i)
     issues.push(i)
     console.log(i, res.left?.keys,res.keys, res.right?.keys)
@@ -63,11 +61,11 @@ bpt.print()
 
 let result
 do {
-  let max
-  max = bpt.max()
-  console.log(`\nremove ${max}`)
-  result = bpt.remove(max)
-  const block = bpt.find(max)
-  console.log(block.keys.indexOf(max))
+  let cur
+  cur = simple.shift()
+  console.log(`\nremove ${cur}`)
+  result = bpt.remove(cur)
+  const block = bpt.find(cur)
+  console.log(block.keys.indexOf(cur))
   bpt.print()
-} while(result)
+} while(simple.length > 0)

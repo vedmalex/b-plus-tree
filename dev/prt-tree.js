@@ -1,4 +1,4 @@
-const print = require('print-tree')
+Íconst print = require('print-tree')
 const fs = require('fs')
 
 const tree = JSON.parse(fs.readFileSync('bpt.json').toString())

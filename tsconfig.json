@@ -25,6 +25,6 @@
     "experimentalDecorators": true,
     "moduleResolution": "node"
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "dev/btree.ts", "dev/btree copy.ts"],
   "exclude": ["**/__tests__", "**/__mocks__"]
 }

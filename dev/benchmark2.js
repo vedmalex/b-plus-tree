@@ -1,7 +1,7 @@
 const fs = require('fs')
 var Benchmark = require('benchmark')
-var BPlusTree = require('./dist').BPlusTree
-var findIndex = require('./dist/methods/findIndex').findIndex
+var BPlusTree = require('../dist').BPlusTree
+var findIndex = require('../dist/methods/findIndex').findIndex
 var RBTree = require('bintrees').RBTree
 const { indexOf } = require('benchmark')
 var linear = new Benchmark.Suite('Linear search by one element')

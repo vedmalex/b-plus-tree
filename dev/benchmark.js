@@ -1,5 +1,5 @@
 var Benchmark = require('benchmark');
-var BPlusTree = require('./dist').BPlusTree;
+var BPlusTree = require('../dist').BPlusTree;
 var RBTree = require('bintrees').RBTree;
 var suite = new Benchmark.Suite;
 
