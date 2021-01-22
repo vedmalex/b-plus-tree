@@ -3,8 +3,7 @@ import { min } from '../methods/min'
 import { max } from '../methods/max'
 import { findPosInsert } from '../methods/findPosInsert'
 import { findFast } from '../methods/findFast'
-import { RuleRunner } from './RuleRunner'
-import { Rule } from './Rule'
+import { RuleRunner, Rule } from 'dymanic-rule-runner'
 import { Chainable } from './Chainable'
 
 export function addSibling(

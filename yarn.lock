@@ -1282,6 +1282,13 @@ domexception@^2.0.1:
   dependencies:
     webidl-conversions "^5.0.0"
 
+dymanic-rule-runner@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/dymanic-rule-runner/-/dymanic-rule-runner-1.0.0.tgz#7a05093c5114236227c2d0201deddfd4a84f93f5"
+  integrity sha512-5X/WvdygruFqv9K38UrzNjzEaxz6ZrRUkc6GgZQ1R9hCvlbUSxRflUE6OnlLpuOyA+GQ/yGmxcRm+0pGxlqoBg==
+  dependencies:
+    isarrow "^1.0.0"
+
 ecc-jsbn@~0.1.1:
   version "0.1.2"
   resolved "https://registry.yarnpkg.com/ecc-jsbn/-/ecc-jsbn-0.1.2.tgz#3a83a904e54353287874c564b7549386849a98c9"
