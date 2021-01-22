@@ -65,6 +65,9 @@ bpt.print()
 const res = bpt.findAll(simple[3], 2, 6)
 console.log(res)
 
+const get = bpt.getAll(10, 6)
+console.log(get)
+
 let result
 do {
   let cur

@@ -14,6 +14,7 @@ export function getItems(node: Node, key: ValueType): Array<[ValueType, any]> {
     })
     return lres.map((i) => [i, node.pointers[i]])
   } else {
+    // нужна ли эта ветка кода???
     const lres = []
     const keys = [...node.keys]
     const pos = findPosInsert(keys, key)
@@ -38,14 +39,18 @@ export class BPlusTree {
     this.t = t
     this.unique = unique
   }
-
-  findAll(key: ValueType, skip: number = 0, take: number = -1) {
-    let f = this.find(key)
+  backward(
+    getFirst: () => Node,
+    getData: (node: Node) => Array<[ValueType, any]>,
+    skip: number = 0,
+    take: number = -1,
+  ) {
+    let f = getFirst()
     let result = []
     let skipped = skip
     let taken = take
     do {
-      const lres = getItems(f, key)
+      const lres = getData(f)
       if (lres.length > 0) {
         const resLen = lres.length
         let lskip = skipped
@@ -93,6 +98,24 @@ export class BPlusTree {
     } while (f != null)
     return result
   }
+
+  findAll(key: ValueType, skip: number = 0, take: number = -1) {
+    return this.backward(
+      () => this.find(key),
+      (node) => getItems(node, key),
+      skip,
+      take,
+    )
+  }
+  getAll(skip: number = 0, take: number = -1) {
+    return this.backward(
+      () => this.find(this.max()),
+      (node) => node.keys.map((k, i) => [k, node.pointers[i]]),
+      skip,
+      take,
+    )
+  }
+
   find(key: ValueType): ReturnType<typeof find_key> {
     return find_key.call(this, key)
   }
