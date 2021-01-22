@@ -1,15 +1,16 @@
 const fs = require('fs')
 const print = require('print-tree')
-var BPlusTree = require('./dist').BPlusTree
+var BPlusTree = require('../dist').BPlusTree
 var RBTree = require('bintrees').RBTree
 
 const comparator = (a, b) => a[0] - b[0]
-const N = 20
+const N = 10
 // const MAX_RAND = 10000000
 // const SAMPLES = 1000
-const T = 2
+const T = 4
+const dupes = 10
 
-const itemsToGet = JSON.parse(fs.readFileSync('test_data.json').toString())
+const itemsToGet = JSON.parse(fs.readFileSync('dev/test_data.json').toString())
 
 console.log(`N ${N} T ${T}`)
 
@@ -17,7 +18,7 @@ console.log(`N ${N} T ${T}`)
 
 let
   arr=[],
-  bpt = new BPlusTree(T, true)
+  bpt = new BPlusTree(T, false)
 for (let i = 0; i < N; i++) {
   arr.push(itemsToGet[i])
 }
@@ -27,7 +28,9 @@ const simple = arr.map(i => ordered.indexOf(i))
 
 simple.forEach((i)=>{
   bpt.print()
-  bpt.insert(i, i)
+  for(j = 0; j< dupes; j++) {
+    bpt.insert(i, `${i}-${j}`)
+  }
   console.log(`\ninsert ${i}`)
 })
 
@@ -59,11 +62,15 @@ if(issues.length > 0){
 
 bpt.print()
 
+const res = bpt.findAll(simple[3], 2, 6)
+console.log(res)
+
 let result
 do {
   let cur
   cur = simple.shift()
   console.log(`\nremove ${cur}`)
+
   result = bpt.remove(cur)
   const block = bpt.find(cur)
   console.log(block.keys.indexOf(cur))

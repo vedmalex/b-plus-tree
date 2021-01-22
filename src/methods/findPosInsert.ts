@@ -1,4 +1,3 @@
-import { ValueType } from '../btree'
 /**
  * search index of possible location item
  * @param a ordered array
