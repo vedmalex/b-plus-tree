@@ -4,7 +4,7 @@ import { split } from './split'
 import { reflow } from './reflow'
 
 export function insert(this: BPlusTree, key: ValueType, value: any): boolean {
-  let leaf = this.find(key)
+  let leaf = this.find_last_node(key)
   if (leaf.keys.indexOf(key) > -1) {
     if (this.unique) return false
   }

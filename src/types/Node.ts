@@ -1,7 +1,7 @@
 import { ValueType } from '../btree'
 import { min } from '../methods/min'
 import { max } from '../methods/max'
-import { findPosInsert } from '../methods/findPosInsert'
+import { findLastPosToInsert } from '../methods/findPosInsert'
 import { findFast } from '../methods/findFast'
 import { RuleRunner, Rule } from 'dymanic-rule-runner'
 import { Chainable } from './Chainable'
@@ -179,8 +179,11 @@ export class Node extends Chainable {
       if (!this.leaf) {
         if (!item.isEmpty) {
           item.parent = this
-          const pos = findPosInsert<Node>(this.children, item, (key, node) =>
-            key.min > node.min ? 1 : key.min == node.min ? 0 : -1,
+          const pos = findLastPosToInsert<Node>(
+            this.children,
+            item,
+            (key, node) =>
+              key.min > node.min ? 1 : key.min == node.min ? 0 : -1,
           )
           this.children.splice(pos, 0, item)
         } else {
@@ -192,7 +195,7 @@ export class Node extends Chainable {
     } else {
       if (this.leaf) {
         const [key, value] = item
-        const pos = findPosInsert(this.keys, item[0])
+        const pos = findLastPosToInsert(this.keys, item[0])
         this.keys.splice(pos, 0, key)
         this.pointers.splice(pos, 0, value)
       } else {
@@ -219,7 +222,7 @@ export class Node extends Chainable {
         this.updateStatics()
         return res
       } else {
-        const pos = findPosInsert(this.keys, item)
+        const pos = findLastPosToInsert(this.keys, item)
         const res = this.children.splice(pos, 1)[0]
         res.parent = undefined
         this.updateStatics()

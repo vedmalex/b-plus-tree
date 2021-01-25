@@ -3,32 +3,12 @@ import { Node } from './Node'
 import { ValueType } from '../btree'
 import { remove } from '../methods/remove'
 import { insert } from '../methods/insert'
-import { find_key } from '../methods/find_key'
-import { findPosInsert } from '../methods/findPosInsert'
-
-export function getItems(node: Node, key: ValueType): Array<[ValueType, any]> {
-  if (node.leaf) {
-    const lres = []
-    node.keys.forEach((k, i) => {
-      if (k == key) lres.push(i)
-    })
-    return lres.map((i) => [i, node.pointers[i]])
-  } else {
-    // нужна ли эта ветка кода???
-    const lres = []
-    const keys = [...node.keys]
-    const pos = findPosInsert(keys, key)
-    for (let i = pos; i >= 0; i--) {
-      const res = getItems(node.children[i], key)
-      if (res.length > 0) {
-        lres.push(...res)
-      } else {
-        break
-      }
-    }
-    return lres
-  }
-}
+import { find_key, find_first_key } from '../methods/find_key'
+import { findLastPosToInsert } from '../methods/findPosInsert'
+import { walkthrought } from './backward'
+import { count } from './count'
+import { size } from './size'
+import { forward } from './forward'
 
 export class BPlusTree {
   public t: number // минимальная степень дерева
@@ -39,85 +19,49 @@ export class BPlusTree {
     this.t = t
     this.unique = unique
   }
-  backward(
-    getFirst: () => Node,
-    getData: (node: Node) => Array<[ValueType, any]>,
-    skip: number = 0,
-    take: number = -1,
+
+  find(
+    key: ValueType,
+    {
+      skip = 0,
+      take = -1,
+      forward = true,
+    }: { skip: number; take: number; forward: boolean },
   ) {
-    let f = getFirst()
-    let result = []
-    let skipped = skip
-    let taken = take
-    do {
-      const lres = getData(f)
-      if (lres.length > 0) {
-        const resLen = lres.length
-        let lskip = skipped
-        if (skipped > 0) {
-          lskip -= resLen
-        }
-        if (lskip <= 0) {
-          if (taken == -1) {
-            // или берем все или только часть вырезаем
-            if (skipped == 0) {
-              result.unshift(...lres)
-            } else {
-              // вырезаем от начального элемента
-              result.unshift(...lres.slice(skipped))
-              // следующий слок читаем сначала
-              skipped = 0
-            }
-          } else {
-            // if (skipped > 0)
-            if (skipped + taken > 0 && skipped + taken < resLen) {
-              result.unshift(...lres.slice(skipped, skipped + taken))
-              taken = 0
-              break
-            } else if (skipped + taken > 0 && skipped + taken >= resLen) {
-              if (skipped == 0) {
-                result.unshift(...lres)
-              } else {
-                result.unshift(...lres.slice(skipped))
-              }
-              taken -= resLen - skipped
-            } else {
-              // skipped + taken == 0
-              // мы полуили все что нужно
-              // и тут оказались случайно
-              break
-            }
-          }
-        } else {
-          skipped = lskip
-        }
-        f = f.left
-      } else {
-        break
-      }
-    } while (f != null)
-    return result
+    return walkthrought({ tree: this, key, skip, take, forward })
   }
 
-  findAll(key: ValueType, skip: number = 0, take: number = -1) {
-    return this.backward(
-      () => this.find(key),
-      (node) => getItems(node, key),
-      skip,
-      take,
-    )
-  }
-  getAll(skip: number = 0, take: number = -1) {
-    return this.backward(
-      () => this.find(this.max()),
-      (node) => node.keys.map((k, i) => [k, node.pointers[i]]),
-      skip,
-      take,
-    )
+  getAll({
+    skip = 0,
+    take = -1,
+    forward = true,
+  }: {
+    skip: number
+    take: number
+    forward: boolean
+  }) {
+    return walkthrought({ tree: this, skip, take, forward })
   }
 
-  find(key: ValueType): ReturnType<typeof find_key> {
+  find_last_node(key: ValueType): ReturnType<typeof find_key> {
     return find_key.call(this, key)
+  }
+
+  find_first_node(key: ValueType): ReturnType<typeof find_key> {
+    return find_first_key.call(this, key)
+  }
+
+  findFirst(key: ValueType) {}
+
+  findLast(key: ValueType) {
+    return find_key.call(this, key)
+  }
+
+  count(key: ValueType) {
+    return count(key, this.root)
+  }
+  size() {
+    return size(this.root)
   }
   insert(key: ValueType, value: any): boolean {
     return insert.call(this, key, value)

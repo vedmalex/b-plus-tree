@@ -1,5 +1,5 @@
 import 'jest'
-import { findPosInsert } from '../findPosInsert'
+import { findLastPosToInsert, findFirstPosToInsert } from '../findPosInsert'
 
 const orderedArray = [
   97,
@@ -21,16 +21,35 @@ const orderedArray = [
 
 describe('findPosInsert search position', () => {
   it('looking for next position to insert item', () => {
-    expect(findPosInsert(orderedArray, 0)).toBe(0)
-    expect(findPosInsert(orderedArray, 100)).toBe(1)
-    expect(findPosInsert(orderedArray, 8310102)).toBe(
+    expect(findLastPosToInsert(orderedArray, 0)).toBe(0)
+    expect(findLastPosToInsert(orderedArray, 100)).toBe(1)
+    expect(findLastPosToInsert(orderedArray, 8310102)).toBe(
       orderedArray.indexOf(8310101) + 1,
     )
   })
   it('insert position', () => {
-    expect(findPosInsert([0], 1)).toBe(1)
-    expect(findPosInsert([0, 2], 1)).toBe(1)
-    expect(findPosInsert([0, 1], 1)).toBe(2)
-    expect(findPosInsert([0, 6, 9, 13], 9)).toBe(3)
+    expect(findLastPosToInsert([0], 1)).toBe(1)
+    expect(findLastPosToInsert([0, 2], 1)).toBe(1)
+    expect(findLastPosToInsert([0, 1], 1)).toBe(2)
+    expect(findLastPosToInsert([0, 6, 9, 13], 9)).toBe(3)
+  })
+  it('insert position', () => {
+    expect(findLastPosToInsert([0, 0, 0, 0], 1)).toBe(4)
+    expect(findLastPosToInsert([0, 1, 1, 3], 1)).toBe(3)
+    expect(findLastPosToInsert([1, 1, 1, 1], 1)).toBe(4)
+    expect(findLastPosToInsert([1, 2, 2, 2], 1)).toBe(1)
+    expect(findLastPosToInsert([-1, 0, 0, 1], 1)).toBe(4)
+    expect(findLastPosToInsert([-1, 0, 0, 1, 1, 1, 1, 1, 1, 2], 1)).toBe(9)
+  })
+  it('insert position', () => {
+    expect(findFirstPosToInsert([1, 3, 5, 7], 9)).toBe(4)
+    expect(findFirstPosToInsert([8, 8, 9, 9], 9)).toBe(2)
+    expect(findFirstPosToInsert([0, 0, 0, 0], 1)).toBe(4)
+    expect(findFirstPosToInsert([0, 1, 1, 3], 1)).toBe(1)
+    expect(findFirstPosToInsert([1, 1, 1, 1], 1)).toBe(0)
+    expect(findFirstPosToInsert([1, 2, 2, 2], 1)).toBe(0)
+    expect(findFirstPosToInsert([-1, 0, 0, 1], 1)).toBe(3)
+    expect(findFirstPosToInsert([-1, 0, 0, 1, 1, 1, 1, 1, 1, 2], 1)).toBe(3)
+    expect(findFirstPosToInsert([-1, 0, 0, 2, 2, 2, 2, 2, 2, 2], 1)).toBe(3)
   })
 })
