@@ -27,12 +27,12 @@ let ordered = [...arr].sort((a,b)=> a-b)
 const simple = arr.map(i => ordered.indexOf(i))
 
 simple.forEach((i)=>{
-  // bpt.print()
+  console.log(`\ninsert ${i}`)
   for(j = 0; j< dupes; j++) {
     bpt.insert(i, `${i}-${j}`)
   }
+  // bpt.print()
   console.log(bpt.find(i))
-  console.log(`\ninsert ${i}`)
 })
 console.log(bpt.size())
 
@@ -62,6 +62,6 @@ do {
 
   result = bpt.remove(cur)
   const find = bpt.find(cur)
-  console.log(find)
+  console.log(find.length)
 } while(simple.length > 0)
 bpt.print()

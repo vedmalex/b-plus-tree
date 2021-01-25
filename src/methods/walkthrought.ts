@@ -100,7 +100,8 @@ export function walkthrought({
       node = forward ? node.right : node.left
     } else {
       // первый элемент не найден в дереве
-      break
+      node = forward ? node.right : node.left
+      // break
     }
   } while (node != null)
   return result
