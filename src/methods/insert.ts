@@ -4,15 +4,15 @@ import { split } from './split'
 import { reflow } from './reflow'
 import { find_last_node } from './find_last_node'
 
-export function insert(this: BPlusTree, key: ValueType, value: any): boolean {
-  let leaf = find_last_node(this, key)
+export function insert(tree: BPlusTree, key: ValueType, value: any): boolean {
+  let leaf = find_last_node(tree, key)
   if (leaf.keys.indexOf(key) > -1) {
-    if (this.unique) return false
+    if (tree.unique) return false
   }
   leaf.insert([key, value])
-  reflow.call(this, leaf)
+  reflow(tree, leaf)
   if (leaf.isFull) {
-    split.call(this, leaf) // Разбиваем узел
+    split(tree, leaf) // Разбиваем узел
   }
   return true
 }

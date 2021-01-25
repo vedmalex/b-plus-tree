@@ -5,18 +5,18 @@ import { borrowRight } from './borrowRight'
 import { canBorrowLeft } from './canBorrowLeft'
 import { canBorrowRight } from './canBorrowRight'
 
-export function reflow(this: BPlusTree, node: Node) {
+export function reflow(tree: BPlusTree, node: Node) {
   if (node) {
-    if (node.key_num < this.t - 1 || node.isEmpty) {
+    if (node.key_num < tree.t - 1 || node.isEmpty) {
       const right_sibling = node.right
       const left_sibling = node.left
       //1. слева есть откуда брать и количество элементов достаточно
-      if (canBorrowLeft.call(this, node)) {
-        borrowLeft.call(this, node)
+      if (canBorrowLeft(tree, node)) {
+        borrowLeft(node)
       }
       // 2. крайний справа элемент есть и в нем достаточно элементов для займа
-      else if (canBorrowRight.call(this, node)) {
-        borrowRight.call(this, node)
+      else if (canBorrowRight(tree, node)) {
+        borrowRight(node)
       }
 
       // занять не у кого
@@ -40,8 +40,8 @@ export function reflow(this: BPlusTree, node: Node) {
             parent.remove(node)
           }
           node.commit()
-          reflow.call(this, parent)
-          reflow.call(this, left_sibling.parent)
+          reflow(tree, parent)
+          reflow(tree, left_sibling.parent)
         } else if (right_sibling) {
           while (!node.isEmpty) {
             const item = node.remove(node.min)
@@ -55,8 +55,8 @@ export function reflow(this: BPlusTree, node: Node) {
             parent.remove(node)
           }
           node.commit()
-          reflow.call(this, parent)
-          reflow.call(this, right_sibling.parent)
+          reflow(tree, parent)
+          reflow(tree, right_sibling.parent)
         } else if (node.isEmpty) {
           const parent = node.parent
           node.right?.removeSiblingAtLeft()
@@ -64,7 +64,7 @@ export function reflow(this: BPlusTree, node: Node) {
           if (parent) {
             parent.remove(node)
           }
-          reflow.call(this, parent)
+          reflow(tree, parent)
           node.commit()
         }
       }

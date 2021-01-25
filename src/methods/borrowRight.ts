@@ -1,7 +1,7 @@
 import { BPlusTree } from '../types/BPlusTree'
 import { Node } from '../types/Node'
 
-export function borrowRight(this: BPlusTree, node: Node, count: number = 1) {
+export function borrowRight(node: Node, count: number = 1) {
   let cur = node
   while (cur) {
     const right_sibling = node.right

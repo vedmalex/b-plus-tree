@@ -47,7 +47,7 @@ bpt.print()
 const res = bpt.find(simple[3], {skip:2, take:6})
 console.log(res)
 
-const get = bpt.getAll({skip:17, take:20})
+const get = bpt.find(undefined,{skip:17, take:20})
 console.log(get)
 console.log(bpt.count(simple[3]))
 console.log(bpt.size())

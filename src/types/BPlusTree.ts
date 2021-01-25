@@ -43,10 +43,10 @@ export class BPlusTree {
     return size(this.root)
   }
   insert(key: ValueType, value: any): boolean {
-    return insert.call(this, key, value)
+    return insert(this, key, value)
   }
   remove(key: ValueType): boolean {
-    return remove.call(this, key)
+    return remove(this, key)
   }
   min() {
     return this.root.min
