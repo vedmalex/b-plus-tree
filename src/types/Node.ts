@@ -1,7 +1,7 @@
 import { ValueType } from '../btree'
 import { min } from '../methods/min'
 import { max } from '../methods/max'
-import { findLastPosToInsert } from '../methods/findPosInsert'
+import { findLastPosToInsert } from '../methods/findLastPosToInsert'
 import { findFast } from '../methods/findFast'
 import { RuleRunner, Rule } from 'dymanic-rule-runner'
 import { Chainable } from './Chainable'

@@ -3,12 +3,9 @@ import { Node } from './Node'
 import { ValueType } from '../btree'
 import { remove } from '../methods/remove'
 import { insert } from '../methods/insert'
-import { find_key, find_first_key } from '../methods/find_key'
-import { findLastPosToInsert } from '../methods/findPosInsert'
-import { walkthrought } from './backward'
-import { count } from './count'
-import { size } from './size'
-import { forward } from './forward'
+import { walkthrought } from '../methods/walkthrought'
+import { count } from '../methods/count'
+import { size } from '../methods/size'
 
 export class BPlusTree {
   public t: number // минимальная степень дерева
@@ -21,40 +18,22 @@ export class BPlusTree {
   }
 
   find(
-    key: ValueType,
+    key?: ValueType,
     {
       skip = 0,
       take = -1,
       forward = true,
-    }: { skip: number; take: number; forward: boolean },
+    }: { skip?: number; take?: number; forward?: boolean } = {},
   ) {
     return walkthrought({ tree: this, key, skip, take, forward })
   }
 
-  getAll({
-    skip = 0,
-    take = -1,
-    forward = true,
-  }: {
-    skip: number
-    take: number
-    forward: boolean
-  }) {
-    return walkthrought({ tree: this, skip, take, forward })
+  findFirst(key: ValueType) {
+    return walkthrought({ tree: this, key, take: 1, forward: true })[0]
   }
-
-  find_last_node(key: ValueType): ReturnType<typeof find_key> {
-    return find_key.call(this, key)
-  }
-
-  find_first_node(key: ValueType): ReturnType<typeof find_key> {
-    return find_first_key.call(this, key)
-  }
-
-  findFirst(key: ValueType) {}
 
   findLast(key: ValueType) {
-    return find_key.call(this, key)
+    return walkthrought({ tree: this, key, take: 1, forward: false })[0]
   }
 
   count(key: ValueType) {

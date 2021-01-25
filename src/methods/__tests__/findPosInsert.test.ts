@@ -1,5 +1,8 @@
 import 'jest'
-import { findLastPosToInsert, findFirstPosToInsert } from '../findPosInsert'
+import {
+  findLastPosToInsert,
+  findFirstPosToInsert,
+} from '../findFirstPosToInsert'
 
 const orderedArray = [
   97,

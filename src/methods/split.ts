@@ -1,6 +1,6 @@
 import { BPlusTree } from '../types/BPlusTree'
 import { Node } from '../types/Node'
-import { findLastPosToInsert } from './findPosInsert'
+import { findLastPosToInsert } from './findLastPosToInsert'
 import { ValueType } from '../btree'
 import { reflow } from './reflow'
 

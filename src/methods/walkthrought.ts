@@ -1,33 +1,10 @@
-import { Node } from './Node'
+import { Node } from '../types/Node'
 import { ValueType } from '../btree'
-import { BPlusTree } from './BPlusTree'
+import { BPlusTree } from '../types/BPlusTree'
 import { getItems } from './getItems'
-
-function get_items_from_array({
-  array,
-  skip = 0,
-  take = -1,
-  forward = true,
-}: {
-  array: Array<any>
-  skip?: number
-  take?: number
-  forward?: boolean
-}) {
-  const result = []
-  if (take == -1) take = array.length - skip
-  if (forward) {
-    const start = skip
-    const end = skip + take
-    for (let i = start; i < end; i++) result.push(array[i])
-  } else {
-    const length = array.length
-    const start = length - skip - 1
-    const end = start - take
-    for (let i = start; i > end; i--) result.push(array[i])
-  }
-  return result
-}
+import { get_items_from_array } from './get_items_from_array'
+import { find_first_node } from './find_first_node'
+import { find_last_node } from './find_last_node'
 
 // сравнить reverse() и обход с конца и с начала
 export function walkthrought({
@@ -48,12 +25,12 @@ export function walkthrought({
     // если ключ поиска не задан
     node = forward
       ? // ищем первый элемент
-        tree.find_first_node(tree.min())
+        find_first_node(tree, tree.min())
       : // или последний
-        tree.find_last_node(tree.max())
+        find_last_node(tree, tree.max())
   } else {
     // ищем заданный элемент
-    node = forward ? tree.find_first_node(key) : tree.find_last_node(key)
+    node = forward ? find_first_node(tree, key) : find_last_node(tree, key)
   }
   let result = []
   let toBeSkipped = skip

@@ -1,90 +1,9 @@
 import { BPlusTree } from '../types/BPlusTree'
 import { Node } from '../types/Node'
-
-export function canBorrowLeft(this: BPlusTree, node: Node) {
-  let cur = node
-  while (cur) {
-    if (node.left?.key_num > this.t - 1 && node.left?.key_num > 1) {
-      return true
-    }
-    cur = cur.left
-  }
-  return false
-}
-export function canBorrowRight(this: BPlusTree, node: Node) {
-  let cur = node
-  while (cur) {
-    if (node.right?.key_num > this.t - 1 && node.right?.key_num > 1) {
-      return true
-    }
-    cur = cur.right
-  }
-  return false
-}
-
-export function borrowLeft(this: BPlusTree, node: Node, count: number = 1) {
-  let cur = node
-  while (cur) {
-    const left_sibling = node.left
-    for (let i = 0; i < count; i++) {
-      // занимаем крайний слева
-      const item = left_sibling.remove(left_sibling.max)
-      node.insert(item)
-      left_sibling.updateStatics()
-    }
-    node.commit()
-    if (left_sibling.isEmpty) {
-      cur = left_sibling
-    } else {
-      break
-    }
-  }
-}
-
-export function borrowLeftR(this: BPlusTree, node: Node) {
-  const left_sibling = node.left
-  // занимаем крайний слева
-  const item = left_sibling.remove(left_sibling.max)
-  node.insert(item)
-  node.updateStatics()
-  left_sibling.updateStatics()
-  if (left_sibling.isEmpty) {
-    borrowLeftR.call(this, left_sibling)
-  }
-  left_sibling.commit()
-}
-
-export function borrowRight(this: BPlusTree, node: Node, count: number = 1) {
-  let cur = node
-  while (cur) {
-    const right_sibling = node.right
-    for (let i = 0; i < count; i++) {
-      // занимаем крайний слева
-      const item = right_sibling.remove(right_sibling.min)
-      node.insert(item)
-      right_sibling.updateStatics()
-    }
-    node.commit()
-    if (right_sibling.isEmpty) {
-      cur = right_sibling
-    } else {
-      break
-    }
-  }
-}
-
-export function borrowRightR(this: BPlusTree, node: Node) {
-  const right_sibling = node.right
-  // Перемещаем минимальный из right_sibling ключ на последнюю позицию в tec
-  const item = right_sibling.remove(right_sibling.min)
-  node.insert(item)
-  node.updateStatics()
-  right_sibling.updateStatics()
-  if (right_sibling.isEmpty) {
-    borrowRightR.call(this, right_sibling)
-  }
-  right_sibling.commit()
-}
+import { borrowLeft } from './borrowLeft'
+import { borrowRight } from './borrowRight'
+import { canBorrowLeft } from './canBorrowLeft'
+import { canBorrowRight } from './canBorrowRight'
 
 export function reflow(this: BPlusTree, node: Node) {
   if (node) {

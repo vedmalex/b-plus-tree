@@ -1,4 +1,4 @@
-import { Node } from './Node'
+import { Node } from '../types/Node'
 
 export function size(node: Node) {
   let lres = 0

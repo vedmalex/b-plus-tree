@@ -1,18 +1,9 @@
 import { BPlusTree } from '../types/BPlusTree'
 import { ValueType } from '../btree'
-import { findLastPosToInsert, findFirstPosToInsert } from './findPosInsert'
+import { findFirstPosToInsert } from './findFirstPosToInsert'
 
-export function find_key(this: BPlusTree, key: ValueType) {
-  let cur = this.root
-  while (cur.leaf != true) {
-    let i = findLastPosToInsert(cur.keys, key)
-    cur = cur.children[i]
-  }
-  return cur
-}
-
-export function find_first_key(this: BPlusTree, key: ValueType) {
-  let cur = this.root
+export function find_first_node(tree: BPlusTree, key: ValueType) {
+  let cur = tree.root
   while (cur.leaf != true) {
     let i = findFirstPosToInsert(cur.keys, key)
     if (cur.keys[i] == key) {

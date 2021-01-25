@@ -1,6 +1,6 @@
-import { Node } from './Node'
+import { Node } from '../types/Node'
 import { ValueType } from '../btree'
-import { findFirstPosToInsert } from '../methods/findPosInsert'
+import { findFirstPosToInsert } from './findFirstPosToInsert'
 
 export function count(key: ValueType, node: Node) {
   let lres = 0

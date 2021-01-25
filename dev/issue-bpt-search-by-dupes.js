@@ -42,24 +42,6 @@ fs.writeFileSync('bpt.json', JSON.stringify(bpt.toJSON()))
 //   f = f.right
 // } while (f != null)
 
-const issues = []
-simple.forEach((i)=>{
-  let res = bpt.find_last_node(i)
-  if(res.keys.indexOf(i) == -1) {
-    let res = bpt.find_last_node(i)
-    issues.push(i)
-    console.log(i, res.left?.keys,res.keys, res.right?.keys)
-    // bpt.print()
-  }
-})
-
-if(issues.length > 0){
-  console.log('found issues'),
-  console.log(issues)
-} else {
-  console.log('no issues found')
-}
-
 bpt.print()
 
 const res = bpt.find(simple[3], {skip:2, take:6})
@@ -70,14 +52,14 @@ console.log(get)
 console.log(bpt.count(simple[3]))
 console.log(bpt.size())
 
-// // let result
-// do {
-//   let cur
-//   cur = simple.shift()
-//   console.log(`\nremove ${cur}`)
+let result
+do {
+  let cur
+  cur = simple.shift()
+  console.log(`\nremove ${cur}`)
 
-//   result = bpt.remove(cur)
-//   const block = bpt.find_last_node(cur)
-//   console.log(block.keys.indexOf(cur))
-// } while(simple.length > 0)
-// bpt.print()
+  result = bpt.remove(cur)
+  const find = bpt.find(cur)
+  console.log(find)
+} while(simple.length > 0)
+bpt.print()
