@@ -1,6 +1,6 @@
 import { BPlusTree } from '../types/BPlusTree'
 import { Node } from '../types/Node'
-import { findLastPosToInsert } from './findLastPosToInsert'
+import { find_last_pos_to_insert } from './find_last_pos_to_insert'
 import { ValueType } from '../btree'
 import { reflow } from './reflow'
 
@@ -28,7 +28,6 @@ export function split(tree: BPlusTree, node: Node) {
   } else {
     const parent = node.parent
     parent.insert(new_node)
-    // reflow(this, new_node)
     if (parent.size >= tree.t * 2) {
       split(tree, parent)
     }

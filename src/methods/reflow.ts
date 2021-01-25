@@ -1,9 +1,9 @@
 import { BPlusTree } from '../types/BPlusTree'
 import { Node } from '../types/Node'
-import { borrowLeft } from './borrowLeft'
-import { borrowRight } from './borrowRight'
-import { canBorrowLeft } from './canBorrowLeft'
-import { canBorrowRight } from './canBorrowRight'
+import { borrow_left } from './borrow_left'
+import { borrow_right } from './borrow_right'
+import { can_borrow_left } from './can_borrow_left'
+import { can_borrow_right } from './can_borrow_right'
 
 export function reflow(tree: BPlusTree, node: Node) {
   if (node) {
@@ -11,12 +11,12 @@ export function reflow(tree: BPlusTree, node: Node) {
       const right_sibling = node.right
       const left_sibling = node.left
       //1. слева есть откуда брать и количество элементов достаточно
-      if (canBorrowLeft(tree, node)) {
-        borrowLeft(node)
+      if (can_borrow_left(tree, node)) {
+        borrow_left(node)
       }
       // 2. крайний справа элемент есть и в нем достаточно элементов для займа
-      else if (canBorrowRight(tree, node)) {
-        borrowRight(node)
+      else if (can_borrow_right(tree, node)) {
+        borrow_right(node)
       }
 
       // занять не у кого

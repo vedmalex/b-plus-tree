@@ -1,8 +1,8 @@
 import 'jest'
 import {
   findLastPosToInsert,
-  findFirstPosToInsert,
-} from '../findFirstPosToInsert'
+  find_first_pos_to_insert,
+} from '../find_first_pos_to_insert'
 
 const orderedArray = [
   97,
@@ -45,14 +45,14 @@ describe('findPosInsert search position', () => {
     expect(findLastPosToInsert([-1, 0, 0, 1, 1, 1, 1, 1, 1, 2], 1)).toBe(9)
   })
   it('insert position', () => {
-    expect(findFirstPosToInsert([1, 3, 5, 7], 9)).toBe(4)
-    expect(findFirstPosToInsert([8, 8, 9, 9], 9)).toBe(2)
-    expect(findFirstPosToInsert([0, 0, 0, 0], 1)).toBe(4)
-    expect(findFirstPosToInsert([0, 1, 1, 3], 1)).toBe(1)
-    expect(findFirstPosToInsert([1, 1, 1, 1], 1)).toBe(0)
-    expect(findFirstPosToInsert([1, 2, 2, 2], 1)).toBe(0)
-    expect(findFirstPosToInsert([-1, 0, 0, 1], 1)).toBe(3)
-    expect(findFirstPosToInsert([-1, 0, 0, 1, 1, 1, 1, 1, 1, 2], 1)).toBe(3)
-    expect(findFirstPosToInsert([-1, 0, 0, 2, 2, 2, 2, 2, 2, 2], 1)).toBe(3)
+    expect(find_first_pos_to_insert([1, 3, 5, 7], 9)).toBe(4)
+    expect(find_first_pos_to_insert([8, 8, 9, 9], 9)).toBe(2)
+    expect(find_first_pos_to_insert([0, 0, 0, 0], 1)).toBe(4)
+    expect(find_first_pos_to_insert([0, 1, 1, 3], 1)).toBe(1)
+    expect(find_first_pos_to_insert([1, 1, 1, 1], 1)).toBe(0)
+    expect(find_first_pos_to_insert([1, 2, 2, 2], 1)).toBe(0)
+    expect(find_first_pos_to_insert([-1, 0, 0, 1], 1)).toBe(3)
+    expect(find_first_pos_to_insert([-1, 0, 0, 1, 1, 1, 1, 1, 1, 2], 1)).toBe(3)
+    expect(find_first_pos_to_insert([-1, 0, 0, 2, 2, 2, 2, 2, 2, 2], 1)).toBe(3)
   })
 })

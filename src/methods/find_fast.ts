@@ -6,7 +6,7 @@ import { ValueType } from '../btree'
  * @param comparator compare key against current item
  * @returns result element
  */
-export function findFast<T>(
+export function find_fast<T>(
   a: T[],
   key: T,
   comparator: (key, item) => number = (key, item) => key - item,

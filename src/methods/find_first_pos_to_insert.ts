@@ -1,11 +1,11 @@
 /**
- * search index of possible location item
+ * search index of first appearance of the item
  * @param a ordered array
  * @param key value to insert into array
  * @param comparator compare key against current item
  * @returns the position where the value can be inserted
  */
-export function findLastPosToInsert<T = number>(
+export function find_first_pos_to_insert<T = number>(
   a: T[],
   key: T,
   comparator: (key: T, item: T) => number = (key: unknown, item: unknown) =>
@@ -17,7 +17,7 @@ export function findLastPosToInsert<T = number>(
   while (l < r - 1) {
     // Запускаем цикл
     let m = Math.ceil((l + r) / 2) // m — середина области поиска
-    if (comparator(key, a[m]) < 0) r = m
+    if (comparator(key, a[m]) <= 0) r = m
     else l = m // Сужение границ
   }
   return r

@@ -1,7 +1,7 @@
 import { Node } from '../types/Node'
 import { ValueType } from '../btree'
 import { BPlusTree } from '../types/BPlusTree'
-import { getItems } from './getItems'
+import { get_items } from './get_items'
 import { get_items_from_array } from './get_items_from_array'
 import { find_first_node } from './find_first_node'
 import { find_last_node } from './find_last_node'
@@ -36,7 +36,7 @@ export function walkthrought({
   let toBeSkipped = skip
   let taken = take
   do {
-    const lres = getItems(node, key)
+    const lres = get_items(node, key)
     // const lres = getData(node)
     if (lres.length > 0) {
       const resLen = lres.length

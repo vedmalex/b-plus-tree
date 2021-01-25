@@ -31,8 +31,10 @@ simple.forEach((i)=>{
   for(j = 0; j< dupes; j++) {
     bpt.insert(i, `${i}-${j}`)
   }
+  console.log(bpt.find(i))
   console.log(`\ninsert ${i}`)
 })
+console.log(bpt.size())
 
 fs.writeFileSync('bpt.json', JSON.stringify(bpt.toJSON()))
 

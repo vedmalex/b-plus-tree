@@ -1,7 +1,6 @@
-import { BPlusTree } from '../types/BPlusTree'
 import { Node } from '../types/Node'
 
-export function borrowLeft(node: Node, count: number = 1) {
+export function borrow_left(node: Node, count: number = 1) {
   let cur = node
   while (cur) {
     const left_sibling = node.left
