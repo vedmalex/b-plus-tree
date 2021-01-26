@@ -4,14 +4,14 @@ import { Node } from '../types/Node'
 export function borrow_right(node: Node, count: number = 1) {
   let cur = node
   while (cur) {
-    const right_sibling = node.right
+    const right_sibling = cur.right
     for (let i = 0; i < count; i++) {
       // занимаем крайний слева
       const item = right_sibling.remove(right_sibling.min)
-      node.insert(item)
+      cur.insert(item)
       right_sibling.updateStatics()
     }
-    node.commit()
+    cur.commit()
     if (right_sibling.isEmpty) {
       cur = right_sibling
     } else {

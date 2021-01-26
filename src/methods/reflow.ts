@@ -10,15 +10,19 @@ export function reflow(tree: BPlusTree, node: Node) {
     if (node.key_num < tree.t - 1 || node.isEmpty) {
       const right_sibling = node.right
       const left_sibling = node.left
-      //1. слева есть откуда брать и количество элементов достаточно
-      if (can_borrow_left(tree, node)) {
-        borrow_left(node)
+      let bl = can_borrow_left(node)
+      let br = can_borrow_right(node)
+      // нужно взять до половины
+      // берем у кого больше
+      if (bl > 0 || br > 0) {
+        if (bl > br) {
+          //1. слева есть откуда брать и количество элементов достаточно
+          borrow_left(node, bl)
+        } else {
+          // 2. крайний справа элемент есть и в нем достаточно элементов для займа
+          borrow_right(node, br)
+        }
       }
-      // 2. крайний справа элемент есть и в нем достаточно элементов для займа
-      else if (can_borrow_right(tree, node)) {
-        borrow_right(node)
-      }
-
       // занять не у кого
       // слева не пустой элемент
       else {

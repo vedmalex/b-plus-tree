@@ -1,13 +1,13 @@
 import { BPlusTree } from '../types/BPlusTree'
 import { Node } from '../types/Node'
 
-export function can_borrow_right(tree: BPlusTree, node: Node) {
+export function can_borrow_right(node: Node) {
   let cur = node
   while (cur) {
-    if (node.right?.key_num > tree.t - 1 && node.right?.key_num > 1) {
-      return true
+    if (cur.right?.key_num > cur.t - 1 && cur.right?.key_num > 1) {
+      return cur.right?.key_num - cur.t - 1
     }
     cur = cur.right
   }
-  return false
+  return 0
 }
