@@ -67,15 +67,17 @@ export class BPlusTree {
       root: this.root.toJSON(),
     }
   }
-  print() {
+  print(node?: Node) {
     print(
-      this.toJSON().root,
+      node?.toJSON() ?? this.toJSON().root,
       (node: Node) =>
-        `${node.leaf ? 'L' : 'N'}${node.id} <${node.min ?? ''}:${
-          node.max ?? ''
-        }> ${JSON.stringify(node.keys)} L:${node.leaf ? 'L' : 'N'}${
-          node.left ?? '-'
-        } R:${node.leaf ? 'L' : 'N'}${node.right ?? '-'} ${
+        `${node.parent ? 'N' : ''}${node.parent ?? ''}${
+          node.parent ? '<-' : ''
+        }${node.isFull ? '!' : ''}${node.leaf ? 'L' : 'N'}${node.id} <${
+          node.min ?? ''
+        }:${node.max ?? ''}> ${JSON.stringify(node.keys)} L:${
+          node.leaf ? 'L' : 'N'
+        }${node.left ?? '-'} R:${node.leaf ? 'L' : 'N'}${node.right ?? '-'} ${
           node.leaf ? node.pointers : ''
         }`,
       (node: Node) => node.children,

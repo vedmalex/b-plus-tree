@@ -1,7 +1,8 @@
 const fs = require('fs')
 var Benchmark = require('benchmark')
 var BPlusTree = require('../dist').BPlusTree
-var findIndex = require('../dist/methods/findIndex').findIndex
+var findIndex = require('../dist/methods/find_first_pos_to_insert').find_first_pos_to_insert
+var findLastIndex = require('../dist/methods/find_last_pos_to_insert').find_last_pos_to_insert
 var RBTree = require('bintrees').RBTree
 const { indexOf } = require('benchmark')
 var linear = new Benchmark.Suite('Linear search by one element')
@@ -9,8 +10,8 @@ var linear = new Benchmark.Suite('Linear search by one element')
 const comparator = (a, b) => a[0] - b[0]
 const N = 10000
 const MAX_RAND = 10000000
-const SAMPLES = 100
-const T = 51
+const SAMPLES = 10
+const T = 510
 
 const itemsToGet = JSON.parse(fs.readFileSync('dev/test_data.json').toString())
 
@@ -61,16 +62,16 @@ while ((i = it.next()) !== null) {
 }
 console.log(res)
 
-const start = bpt.find(from)
-const end = bpt.find(to)
-let cur = start
-const result = start.keys.filter((i) => from <= i && i <= to)
-do {
-  cur = cur.right
-  result.push(...cur.keys.filter((i) => from <= i && i <= to))
-} while (cur.right && cur.right != end.right)
+// const start = bpt.find_node(from)
+// const end = bpt.find_node(to)
+// let cur = start
+// const result = start.keys.filter((i) => from <= i && i <= to)
+// do {
+//   cur = cur.right
+//   result.push(...cur.keys.filter((i) => from <= i && i <= to))
+// } while (cur.right && cur.right != end.right)
 
-console.log(result)
+// console.log(result)
 
 console.log('Linear search by one element')
 
@@ -93,10 +94,16 @@ linear
       findArr.find((i) => i == item)
     }
   })
-  .add('Array#findIndex', function () {
+  .add('Array#findFirstIndex', function () {
     for (let i = 0; i < SAMPLES; i++) {
       const item = itemsToGet[i]
       arr[findIndex(findArr, item)]
+    }
+  })
+  .add('Array#findLastIndex', function () {
+    for (let i = 0; i < SAMPLES; i++) {
+      const item = itemsToGet[i]
+      arr[findLastIndex(findArr, item)]
     }
   })
   .add('bplTree#find', function () {
@@ -105,12 +112,33 @@ linear
       bpt.find(item)
     }
   })
+  .add('bplTree#find-reverse', function () {
+    for (let i = 0; i < SAMPLES; i++) {
+      const item = itemsToGet[i]
+      bpt.find(item, {forward:false})
+    }
+  })
+  .add('bplTree#findOne', function () {
+    for (let i = 0; i < SAMPLES; i++) {
+      const item = itemsToGet[i]
+      bpt.findLast(item)
+    }
+  })
+  .add('bplTree#findOne-reverse', function () {
+    for (let i = 0; i < SAMPLES; i++) {
+      const item = itemsToGet[i]
+      bpt.findFirst(item, {forward:false})
+    }
+  })
   .add('RBTree#find', function () {
     for (let i = 0; i < SAMPLES; i++) {
       const item = itemsToGet[i]
       rbTree.find([item])
     }
   })
+
+
+
   .add('Hash#prop', function () {
     for (let i = 0; i < SAMPLES; i++) {
       const item = itemsToGet[i]
@@ -172,4 +200,4 @@ range
     console.log('Fastest is ' + this.filter('fastest').map('name'))
   })
 
-range.run()
+// range.run()

@@ -6,6 +6,7 @@ import { find_fast } from '../methods/find_fast'
 import { RuleRunner, Rule } from 'dymanic-rule-runner'
 import { Chainable } from './Chainable'
 import { find_first_pos_to_insert } from '../methods/find_first_pos_to_insert'
+import { attach_many_to_right } from '../methods/attach_many_to_right'
 
 export function addSibling(
   a: Chainable,
@@ -99,6 +100,7 @@ const rules: Array<Rule<Node>> = [
     run: (obj: Node) =>
       obj.leaf ? obj.keys[obj.key_num - 1] ?? undefined : max(obj),
   }),
+  // уменьшать можно только разрядность всего дерева???
   ...Rule.createAction({
     on: ['after:update', 'after:delete', 'before:delete'],
     condition: (obj: Node) =>
@@ -106,8 +108,12 @@ const rules: Array<Rule<Node>> = [
     run: (obj: Node) => {
       const child = obj.children.pop()
       const parent = obj.parent
-      parent.remove(obj)
-      parent.insert(child)
+      // вставляем на прямо на то же место где и был
+      const pos = parent.children.indexOf(obj)
+      parent.children[pos] = child
+      obj.parent = undefined
+      // parent.remove(obj)
+      // parent.insert(child)
       obj.commit()
       parent.commit()
     },
@@ -124,6 +130,7 @@ const rules: Array<Rule<Node>> = [
 export const ruleRunner = new RuleRunner<Node>(rules)
 
 let node = 0
+
 export class Node extends Chainable {
   static createLeaf(t: number) {
     return ruleRunner.create(new Node(true, t))
@@ -133,9 +140,12 @@ export class Node extends Chainable {
   }
   static createRootFrom(t: number, ...node: Array<Node>) {
     const root = Node.createNode(t)
-    root.insertMany(...node)
+    attach_many_to_right(root, node)
     root.updateStatics()
     return root
+  }
+  static load(t: number) {
+    const node = Node.createNode(t)
   }
   id = node++
   t: number
@@ -171,68 +181,18 @@ export class Node extends Chainable {
     this.t = t
   }
 
-  insertMany(...items: (Node | [ValueType, any])[]) {
+  insertMany(...items: [/* Node |  */ ValueType, any][]) {
     items.forEach((item) => this.insert(item))
   }
 
-  merge(item: Node | [ValueType, any]) {
-    if (item instanceof Node) {
-      if (!this.leaf) {
-        if (!item.isEmpty) {
-          item.parent = this
-          const pos = find_last_pos_to_insert<Node>(
-            this.children,
-            item,
-            (key, node) =>
-              key.min > node.min ? 1 : key.min == node.min ? 0 : -1,
-          )
-          this.children.splice(pos, 0, item)
-        } else {
-          throw new Error("can't attach empty children to node")
-        }
-      } else {
-        throw new Error("can't attach children to leaf")
-      }
+  insert(item: [ValueType, any]) {
+    if (this.leaf) {
+      const [key, value] = item
+      const pos = find_last_pos_to_insert(this.keys, item[0])
+      this.keys.splice(pos, 0, key)
+      this.pointers.splice(pos, 0, value)
     } else {
-      if (this.leaf) {
-        const [key, value] = item
-        const pos = find_last_pos_to_insert(this.keys, item[0])
-        this.keys.splice(pos, 0, key)
-        this.pointers.splice(pos, 0, value)
-      } else {
-        throw new Error("can't attach value to node")
-      }
-    }
-    this.updateStatics()
-  }
-
-  insert(item: Node | [ValueType, any]) {
-    if (item instanceof Node) {
-      if (!this.leaf) {
-        if (!item.isEmpty) {
-          item.parent = this
-          const pos = find_last_pos_to_insert<Node>(
-            this.children,
-            item,
-            (key, node) =>
-              key.min > node.min ? 1 : key.min == node.min ? 0 : -1,
-          )
-          this.children.splice(pos, 0, item)
-        } else {
-          throw new Error("can't attach empty children to node")
-        }
-      } else {
-        throw new Error("can't attach children to leaf")
-      }
-    } else {
-      if (this.leaf) {
-        const [key, value] = item
-        const pos = find_last_pos_to_insert(this.keys, item[0])
-        this.keys.splice(pos, 0, key)
-        this.pointers.splice(pos, 0, value)
-      } else {
-        throw new Error("can't attach value to node")
-      }
+      throw new Error("can't attach value to node")
     }
     this.updateStatics()
   }
@@ -254,8 +214,8 @@ export class Node extends Chainable {
         this.updateStatics()
         return res
       } else {
-        const pos = find_last_pos_to_insert(this.keys, item)
-        // const pos = find_first_pos_to_insert(this.keys, item)
+        // const pos = find_last_pos_to_insert(this.keys, item)
+        const pos = find_first_pos_to_insert(this.keys, item)
         const res = this.children.splice(pos, 1)[0]
         res.parent = undefined
         this.updateStatics()
@@ -273,6 +233,30 @@ export class Node extends Chainable {
     return ruleRunner.executeAllActions(this)
   }
   moveChildtoParent() {}
+  // // export node
+  // toValue(): NodeStruct {
+  //   if (this.leaf) {
+  //     return {
+  //       leaf: this.leaf,
+  //       keys: [...this.keys].map((i) => (typeof i == 'number' ? i : 'empty')),
+  //       pointers: this.pointers,
+  //       children: [],
+  //       min: this.min,
+  //       max: this.max,
+  //       size: this.size,
+  //     }
+  //   } else {
+  //     return {
+  //       leaf: this.leaf,
+  //       keys: [...this.keys].map((i) => (typeof i == 'number' ? i : 'empty')),
+  //       children: this.children.map((c) => c.toJSON()),
+  //       pointers: [],
+  //       min: this.min,
+  //       max: this.max,
+  //       size: this.size,
+  //     }
+  //   }
+  // }
 
   toJSON() {
     if (this.leaf) {
@@ -286,6 +270,8 @@ export class Node extends Chainable {
         pointers: this.pointers,
         left: this.left?.id,
         right: this.right?.id,
+        parent: this.parent?.id,
+        isFull: this.isFull,
       }
     } else {
       return {
@@ -298,7 +284,19 @@ export class Node extends Chainable {
         left: this.left?.id,
         right: this.right?.id,
         children: this.children.map((c) => c.toJSON()),
+        parent: this.parent?.id,
+        isFull: this.isFull,
       }
     }
   }
 }
+
+/**
+ * все манипуляции с деревом простое обхединение массивов
+ * поскольку мы знаем что и откуда надо брать
+ * отсюда: все операции это просто функции
+ *
+ * операции пользователя это вставка... он вставляет только данные а не узлы дерева
+ * а это методы дерева
+ *
+ */

@@ -1,10 +1,8 @@
 import { BPlusTree } from '../types/BPlusTree'
 import { Node } from '../types/Node'
-import { find_last_pos_to_insert } from './find_last_pos_to_insert'
-import { ValueType } from '../btree'
-import { reflow } from './reflow'
 import { borrow_left } from './borrow_left'
 import { can_borrow_left } from './can_borrow_left'
+import { attach_one_to_right_after } from './attach_one_to_right'
 
 export function split(tree: BPlusTree, node: Node) {
   //Создаем новый узел
@@ -22,7 +20,7 @@ export function split(tree: BPlusTree, node: Node) {
     tree.root = Node.createRootFrom(tree.t, node, new_node)
   } else {
     const parent = node.parent
-    parent.insert(new_node)
+    attach_one_to_right_after(parent, new_node, node)
     if (parent.size >= tree.t * 2) {
       split(tree, parent)
     }

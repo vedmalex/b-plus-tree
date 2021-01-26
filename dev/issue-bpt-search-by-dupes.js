@@ -8,7 +8,7 @@ const N = 10
 // const MAX_RAND = 10000000
 // const SAMPLES = 1000
 const T = 3
-const dupes = 10
+const dupes = 2
 
 const itemsToGet = JSON.parse(fs.readFileSync('dev/test_data.json').toString())
 
@@ -46,7 +46,7 @@ console.log(bpt.size())
 
 // bpt.print()
 
-const res = bpt.find(simple[3], {skip:2, take:6})
+const res = bpt.find(simple[3], {skip:1, take:6})
 console.log(res)
 
 const get = bpt.find(undefined,{skip:17, take:20})
