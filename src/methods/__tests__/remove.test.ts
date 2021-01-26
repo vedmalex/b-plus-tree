@@ -15,8 +15,8 @@ describe('split', () => {
     expect(() => {
       bpt.max()
       insertion.forEach((item) => {
-        const result = bpt.find(item).keys.indexOf(item)
-        if (result == -1) throw new Error(`not found ${item}`)
+        const result = bpt.find(item)
+        if (!result) throw new Error(`not found ${item}`)
       })
     }).not.toThrow()
     let last = insertion.length
@@ -28,8 +28,7 @@ describe('split', () => {
         result = bpt.remove(max)
         if (!result) throw new Error(`not found ${max} ${last}`)
         const block = bpt.find(max)
-        if (block.keys.indexOf(max) != -1)
-          throw new Error(`not removed ${max}  ${last}`)
+        if (!block) throw new Error(`not removed ${max}  ${last}`)
         last--
       } while (last != 0 && result)
     }).not.toThrow()
@@ -75,8 +74,8 @@ describe('split', () => {
 
     expect(() => {
       insertion.forEach((item) => {
-        const result = bpt.find(item).keys.indexOf(item)
-        if (result == -1) throw new Error(`not found ${item}`)
+        const result = bpt.find(item)
+        if (!result) throw new Error(`not found ${item}`)
       })
     }).not.toThrow()
 
@@ -88,8 +87,7 @@ describe('split', () => {
         result = bpt.remove(min)
         if (!result) throw new Error(`not found ${min} ${last}`)
         const block = bpt.find(min)
-        if (block.keys.indexOf(min) != -1)
-          throw new Error(`not removed ${min}  ${last}`)
+        if (!block) throw new Error(`not removed ${min}  ${last}`)
         last--
       } while (last != 0 && result)
     }).not.toThrow()

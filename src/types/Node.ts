@@ -1,3 +1,4 @@
+import print from 'print-tree'
 import { ValueType } from '../btree'
 import { min } from '../methods/min'
 import { max } from '../methods/max'
@@ -112,6 +113,8 @@ const rules: Array<Rule<Node>> = [
       const pos = parent.children.indexOf(obj)
       parent.children[pos] = child
       child.parent = parent
+      obj.left?.removeSiblingAtRight()
+      obj.right?.removeSiblingAtLeft()
       obj.parent = undefined
       // parent.remove(obj)
       // parent.insert(child)
@@ -259,6 +262,22 @@ export class Node extends Chainable {
   //   }
   // }
 
+  print(node?: Node) {
+    print(
+      node?.toJSON() ?? this.toJSON(),
+      (node: Node) =>
+        `${node.parent ? 'N' : ''}${node.parent ?? ''}${
+          node.parent ? '<-' : ''
+        }${node.isFull ? '!' : ''}${node.leaf ? 'L' : 'N'}${node.id} <${
+          node.min ?? ''
+        }:${node.max ?? ''}> ${JSON.stringify(node.keys)} L:${
+          node.leaf ? 'L' : 'N'
+        }${node.left ?? '-'} R:${node.leaf ? 'L' : 'N'}${node.right ?? '-'} ${
+          node.leaf ? node.pointers : ''
+        }`,
+      (node: Node) => node.children,
+    )
+  }
   toJSON() {
     if (this.leaf) {
       return {

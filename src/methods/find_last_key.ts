@@ -8,7 +8,7 @@ export function find_last_key(a: Array<any>, key: any) {
   const len = a.length
   let res = len
   for (let i = 0; i < len; i++) {
-    if (key > a[i]) {
+    if (key < a[i]) {
       res = i
       break
     }
