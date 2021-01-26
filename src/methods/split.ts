@@ -3,6 +3,8 @@ import { Node } from '../types/Node'
 import { find_last_pos_to_insert } from './find_last_pos_to_insert'
 import { ValueType } from '../btree'
 import { reflow } from './reflow'
+import { borrow_left } from './borrow_left'
+import { can_borrow_left } from './can_borrow_left'
 
 export function split(tree: BPlusTree, node: Node) {
   //Создаем новый узел
@@ -10,15 +12,8 @@ export function split(tree: BPlusTree, node: Node) {
   // Перенаправляем right и left указатели
   node.addSiblingAtRight(new_node)
 
-  // продолжаем
-  if (node.leaf) {
-    const keys = node.keys.splice(tree.t)
-    const values = node.pointers.splice(tree.t)
-    const data = keys.map((k, i) => [k, values[i]]) as Array<[ValueType, any]>
-    new_node.insertMany(...data)
-  } else {
-    new_node.insertMany(...node.children.splice(tree.t))
-  }
+  let bl = can_borrow_left(new_node)
+  borrow_left(new_node, bl)
 
   node.updateStatics()
   new_node.updateStatics()

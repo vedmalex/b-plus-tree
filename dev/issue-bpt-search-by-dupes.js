@@ -4,10 +4,10 @@ var BPlusTree = require('../dist').BPlusTree
 var RBTree = require('bintrees').RBTree
 
 const comparator = (a, b) => a[0] - b[0]
-const N = 100
+const N = 10
 // const MAX_RAND = 10000000
 // const SAMPLES = 1000
-const T = 5
+const T = 3
 const dupes = 10
 
 const itemsToGet = JSON.parse(fs.readFileSync('dev/test_data.json').toString())
@@ -31,12 +31,12 @@ simple.forEach((i)=>{
   for(j = 0; j< dupes; j++) {
     bpt.insert(i, `${i}-${j}`)
   }
-  // bpt.print()
+  bpt.print()
   console.log(bpt.find(i))
 })
 console.log(bpt.size())
 
-fs.writeFileSync('bpt.json', JSON.stringify(bpt.toJSON()))
+// fs.writeFileSync('bpt.json', JSON.stringify(bpt.toJSON()))
 
 // let f = bpt.find_last_node(-1);
 // do {
@@ -66,7 +66,7 @@ do {
   console.log(find.length)
   i+=1
 } while(i < simple.length)
-// bpt.print()
+bpt.print()
 
 do {
   let cur
@@ -74,7 +74,7 @@ do {
   console.log(`\nremove all ${cur}`)
 
   result = bpt.removeMany(cur)
-  // bpt.print()
+  bpt.print()
   const find = bpt.find(cur)
   console.log(find.length)
 } while(simple.length > 0)

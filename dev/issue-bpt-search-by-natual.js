@@ -31,7 +31,7 @@ simple.forEach((i)=>{
   console.log(`\ninsert ${i}`)
 })
 
-fs.writeFileSync('bpt.json', JSON.stringify(bpt.toJSON()))
+// fs.writeFileSync('bpt.json', JSON.stringify(bpt.toJSON()))
 
 let f = bpt.find(-1);
 do {

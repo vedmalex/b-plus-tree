@@ -44,19 +44,6 @@ export function reflow(tree: BPlusTree, node: Node) {
               )
               node.children.length = 0
             }
-
-            // while (!node.isEmpty) {
-            //   const item = node.remove(node.min)
-            //   if (
-            //     (item instanceof Node && !item.isEmpty) ||
-            //     Array.isArray(item)
-            //   ) {
-            //     left_sibling.insert(item)
-            //   }
-            //   node.updateStatics()
-            //   left_sibling.updateStatics()
-            // }
-
             left_sibling.updateStatics()
             left_sibling.removeSiblingAtRight()
             const parent = node.parent
@@ -83,14 +70,6 @@ export function reflow(tree: BPlusTree, node: Node) {
               )
               node.children.length = 0
             }
-
-            // while (!node.isEmpty) {
-            //   // для node надо переставлять значения
-            //   const item = node.remove(node.min)
-            //   right_sibling.insert(item)
-            //   node.updateStatics()
-            //   right_sibling.updateStatics()
-            // }
 
             right_sibling.updateStatics()
             right_sibling.removeSiblingAtLeft()
