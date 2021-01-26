@@ -56,6 +56,8 @@ export function reflow(tree: BPlusTree, node: Node) {
             //   node.updateStatics()
             //   left_sibling.updateStatics()
             // }
+
+            left_sibling.updateStatics()
             left_sibling.removeSiblingAtRight()
             const parent = node.parent
             if (parent) {
@@ -90,6 +92,7 @@ export function reflow(tree: BPlusTree, node: Node) {
             //   right_sibling.updateStatics()
             // }
 
+            right_sibling.updateStatics()
             right_sibling.removeSiblingAtLeft()
             const parent = node.parent
             if (parent) {
