@@ -7,7 +7,7 @@ const comparator = (a, b) => a[0] - b[0]
 const N = 10
 // const MAX_RAND = 10000000
 // const SAMPLES = 1000
-const T = 4
+const T = 5
 const dupes = 10
 
 const itemsToGet = JSON.parse(fs.readFileSync('dev/test_data.json').toString())
