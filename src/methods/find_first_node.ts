@@ -13,9 +13,9 @@ export function find_first_node(tree: BPlusTree, key: ValueType) {
         cur = cur.left
       }
     } else if (cur.max < key) {
-      do {
+      while (key >= cur.right?.min && cur.right) {
         cur = cur.right
-      } while (!(key >= cur.right?.min))
+      }
     }
   }
   return cur

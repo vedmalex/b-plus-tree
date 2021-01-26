@@ -54,14 +54,27 @@ console.log(get)
 console.log(bpt.count(simple[3]))
 console.log(bpt.size())
 
-let result
+// let result
+// let i =0
+// do {
+//   let cur
+//   cur = simple[i]
+//   console.log(`\nremove ${cur}`)
+
+//   result = bpt.remove(cur)
+//   const find = bpt.find(cur)
+//   console.log(find.length)
+//   i+=1
+// } while(i < simple.length)
+// bpt.print()
+
 do {
   let cur
   cur = simple.shift()
-  console.log(`\nremove ${cur}`)
+  console.log(`\nremove all ${cur}`)
 
-  result = bpt.remove(cur)
+  result = bpt.removeMany(cur)
+  bpt.print()
   const find = bpt.find(cur)
   console.log(find.length)
 } while(simple.length > 0)
-bpt.print()

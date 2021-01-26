@@ -42,11 +42,17 @@ export class BPlusTree {
   size() {
     return size(this.root)
   }
+  insertMany(key: ValueType, value: any): boolean {
+    return insert(this, key, value)
+  }
   insert(key: ValueType, value: any): boolean {
     return insert(this, key, value)
   }
-  remove(key: ValueType): boolean {
-    return remove(this, key)
+  remove(key: ValueType) {
+    return remove(this, key, false)
+  }
+  removeMany(key: ValueType) {
+    return remove(this, key, true)
   }
   min() {
     return this.root.min

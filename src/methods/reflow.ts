@@ -23,17 +23,34 @@ export function reflow(tree: BPlusTree, node: Node) {
       // слева не пустой элемент
       else {
         if (left_sibling) {
-          while (!node.isEmpty) {
-            const item = node.remove(node.min)
-            if (
-              (item instanceof Node && !item.isEmpty) ||
-              Array.isArray(item)
-            ) {
-              left_sibling.insert(item)
-            }
-            node.updateStatics()
-            left_sibling.updateStatics()
+          if (node.leaf) {
+            left_sibling.keys.push(...node.keys)
+            left_sibling.pointers.push(...node.pointers)
+            node.keys.length = 0
+            node.pointers.length = 0
+          } else {
+            left_sibling.keys.push(...node.keys)
+            node.keys.length = 0
+            left_sibling.children.push(
+              ...node.children.map((c) => {
+                c.parent = left_sibling
+                return c
+              }),
+            )
+            node.children.length = 0
           }
+
+          // while (!node.isEmpty) {
+          //   const item = node.remove(node.min)
+          //   if (
+          //     (item instanceof Node && !item.isEmpty) ||
+          //     Array.isArray(item)
+          //   ) {
+          //     left_sibling.insert(item)
+          //   }
+          //   node.updateStatics()
+          //   left_sibling.updateStatics()
+          // }
           left_sibling.removeSiblingAtRight()
           const parent = node.parent
           if (parent) {
@@ -41,14 +58,33 @@ export function reflow(tree: BPlusTree, node: Node) {
           }
           node.commit()
           reflow(tree, parent)
-          reflow(tree, left_sibling.parent)
+          if (parent != left_sibling.parent) reflow(tree, left_sibling.parent)
         } else if (right_sibling) {
-          while (!node.isEmpty) {
-            const item = node.remove(node.min)
-            right_sibling.insert(item)
-            node.updateStatics()
-            right_sibling.updateStatics()
+          if (node.leaf) {
+            right_sibling.keys.unshift(...node.keys)
+            right_sibling.pointers.unshift(...node.pointers)
+            node.keys.length = 0
+            node.pointers.length = 0
+          } else {
+            right_sibling.keys.unshift(...node.keys)
+            node.keys.length = 0
+            right_sibling.children.unshift(
+              ...node.children.map((c) => {
+                c.parent = right_sibling
+                return c
+              }),
+            )
+            node.children.length = 0
           }
+
+          // while (!node.isEmpty) {
+          //   // для node надо переставлять значения
+          //   const item = node.remove(node.min)
+          //   right_sibling.insert(item)
+          //   node.updateStatics()
+          //   right_sibling.updateStatics()
+          // }
+
           right_sibling.removeSiblingAtLeft()
           const parent = node.parent
           if (parent) {
@@ -56,7 +92,7 @@ export function reflow(tree: BPlusTree, node: Node) {
           }
           node.commit()
           reflow(tree, parent)
-          reflow(tree, right_sibling.parent)
+          if (parent != right_sibling.parent) reflow(tree, right_sibling.parent)
         } else if (node.isEmpty) {
           const parent = node.parent
           node.right?.removeSiblingAtLeft()

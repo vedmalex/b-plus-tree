@@ -5,6 +5,7 @@ import { find_last_pos_to_insert } from '../methods/find_last_pos_to_insert'
 import { find_fast } from '../methods/find_fast'
 import { RuleRunner, Rule } from 'dymanic-rule-runner'
 import { Chainable } from './Chainable'
+import { find_first_pos_to_insert } from '../methods/find_first_pos_to_insert'
 
 export function addSibling(
   a: Chainable,
@@ -174,6 +175,37 @@ export class Node extends Chainable {
     items.forEach((item) => this.insert(item))
   }
 
+  merge(item: Node | [ValueType, any]) {
+    if (item instanceof Node) {
+      if (!this.leaf) {
+        if (!item.isEmpty) {
+          item.parent = this
+          const pos = find_last_pos_to_insert<Node>(
+            this.children,
+            item,
+            (key, node) =>
+              key.min > node.min ? 1 : key.min == node.min ? 0 : -1,
+          )
+          this.children.splice(pos, 0, item)
+        } else {
+          throw new Error("can't attach empty children to node")
+        }
+      } else {
+        throw new Error("can't attach children to leaf")
+      }
+    } else {
+      if (this.leaf) {
+        const [key, value] = item
+        const pos = find_last_pos_to_insert(this.keys, item[0])
+        this.keys.splice(pos, 0, key)
+        this.pointers.splice(pos, 0, value)
+      } else {
+        throw new Error("can't attach value to node")
+      }
+    }
+    this.updateStatics()
+  }
+
   insert(item: Node | [ValueType, any]) {
     if (item instanceof Node) {
       if (!this.leaf) {
@@ -223,6 +255,7 @@ export class Node extends Chainable {
         return res
       } else {
         const pos = find_last_pos_to_insert(this.keys, item)
+        // const pos = find_first_pos_to_insert(this.keys, item)
         const res = this.children.splice(pos, 1)[0]
         res.parent = undefined
         this.updateStatics()
