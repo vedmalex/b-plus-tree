@@ -15,6 +15,7 @@ export function borrow_left(node: Node, count: number = 1) {
       )
     } else {
       node.keys.unshift(
+        left_sibling.max,
         ...left_sibling.keys.splice(left_sibling.keys.length - count - 1),
       )
       node.children.unshift(

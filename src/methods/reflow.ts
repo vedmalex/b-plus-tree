@@ -122,6 +122,15 @@ export function reflow(tree: BPlusTree, node: Node) {
           }
           node.commit()
           reflow(tree, parent)
+          if (left_sibling) {
+            if (parent != left_sibling.parent) {
+              reflow(tree, left_sibling.parent)
+            }
+          } else if (right_sibling) {
+            if (parent != right_sibling.parent) {
+              reflow(tree, right_sibling.parent)
+            }
+          }
         }
       }
     } else {

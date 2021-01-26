@@ -7,7 +7,7 @@ export function find_first_node(tree: BPlusTree, key: ValueType) {
   while (cur.leaf != true) {
     let i = find_first_pos_to_insert(cur.keys, key)
     cur = cur.children[i]
-    //searchion exact first node!!!
+    //search exact first node!!!
     if (key <= cur.min && key <= cur.left?.max) {
       while (key <= cur.left?.max) {
         cur = cur.left
