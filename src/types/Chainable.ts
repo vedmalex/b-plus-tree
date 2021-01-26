@@ -19,7 +19,4 @@ export class Chainable {
   removeSiblingAtLeft() {
     removeSibling(this, 'left')
   }
-
-  mergeWithLeftSibling() {}
-  borrowLeft() {}
 }

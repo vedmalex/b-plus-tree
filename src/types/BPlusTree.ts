@@ -16,7 +16,6 @@ export class BPlusTree {
     this.t = t
     this.unique = unique
   }
-
   find(
     key?: ValueType,
     {
@@ -41,9 +40,6 @@ export class BPlusTree {
   }
   size() {
     return size(this.root)
-  }
-  insertMany(key: ValueType, value: any): boolean {
-    return insert(this, key, value)
   }
   insert(key: ValueType, value: any): boolean {
     return insert(this, key, value)

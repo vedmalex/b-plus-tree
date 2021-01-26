@@ -4,17 +4,19 @@ var BPlusTree = require('../dist').BPlusTree
 var RBTree = require('bintrees').RBTree
 
 const comparator = (a, b) => a[0] - b[0]
-const N = 10
+const N = 15
 // const MAX_RAND = 10000000
 // const SAMPLES = 1000
-const T = 3
-const dupes = 2
+const T = 2
+const dupes = 3
 
 const itemsToGet = JSON.parse(fs.readFileSync('dev/test_data.json').toString())
 
 console.log(`N ${N} T ${T}`)
 
 // const simple = [0, 9, 3, 14, 12, 13, 6, 10, 2, 1, 4, 8, 5, 11, 7]
+const old_clog = console.log;
+// console.log = ()=>undefined
 
 let
   arr=[],
@@ -62,6 +64,7 @@ do {
   console.log(`\nremove ${cur}`)
 
   result = bpt.remove(cur)
+  bpt.print(    )
   const find = bpt.find(cur)
   console.log(find.length)
   i+=1
@@ -78,4 +81,9 @@ do {
   const find = bpt.find(cur)
   console.log(find.length)
 } while(simple.length > 0)
+
+  if(old_clog){
+    console.log = old_clog;
+  }
+
   bpt.print()

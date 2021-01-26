@@ -1,12 +1,12 @@
 import { ValueType } from '../btree'
 import { min } from '../methods/min'
 import { max } from '../methods/max'
-import { find_last_pos_to_insert } from '../methods/find_last_pos_to_insert'
-import { find_fast } from '../methods/find_fast'
+import { find_last_key } from '../methods/find_last_key'
 import { RuleRunner, Rule } from 'dymanic-rule-runner'
 import { Chainable } from './Chainable'
-import { find_first_pos_to_insert } from '../methods/find_first_pos_to_insert'
+import { find_first_key } from '../methods/find_first_key'
 import { attach_many_to_right } from '../methods/attach_many_to_right'
+import { find_first_item } from '../methods/find_first_item'
 
 export function addSibling(
   a: Chainable,
@@ -111,6 +111,7 @@ const rules: Array<Rule<Node>> = [
       // вставляем на прямо на то же место где и был
       const pos = parent.children.indexOf(obj)
       parent.children[pos] = child
+      child.parent = parent
       obj.parent = undefined
       // parent.remove(obj)
       // parent.insert(child)
@@ -188,7 +189,7 @@ export class Node extends Chainable {
   insert(item: [ValueType, any]) {
     if (this.leaf) {
       const [key, value] = item
-      const pos = find_last_pos_to_insert(this.keys, item[0])
+      const pos = find_last_key(this.keys, item[0])
       this.keys.splice(pos, 0, key)
       this.pointers.splice(pos, 0, value)
     } else {
@@ -208,14 +209,14 @@ export class Node extends Chainable {
       return item
     } else {
       if (this.leaf) {
-        const pos = find_fast(this.keys, item)
+        const pos = find_first_item(this.keys, item)
         const res: [ValueType, any] = [item, this.pointers.splice(pos, 1)[0]]
         this.keys.splice(pos, 1)
         this.updateStatics()
         return res
       } else {
         // const pos = find_last_pos_to_insert(this.keys, item)
-        const pos = find_first_pos_to_insert(this.keys, item)
+        const pos = find_first_key(this.keys, item)
         const res = this.children.splice(pos, 1)[0]
         res.parent = undefined
         this.updateStatics()

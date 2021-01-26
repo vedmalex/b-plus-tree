@@ -11,7 +11,7 @@ export function attach_one_to_right(obj: Node, right: Node | [ValueType, any]) {
       obj.keys.push(right.max)
       right.parent = obj
     } else {
-      throw new Error('nevermind')
+      throw new Error('wrong usage')
     }
   } else {
     if (obj.leaf) {

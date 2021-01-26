@@ -1,10 +1,10 @@
 import { Node } from '../types/Node'
 import { ValueType } from '../btree'
-import { find_first_pos_to_insert } from './find_first_pos_to_insert'
+import { find_first_key } from './find_first_key'
 
 export function count(key: ValueType, node: Node) {
   let lres = 0
-  let start = find_first_pos_to_insert(node.keys, key)
+  let start = find_first_key(node.keys, key)
   let i = start
   if (node.leaf) {
     while (node.keys[i] == key) {

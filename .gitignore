@@ -29,3 +29,4 @@ Thumbs.db
 
 tsconfig.tsbuildinfo
 /src/__tests__/*.json
+*.txt

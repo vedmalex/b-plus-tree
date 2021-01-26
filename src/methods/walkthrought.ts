@@ -37,7 +37,6 @@ export function walkthrought({
   let taken = take
   do {
     const lres = get_items(node, key)
-    // const lres = getData(node)
     if (lres.length > 0) {
       const resLen = lres.length
       let lskip = toBeSkipped

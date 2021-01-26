@@ -21,7 +21,8 @@ export function split(tree: BPlusTree, node: Node) {
   } else {
     const parent = node.parent
     attach_one_to_right_after(parent, new_node, node)
-    if (parent.size >= tree.t * 2) {
+    if (parent.isFull) {
+      // if (parent.size >= tree.t * 2) {
       split(tree, parent)
     }
   }
