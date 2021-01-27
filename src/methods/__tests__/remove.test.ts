@@ -26,7 +26,7 @@ describe('split', () => {
         let max
         max = bpt.max()
         result = bpt.remove(max)
-        if (!result) throw new Error(`not found ${max} ${last}`)
+        if (result) throw new Error(`not found ${max} ${last}`)
         const block = bpt.find(max)
         if (!block) throw new Error(`not removed ${max}  ${last}`)
         last--
@@ -85,7 +85,7 @@ describe('split', () => {
       do {
         let min = insertion.shift()
         result = bpt.remove(min)
-        if (!result) throw new Error(`not found ${min} ${last}`)
+        if (result) throw new Error(`not found ${min} ${last}`)
         const block = bpt.find(min)
         if (!block) throw new Error(`not removed ${min}  ${last}`)
         last--

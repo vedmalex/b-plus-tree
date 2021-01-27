@@ -1,6 +1,5 @@
 import { Node } from '../types/Node'
 import { ValueType } from '../btree'
-import { find_first_key } from './find_first_key'
 import { find_first_item } from './find_first_item'
 
 // function
@@ -11,7 +10,6 @@ export function get_items(
 ): Array<[ValueType, any]> {
   const all = key === undefined
   let start = find_first_item(node.keys, key)
-  // let start = find_first_pos_to_insert(node.keys, key)
   let i = start
   if (node.leaf) {
     if (all) {

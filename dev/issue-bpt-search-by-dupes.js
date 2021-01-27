@@ -4,11 +4,11 @@ var BPlusTree = require('../dist').BPlusTree
 var RBTree = require('bintrees').RBTree
 
 // const comparator = (a, b) => a[0] - b[0]
-const N = 150
+const N = 15
 // const MAX_RAND = 10000000
 // const SAMPLES = 1000
-const T = 5
-const dupes = 2
+const T = 20
+const dupes = 3
 
 const itemsToGet = JSON.parse(fs.readFileSync('dev/test_data.json').toString())
 

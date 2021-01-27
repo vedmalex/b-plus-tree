@@ -1,8 +1,8 @@
 const fs = require('fs')
 var Benchmark = require('benchmark')
 var BPlusTree = require('../dist').BPlusTree
-var {find_first_pos_to_insert} = require('../dist/methods/find_first_key')
-var {find_last_pos_to_insert } = require('../dist/methods/find_last_key')
+var {find_first_key} = require('../dist/methods/find_first_key')
+var {find_last_key } = require('../dist/methods/find_last_key')
 var RBTree = require('bintrees').RBTree
 const { indexOf } = require('benchmark')
 var linear = new Benchmark.Suite('Linear search by one element')
@@ -10,7 +10,7 @@ var linear = new Benchmark.Suite('Linear search by one element')
 const comparator = (a, b) => a[0] - b[0]
 const N = 10000
 const MAX_RAND = 10000000
-const SAMPLES = 10
+const SAMPLES = 100
 const T = 510
 
 const itemsToGet = JSON.parse(fs.readFileSync('dev/test_data.json').toString())
@@ -32,17 +32,17 @@ for (let i = 0; i < N; i++) {
 const findArr = [...arr]
 arr.sort((a, b) => a - b)
 
-let from = arr[find_first_pos_to_insert(arr, arr[arr.length - 1] / 15)]
+let from = arr[find_first_key(arr, arr[arr.length - 1] / 15)]
 from += Math.sqrt(from)
 
-let to = arr[find_first_pos_to_insert(arr, arr[arr.length - 1] / 14)]
+let to = arr[find_first_key(arr, arr[arr.length - 1] / 14)]
 to += Math.sqrt(to)
 
 console.log(from)
 console.log(to)
 
-nearestFrom = find_first_pos_to_insert(arr, from)
-nearestTo = find_first_pos_to_insert(arr, to)
+nearestFrom = find_first_key(arr, from)
+nearestTo = find_first_key(arr, to)
 
 console.log(arr[nearestFrom])
 console.log(arr[nearestTo])
@@ -97,13 +97,13 @@ linear
     .add('Array#findFirstIndex', function () {
     for (let i = 0; i < SAMPLES; i++) {
       const item = itemsToGet[i]
-      arr[find_first_pos_to_insert(findArr, item)]
+      arr[find_first_key(findArr, item)]
     }
   })
     .add('Array#findLastIndex', function () {
     for (let i = 0; i < SAMPLES; i++) {
       const item = itemsToGet[i]
-      arr[find_last_pos_to_insert(findArr, item)]
+      arr[find_last_key(findArr, item)]
     }
   })
   .add('bplTree#find', function () {
