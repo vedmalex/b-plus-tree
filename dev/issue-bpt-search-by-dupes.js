@@ -1,7 +1,5 @@
 const fs = require('fs')
-const print = require('print-tree')
 var BPlusTree = require('../dist').BPlusTree
-var RBTree = require('bintrees').RBTree
 
 // const comparator = (a, b) => a[0] - b[0]
 const N = 15
@@ -87,3 +85,8 @@ do {
   }
 
   bpt.print()
+  if(bpt.nodes.size > 1) {
+    throw new Error('memory leak')
+  } else {
+    console.log('clean')
+  }

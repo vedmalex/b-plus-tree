@@ -6,15 +6,24 @@ import { insert } from '../methods/insert'
 import { walkthrought } from '../methods/walkthrought'
 import { count } from '../methods/count'
 import { size } from '../methods/size'
+import { find_last_node } from '../methods/find_last_node'
+import { find_first_key } from '../methods/find_first_key'
+import { find_first_node } from '../methods/find_first_node'
+import { find_last_key } from '../methods/find_last_key'
 
+export type Cursor = {
+  node: number
+  pos: number
+}
 export class BPlusTree {
   public t: number // минимальная степень дерева
   public root: Node // указатель на корень дерева
   public unique: boolean
+  public nodes = new Map<number, Node>()
   constructor(t: number, unique: boolean) {
-    this.root = Node.createLeaf(t)
     this.t = t
     this.unique = unique
+    this.root = Node.createLeaf(this)
   }
   find(
     key?: ValueType,
@@ -28,11 +37,21 @@ export class BPlusTree {
   }
 
   findFirst(key: ValueType) {
-    return walkthrought({ tree: this, key, take: 1, forward: true })[0]
+    const node = find_first_node(this, key)
+    const index = find_first_key(node.keys, key)
+    return node.pointers[index]
   }
 
   findLast(key: ValueType) {
-    return walkthrought({ tree: this, key, take: 1, forward: false })[0]
+    const node = find_last_node(this, key)
+    const index = find_last_key(node.keys, key)
+    return node.pointers[index]
+  }
+
+  cursor(key: ValueType): Cursor {
+    const node = find_last_node(this, key)
+    const index = find_last_key(node.keys, key)
+    return { node: node.id, pos: index }
   }
 
   count(key: ValueType) {

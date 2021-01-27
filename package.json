@@ -6,6 +6,7 @@
   "typings": "dist/index.d.ts",
   "types": "dost/index.d.ts",
   "scripts": {
+    "bundle": "esbuild src/profiling.ts --bundle --sourcemap --outfile=profiling.js",
     "prepublish": "tsc --build tsconfig.json",
     "clean": "git clean -dfqX -- ./node_modules **/{dist,node_modules}/",
     "compile": "tsc --build tsconfig.json",
@@ -22,6 +23,7 @@
     "@types/node": "^14.14.22",
     "benchmark": "^2.1.4",
     "bintrees": "^1.0.2",
+    "esbuild": "^0.8.36",
     "eslint": "^7.18.0",
     "eslint-config-airbnb-base": "^14.2.1",
     "eslint-config-prettier": "^7.2.0",

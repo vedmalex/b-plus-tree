@@ -6,7 +6,7 @@ import { attach_one_to_right_after } from './attach_one_to_right'
 
 export function split(tree: BPlusTree, node: Node) {
   //Создаем новый узел
-  let new_node = node.leaf ? Node.createLeaf(tree.t) : Node.createNode(tree.t)
+  let new_node = node.leaf ? Node.createLeaf(tree) : Node.createNode(tree)
   // Перенаправляем right и left указатели
   node.addSiblingAtRight(new_node)
 
@@ -17,7 +17,7 @@ export function split(tree: BPlusTree, node: Node) {
   new_node.updateStatics()
 
   if (node == tree.root) {
-    tree.root = Node.createRootFrom(tree.t, node, new_node)
+    tree.root = Node.createRootFrom(tree, node, new_node)
   } else {
     const parent = node.parent
     attach_one_to_right_after(parent, new_node, node)

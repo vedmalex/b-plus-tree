@@ -8,6 +8,8 @@ import { Chainable } from './Chainable'
 import { find_first_key } from '../methods/find_first_key'
 import { attach_many_to_right } from '../methods/attach_many_to_right'
 import { find_first_item } from '../methods/find_first_item'
+import { BPlusTree } from './BPlusTree'
+import { remove } from '../methods/remove'
 
 export function addSibling(
   a: Chainable,
@@ -48,22 +50,6 @@ const left = new Map<number, Node>()
 const right = new Map<number, Node>()
 
 const rules: Array<Rule<Node>> = [
-  // ...Rule.createProperty<Node>({
-  //   field: 'left',
-  //   method: 'set',
-  //   run: (node) => {
-  //     if (!node.left) debugger
-  //     left.set(node.id, node.left)
-  //   },
-  // }),
-  // ...Rule.createProperty<Node>({
-  //   field: 'right',
-  //   method: 'set',
-  //   run: (node) => {
-  //     if (!node.right) debugger
-  //     right.set(node.id, node.right)
-  //   },
-  // }),
   ...Rule.createSetter<Node>({
     field: 'keys',
     condition: (obj: Node) => !obj.leaf,
@@ -103,7 +89,7 @@ const rules: Array<Rule<Node>> = [
   }),
   // уменьшать можно только разрядность всего дерева???
   ...Rule.createAction({
-    on: ['after:update', 'after:delete', 'before:delete'],
+    on: ['after:update', 'before:delete'],
     condition: (obj: Node) =>
       obj.key_num == 0 && obj.size == 1 && obj.parent && !obj.leaf,
     run: (obj: Node) => {
@@ -116,18 +102,35 @@ const rules: Array<Rule<Node>> = [
       obj.left?.removeSiblingAtRight()
       obj.right?.removeSiblingAtLeft()
       obj.parent = undefined
-      // parent.remove(obj)
-      // parent.insert(child)
       obj.commit()
+      obj.delete()
       parent.commit()
     },
   }),
 
   ...Rule.createAction({
-    on: ['after:update', 'after:delete'],
+    on: ['after:update'],
     condition: (obj: Node) => obj.parent?.size > 0,
     // condition: (obj: Node) => obj.parent?.size == 1,
     run: (obj: Node) => obj.parent.commit(),
+  }),
+
+  ...Rule.createAction({
+    on: ['after:delete'],
+    condition: (obj: Node) => {
+      return obj.tree.root != obj
+    },
+    run: (obj: Node) => {
+      unregisterNode(obj.tree, obj)
+      // console.log(`unregistered ${obj.id}`)
+    },
+  }),
+  ...Rule.createAction({
+    on: ['after:create'],
+    run: (obj: Node) => {
+      registerNode(obj.tree, obj)
+      // console.log(`registered ${obj.id}`)
+    },
   }),
 ]
 
@@ -135,21 +138,31 @@ export const ruleRunner = new RuleRunner<Node>(rules)
 
 let node = 0
 
-export class Node extends Chainable {
-  static createLeaf(t: number) {
-    return ruleRunner.create(new Node(true, t))
+export function registerNode(tree: BPlusTree, node: Node) {
+  if (tree.nodes.has(node.id)) throw new Error('already here')
+  tree.nodes.set(node.id, node)
+}
+
+export function unregisterNode(tree: BPlusTree, node: Node) {
+  if (!tree.nodes.has(node.id)) throw new Error(`already removed ${node.id}`)
+  tree.nodes.delete(node.id)
+}
+
+export class Node {
+  static createLeaf(tree: BPlusTree) {
+    return ruleRunner.create(new Node(true, tree))
   }
-  static createNode(t: number) {
-    return ruleRunner.create(new Node(false, t))
+  static createNode(tree: BPlusTree) {
+    return ruleRunner.create(new Node(false, tree))
   }
-  static createRootFrom(t: number, ...node: Array<Node>) {
-    const root = Node.createNode(t)
+  static createRootFrom(tree: BPlusTree, ...node: Array<Node>) {
+    const root = Node.createNode(tree)
     attach_many_to_right(root, node)
     root.updateStatics()
     return root
   }
-  static load(t: number) {
-    const node = Node.createNode(t)
+  static load(tree: BPlusTree) {
+    const node = Node.createNode(tree)
   }
   id = node++
   t: number
@@ -157,17 +170,15 @@ export class Node extends Chainable {
   key_num: number // количество ключей узла
   size: number // значимый размер узла
   keys: ValueType[] // ключи узла
-  parent: Node // указатель на отца
   children: Node[] // указатели на детей узла
   pointers: any[] // если лист — указатели на данные
-  left: Node // указатель на левого брата
-  right: Node // указатель на правого брата
   min: ValueType
   max: ValueType
   isFull: boolean
   isEmpty: boolean
-  private constructor(leaf: boolean, t: number) {
-    super()
+  tree: BPlusTree
+  private constructor(leaf: boolean, tree: BPlusTree) {
+    this.tree = tree
     if (leaf == undefined) throw new Error('leaf type expected')
     this.leaf = leaf
     this.keys = []
@@ -182,7 +193,11 @@ export class Node extends Chainable {
     this.isEmpty = true
     this.min = undefined
     this.max = undefined
-    this.t = t
+    this.t = tree.t
+  }
+
+  delete() {
+    ruleRunner.delete(this)
   }
 
   insertMany(...items: [/* Node |  */ ValueType, any][]) {
@@ -234,34 +249,8 @@ export class Node extends Chainable {
 
   commit() {
     this.updateStatics()
-    return ruleRunner.executeAllActions(this)
+    return ruleRunner.runAction(this, 'after:update')
   }
-  moveChildtoParent() {}
-  // // export node
-  // toValue(): NodeStruct {
-  //   if (this.leaf) {
-  //     return {
-  //       leaf: this.leaf,
-  //       keys: [...this.keys].map((i) => (typeof i == 'number' ? i : 'empty')),
-  //       pointers: this.pointers,
-  //       children: [],
-  //       min: this.min,
-  //       max: this.max,
-  //       size: this.size,
-  //     }
-  //   } else {
-  //     return {
-  //       leaf: this.leaf,
-  //       keys: [...this.keys].map((i) => (typeof i == 'number' ? i : 'empty')),
-  //       children: this.children.map((c) => c.toJSON()),
-  //       pointers: [],
-  //       min: this.min,
-  //       max: this.max,
-  //       size: this.size,
-  //     }
-  //   }
-  // }
-
   print(node?: Node) {
     print(
       node?.toJSON() ?? this.toJSON(),
@@ -308,6 +297,50 @@ export class Node extends Chainable {
         isFull: this.isFull,
       }
     }
+  }
+
+  // left: Node
+  // right: Node
+  // parent: Node
+  // указатель на отца
+  _parent: number
+
+  get parent(): Node {
+    return this.tree.nodes.get(this._parent) ?? undefined
+  }
+  set parent(node: Node) {
+    this._parent = node?.id ?? undefined
+  }
+  // указатель на левого брата
+  _left: number
+  _right: number
+  get left(): Node {
+    return this.tree.nodes.get(this._left) ?? undefined
+  }
+  set left(node: Node) {
+    this._left = node?.id ?? undefined
+  }
+  // указатель на правого брата
+  get right(): Node {
+    return this.tree.nodes.get(this._right) ?? undefined
+  }
+  set right(node: Node) {
+    this._right = node?.id ?? undefined
+  }
+  addSiblingAtRight(b) {
+    addSibling(this, b, 'right')
+  }
+
+  addSiblingAtLeft(b) {
+    addSibling(this, b, 'left')
+  }
+
+  removeSiblingAtRight() {
+    removeSibling(this, 'right')
+  }
+
+  removeSiblingAtLeft() {
+    removeSibling(this, 'left')
   }
 }
 

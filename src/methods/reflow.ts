@@ -12,9 +12,10 @@ export function reflow(tree: BPlusTree, node: Node) {
       const left_sibling = node.left
       let bl = can_borrow_left(node)
       let br = can_borrow_right(node)
-      // нужно взять до половины
-      // берем у кого больше
+      // можем ли взять у соседа данных
       if (bl > 0 || br > 0) {
+        // нужно взять до половины
+        // берем у кого больше
         if (bl > br) {
           //1. слева есть откуда брать и количество элементов достаточно
           borrow_left(node, bl)
@@ -22,9 +23,8 @@ export function reflow(tree: BPlusTree, node: Node) {
           // 2. крайний справа элемент есть и в нем достаточно элементов для займа
           borrow_right(node, br)
         }
-      }
-      // занять не у кого
-      else {
+      } else {
+        // не у кого взять данных - удаляем узел
         if (!node.isEmpty) {
           // слева не пустой элемент
           if (left_sibling) {
@@ -114,6 +114,8 @@ export function reflow(tree: BPlusTree, node: Node) {
             }
           }
         }
+        //удаляем узел
+        node.delete()
       }
     } else {
       node.commit()

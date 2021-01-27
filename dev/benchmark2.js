@@ -5,14 +5,13 @@ var BPlusTree = require('../dist').BPlusTree
 var {find_first_key} = require('../dist/methods/find_first_key')
 var {find_last_key } = require('../dist/methods/find_last_key')
 var RBTree = require('bintrees').RBTree
-const { indexOf } = require('benchmark')
 var linear = new Benchmark.Suite('Linear search by one element')
 
 const comparator = (a, b) => a[0] - b[0]
-const N = 10000
+const N = 95000
 const MAX_RAND = 10000000
 const SAMPLES = 100
-const T = 32
+const T = 510
 
 const itemsToGet = JSON.parse(fs.readFileSync('dev/test_data.json').toString())
 
@@ -21,7 +20,7 @@ console.log(`N ${N} MAX_RAND ${MAX_RAND} SAMPLES ${SAMPLES} T ${T}`)
 let obj = {},
   arr = [],
   map = new Map(),
-  bpt = new BPlusTree(T, true),
+  bpt = new BPlusTree(T, false),
   sbpt = new SBPlTree()
   rbTree = new RBTree(comparator)
 for (let i = 0; i < N; i++) {
@@ -80,73 +79,73 @@ console.log('Linear search by one element')
 
 linear
   .add('Map#get', function () {
-    for (let i = 0; i < SAMPLES; i++) {
+    for (let i = N - SAMPLES; i < N; i++) {
       const item = itemsToGet[i]
       map.get(item)
     }
   })
   .add('Array#indexOf', function () {
-    for (let i = 0; i < SAMPLES; i++) {
+    for (let i = N - SAMPLES; i < N; i++) {
       const item = itemsToGet[i]
       itemsToGet[findArr.indexOf(item)]
     }
   })
   .add('Array#find', function () {
-    for (let i = 0; i < SAMPLES; i++) {
+    for (let i = N - SAMPLES; i < N; i++) {
       const item = itemsToGet[i]
       findArr.find((i) => i == item)
     }
   })
     .add('Array#findFirstIndex', function () {
-    for (let i = 0; i < SAMPLES; i++) {
+    for (let i = N - SAMPLES; i < N; i++) {
       const item = itemsToGet[i]
       arr[find_first_key(findArr, item)]
     }
   })
     .add('Array#findLastIndex', function () {
-    for (let i = 0; i < SAMPLES; i++) {
+    for (let i = N - SAMPLES; i < N; i++) {
       const item = itemsToGet[i]
       arr[find_last_key(findArr, item)]
     }
   })
   .add('sbplTree#find', function () {
-    for (let i = 0; i < SAMPLES; i++) {
+    for (let i = N - SAMPLES; i < N; i++) {
       const item = itemsToGet[i]
       sbpt.get(item)
     }
   })
   .add('bplTree#find', function () {
-    for (let i = 0; i < SAMPLES; i++) {
+    for (let i = N - SAMPLES; i < N; i++) {
       const item = itemsToGet[i]
       bpt.find(item)
     }
   })
   .add('bplTree#find-reverse', function () {
-    for (let i = 0; i < SAMPLES; i++) {
+    for (let i = N - SAMPLES; i < N; i++) {
       const item = itemsToGet[i]
       bpt.find(item, {forward:false})
     }
   })
   .add('bplTree#findOne', function () {
-    for (let i = 0; i < SAMPLES; i++) {
+    for (let i = N - SAMPLES; i < N; i++) {
       const item = itemsToGet[i]
       bpt.findLast(item)
     }
   })
   .add('bplTree#findOne-reverse', function () {
-    for (let i = 0; i < SAMPLES; i++) {
+    for (let i = N - SAMPLES; i < N; i++) {
       const item = itemsToGet[i]
-      bpt.findFirst(item, {forward:false})
+      bpt.findFirst(item)
     }
   })
   .add('RBTree#find', function () {
-    for (let i = 0; i < SAMPLES; i++) {
+    for (let i = N - SAMPLES; i < N; i++) {
       const item = itemsToGet[i]
       rbTree.find([item])
     }
   })
   // .add('Hash#prop', function () {
-  //   for (let i = 0; i < SAMPLES; i++) {
+  //   for (let i = N - SAMPLES; i < N; i++) {
   //     const item = itemsToGet[i]
   //     const found = obj[item]
   //   }

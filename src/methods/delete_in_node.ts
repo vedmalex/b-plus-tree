@@ -21,7 +21,9 @@ export function delete_in_node(
   reflow(tree, node)
   node.commit()
   if (tree.root.size == 1 && !tree.root.leaf) {
-    tree.root = tree.root.children[0]
+    const node = tree.root
+    tree.root = tree.root.children.pop()
     tree.root.parent = undefined
+    node.delete()
   }
 }
