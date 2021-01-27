@@ -1,5 +1,6 @@
 const fs = require('fs')
 var Benchmark = require('benchmark')
+var SBPlTree = require('sorted-btree').default
 var BPlusTree = require('../dist').BPlusTree
 var {find_first_key} = require('../dist/methods/find_first_key')
 var {find_last_key } = require('../dist/methods/find_last_key')
@@ -11,7 +12,7 @@ const comparator = (a, b) => a[0] - b[0]
 const N = 10000
 const MAX_RAND = 10000000
 const SAMPLES = 100
-const T = 510
+const T = 32
 
 const itemsToGet = JSON.parse(fs.readFileSync('dev/test_data.json').toString())
 
@@ -21,11 +22,13 @@ let obj = {},
   arr = [],
   map = new Map(),
   bpt = new BPlusTree(T, true),
+  sbpt = new SBPlTree()
   rbTree = new RBTree(comparator)
 for (let i = 0; i < N; i++) {
   obj[i] = itemsToGet[i]
   map.set(itemsToGet[i], i)
   bpt.insert(itemsToGet[i], i)
+  sbpt.set(itemsToGet[i], i)
   rbTree.insert([itemsToGet[i], i])
   arr.push(itemsToGet[i])
 }
@@ -104,6 +107,12 @@ linear
     for (let i = 0; i < SAMPLES; i++) {
       const item = itemsToGet[i]
       arr[find_last_key(findArr, item)]
+    }
+  })
+  .add('sbplTree#find', function () {
+    for (let i = 0; i < SAMPLES; i++) {
+      const item = itemsToGet[i]
+      sbpt.get(item)
     }
   })
   .add('bplTree#find', function () {

@@ -3762,6 +3762,11 @@ snapdragon@^0.8.1:
     source-map-resolve "^0.5.0"
     use "^3.1.0"
 
+sorted-btree@^1.4.0:
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/sorted-btree/-/sorted-btree-1.4.0.tgz#cfc2785c25d038d75bec08e4f5a6c21eef09f8dc"
+  integrity sha512-SqT/kawJE45AWiBuIpzfXNwFSYgWTFpduekFKnpE3JVb1JkldV3TziQF9gAAMcmXasZ/SYB3ZEs6u+IY5o9hiQ==
+
 source-map-resolve@^0.5.0:
   version "0.5.3"
   resolved "https://registry.yarnpkg.com/source-map-resolve/-/source-map-resolve-0.5.3.tgz#190866bece7553e1f8f267a2ee82c606b5509a1a"

@@ -1,5 +1,4 @@
 import { Node } from '../types/Node'
-import { NodeStruct } from './NodeStruct'
 
 export function merge_with_left(node: Node, left_sibling: Node, count: number) {
   if (node.leaf) {

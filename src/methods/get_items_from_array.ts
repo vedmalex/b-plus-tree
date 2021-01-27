@@ -1,3 +1,30 @@
+export function get_items_from_array_slice({
+  array,
+  skip = 0,
+  take = -1,
+  forward = true,
+}: {
+  array: Array<any>
+  skip?: number
+  take?: number
+  forward?: boolean
+}) {
+  let result: any[]
+  if (take == -1) take = array.length - skip
+  if (forward) {
+    const start = skip
+    const end = skip + take
+    result = array.slice(start, end)
+  } else {
+    const length = array.length
+    const start = length - skip - 1
+    const end = start - take
+    result = array.slice(start, end)
+    result.reverse()
+  }
+  return result
+}
+
 export function get_items_from_array({
   array,
   skip = 0,
