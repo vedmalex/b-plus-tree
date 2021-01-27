@@ -11,10 +11,67 @@ import { find_first_key } from '../methods/find_first_key'
 import { find_first_node } from '../methods/find_first_node'
 import { find_last_key } from '../methods/find_last_key'
 
+export type InnerCursor = {
+  node: number
+  pos: number
+  value: any
+}
 export type Cursor = {
   node: number
   pos: number
+  value: any
 }
+
+export function get_current_value(tree: BPlusTree, location: Cursor) {
+  const node = tree.nodes.get(location.node)
+  if (node) {
+    return node.pointers[location.pos]
+  } else {
+    throw new Error('invalid cursor')
+  }
+}
+
+export function get_next_value(tree: BPlusTree, location: Cursor): Cursor {
+  let node = tree.nodes.get(location.node)
+  if (node) {
+    let next = location.pos + 1
+    if (next == node.pointers.length) {
+      if (node.right) {
+        node = node.right
+        next = 0
+      }
+    }
+    return { node: node.id, pos: next, value: node.pointers[next] }
+  } else {
+    throw new Error('invalid cursor')
+  }
+}
+
+export function get_previous_value(tree: BPlusTree, location: Cursor) {
+  let node = tree.nodes.get(location.node)
+  if (node) {
+    let next = location.pos - 1
+    if (next == -1) {
+      if (node.left) {
+        node = node.left
+        next = 0
+      }
+    }
+    return { node: node.id, pos: next, value: node.pointers[next] }
+  } else {
+    throw new Error('invalid cursor')
+  }
+}
+
+// можно использовать скип, относительное перемещение по страницам... зная их размер,можно просто пропускать сколько нужно
+// можно в курсорах указывать: отсюда и 10 элементов
+// перемещаться так же можно по ключу --- значению
+
+/**
+ * в дереве храняться значения ключевого поля и указатель на запись, по сути это будет id
+ * но тут можно хранить и значения
+ */
+
 export class BPlusTree {
   public t: number // минимальная степень дерева
   public root: Node // указатель на корень дерева
@@ -51,9 +108,8 @@ export class BPlusTree {
   cursor(key: ValueType): Cursor {
     const node = find_last_node(this, key)
     const index = find_last_key(node.keys, key)
-    return { node: node.id, pos: index }
+    return { node: node.id, pos: index, value: node.pointers[index] }
   }
-
   count(key: ValueType) {
     return count(key, this.root)
   }
