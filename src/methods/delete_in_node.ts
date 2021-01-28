@@ -12,14 +12,11 @@ export function delete_in_node(
   if (all) {
     while (node.keys.indexOf(key) != -1) {
       node.remove(key)
-      node.updateStatics()
     }
   } else {
     node.remove(key)
-    node.updateStatics()
   }
   reflow(tree, node)
-  node.commit()
   if (tree.root.size == 1 && !tree.root.leaf) {
     const node = tree.root
     tree.root = tree.root.children.pop()

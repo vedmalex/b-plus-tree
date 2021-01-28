@@ -22,7 +22,8 @@ export function attach_one_to_right(obj: Node, right: Node | [ValueType, any]) {
       throw new Error("can't attach value to node")
     }
   }
-  obj.updateStatics()
+  // is used only with attach to many which is already contains this call
+  // obj.updateStatics()
 }
 
 export function attach_one_to_right_after(obj: Node, right: Node, after: Node) {

@@ -44,8 +44,8 @@ export declare class BPlusTree {
     insert(key: ValueType, value: any): boolean;
     remove(key: ValueType): number | boolean;
     removeMany(key: ValueType): number | boolean;
-    min(): string | number | boolean;
-    max(): string | number | boolean;
+    min(): ValueType;
+    max(): ValueType;
     toJSON(): {
         t: number;
         unique: boolean;

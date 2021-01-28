@@ -1,6 +1,6 @@
 const fs = require('fs');
-const MAX_RAND = 10000000;
-const SAMPLES = 100000;
+const MAX_RAND = 100000000;
+const SAMPLES = 1000000;
 const itemsToGet = [];
 for (let i = 0; i < SAMPLES; i++) {
   const items = Math.trunc(Math.random()*MAX_RAND);
@@ -24,7 +24,7 @@ const randomize = (list, )=>{
   return result;
 }
 
-fs.writeFileSync('dev/test_data.json',
-JSON.stringify(randomize(result)));
+fs.writeFileSync('dev/test_data_bm.js',
+"exports.default = "+JSON.stringify(randomize(result)));
 
 

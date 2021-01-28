@@ -2,11 +2,11 @@ const fs = require('fs')
 var BPlusTree = require('../dist').BPlusTree
 
 // const comparator = (a, b) => a[0] - b[0]
-const N = 15
+const N = 50
 // const MAX_RAND = 10000000
 // const SAMPLES = 1000
-const T = 20
-const dupes = 3
+const T = 3
+const dupes = 1
 
 const itemsToGet = JSON.parse(fs.readFileSync('dev/test_data.json').toString())
 
@@ -69,20 +69,22 @@ do {
 } while(i < simple.length)
 bpt.print()
 
-do {
-  let cur
-  cur = simple.shift()
-  console.log(`\nremove all ${cur}`)
+if(dupes > 1){
+  do {
+    let cur
+    cur = simple.shift()
+    console.log(`\nremove all ${cur}`)
 
-  result = bpt.removeMany(cur)
-  bpt.print()
-  const find = bpt.find(cur)
-  console.log(find.length)
-} while(simple.length > 0)
+    result = bpt.removeMany(cur)
+    bpt.print()
+    const find = bpt.find(cur)
+    console.log(find.length)
+  } while(simple.length > 0)
 
   if(old_clog){
     console.log = old_clog;
   }
+}
 
   bpt.print()
   if(bpt.nodes.size > 1) {

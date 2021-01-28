@@ -6,7 +6,7 @@
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
-    "removeComments": true,
+    "removeComments": false,
     "strict": false,
     "noImplicitAny": false,
     "noImplicitReturns": false,
@@ -15,6 +15,7 @@
     "noUnusedLocals": false,
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
+    "declarationDir": "./types",
     "lib": ["es2020", "DOM"],
     "types": ["node"],
     "baseUrl": "./",
@@ -25,6 +26,6 @@
     "experimentalDecorators": true,
     "moduleResolution": "node"
   },
-  "include": ["src/**/*", "dev/btree.ts", "dev/btree copy.ts"],
+  "include": ["src/**/*", "src/globals.d.ts"],
   "exclude": ["**/__tests__", "**/__mocks__"]
 }

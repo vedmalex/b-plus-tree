@@ -9,7 +9,6 @@ import { find_first_key } from '../methods/find_first_key'
 import { attach_many_to_right } from '../methods/attach_many_to_right'
 import { find_first_item } from '../methods/find_first_item'
 import { BPlusTree } from './BPlusTree'
-import { remove } from '../methods/remove'
 
 export function addSibling(
   a: Chainable,
@@ -46,9 +45,6 @@ export enum VertexColor {
   red = 3,
 }
 
-const left = new Map<number, Node>()
-const right = new Map<number, Node>()
-
 const rules: Array<Rule<Node>> = [
   ...Rule.createSetter<Node>({
     field: 'keys',
@@ -59,7 +55,7 @@ const rules: Array<Rule<Node>> = [
     field: 'isFull',
     subscribesTo: ['size'],
     run: (node) =>
-      (node.leaf ? node.keys.length : node.children.length) > node.t * 2,
+      (node.leaf ? node.keys.length : node.children.length) > node.t << 1,
   }),
   ...Rule.createSetter<Node>({
     field: 'size',
@@ -93,6 +89,11 @@ const rules: Array<Rule<Node>> = [
     condition: (obj: Node) =>
       obj.key_num == 0 && obj.size == 1 && obj.parent && !obj.leaf,
     run: (obj: Node) => {
+      //#ifdef DEBUG
+      if (DEBUG) {
+        console.log(`${obj.id} 'after:update', 'before:delete'`)
+      }
+      //#endif
       const child = obj.children.pop()
       const parent = obj.parent
       // вставляем на прямо на то же место где и был
@@ -111,8 +112,14 @@ const rules: Array<Rule<Node>> = [
   ...Rule.createAction({
     on: ['after:update'],
     condition: (obj: Node) => obj.parent?.size > 0,
-    // condition: (obj: Node) => obj.parent?.size == 1,
-    run: (obj: Node) => obj.parent.commit(),
+    run: (obj: Node) => {
+      //#ifdef DEBUG
+      if (DEBUG) {
+        console.log(`${obj.id} action 'after:update'`)
+      }
+      //#endif
+      obj.parent.commit()
+    },
   }),
 
   ...Rule.createAction({
@@ -122,14 +129,22 @@ const rules: Array<Rule<Node>> = [
     },
     run: (obj: Node) => {
       unregisterNode(obj.tree, obj)
-      // console.log(`unregistered ${obj.id}`)
+      //#ifdef DEBUG
+      if (DEBUG) {
+        console.log(`unregistered ${obj.id}`)
+      }
+      //#endif
     },
   }),
   ...Rule.createAction({
     on: ['after:create'],
     run: (obj: Node) => {
       registerNode(obj.tree, obj)
-      // console.log(`registered ${obj.id}`)
+      //#ifdef DEBUG
+      if (DEBUG) {
+        console.log(`registered ${obj.id}`)
+      }
+      //#endif
     },
   }),
 ]
@@ -244,10 +259,20 @@ export class Node {
   }
 
   updateStatics() {
+    //#ifdef DEBUG
+    if (DEBUG) {
+      console.log(`${this.id} update statics`)
+    }
+    //#endif
     return ruleRunner.updateFields(this, '*')
   }
 
   commit() {
+    //#ifdef DEBUG
+    if (DEBUG) {
+      console.log(`${this.id} commit`)
+    }
+    //#endif
     this.updateStatics()
     return ruleRunner.runAction(this, 'after:update')
   }

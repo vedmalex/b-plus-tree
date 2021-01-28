@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "module": "commonjs",
+    "esModuleInterop": true,
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+    "removeComments": false,
+    "strict": false,
+    "noImplicitAny": false,
+    "noImplicitReturns": false,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedParameters": false,
+    "noUnusedLocals": false,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "declarationDir": "./types",
+    "emitDeclarationOnly": true,
+    "lib": ["es2020", "DOM"],
+    "types": ["node"],
+    "baseUrl": "./",
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "allowSyntheticDefaultImports": true,
+    "target": "es2018",
+    "experimentalDecorators": true,
+    "moduleResolution": "node"
+  },
+  "include": ["src/**/*", "src/globals.d.ts"],
+  "exclude": ["**/__tests__", "**/__mocks__"]
+}
