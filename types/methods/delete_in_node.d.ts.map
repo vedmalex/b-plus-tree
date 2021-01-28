@@ -1,0 +1,1 @@
+{"version":3,"file":"delete_in_node.d.ts","sourceRoot":"","sources":["../../src/methods/delete_in_node.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,SAAS,EAAE,MAAM,oBAAoB,CAAA;AAC9C,OAAO,EAAE,IAAI,EAAE,MAAM,eAAe,CAAA;AACpC,OAAO,EAAE,SAAS,EAAE,MAAM,UAAU,CAAA;AAGpC,wBAAgB,cAAc,CAC5B,IAAI,EAAE,SAAS,EACf,IAAI,EAAE,IAAI,EACV,GAAG,EAAE,SAAS,EACd,GAAG,GAAE,OAAe,QAmBrB"}
