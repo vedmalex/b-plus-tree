@@ -60,7 +60,7 @@ export function reflow(tree: BPlusTree, node: Node) {
               node.keys.length = 0
               node.pointers.length = 0
             } else {
-              right_sibling.keys.unshift(...node.keys, node.max)
+              right_sibling.keys.unshift(...node.keys, node.min)
               node.keys.length = 0
               right_sibling.children.unshift(
                 ...node.children.map((c) => {

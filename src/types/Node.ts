@@ -6,7 +6,7 @@ import { find_last_key } from '../methods/find_last_key'
 import { RuleRunner, Rule } from 'dymanic-rule-runner'
 import { Chainable } from './Chainable'
 import { find_first_key } from '../methods/find_first_key'
-import { attach_many_to_right } from '../methods/attach_many_to_right'
+import { add_initial_nodes } from '../methods/add_initial_nodes'
 import { find_first_item } from '../methods/find_first_item'
 import { BPlusTree } from './BPlusTree'
 
@@ -45,112 +45,6 @@ export enum VertexColor {
   red = 3,
 }
 
-const rules: Array<Rule<Node>> = [
-  ...Rule.createSetter<Node>({
-    field: 'keys',
-    condition: (obj: Node) => !obj.leaf,
-    run: (root: Node) => root.children.slice(1).map((c) => c.min),
-  }),
-  ...Rule.createSetter<Node>({
-    field: 'isFull',
-    subscribesTo: ['size'],
-    run: (node) =>
-      (node.leaf ? node.keys.length : node.children.length) > node.t << 1,
-  }),
-  ...Rule.createSetter<Node>({
-    field: 'size',
-    subscribesTo: ['keys'],
-    run: (obj: Node) => (obj.leaf ? obj.keys.length : obj.children.length),
-  }),
-  ...Rule.createSetter<Node>({
-    field: 'key_num',
-    subscribesTo: ['keys'],
-    run: (obj: Node) => obj.keys.length,
-  }),
-  ...Rule.createSetter({
-    field: 'isEmpty',
-    subscribesTo: ['size'],
-    run: (obj: Node) => obj.size == 0,
-  }),
-  ...Rule.createSetter({
-    field: 'min',
-    subscribesTo: ['keys'],
-    run: (obj: Node) => (obj.leaf ? obj.keys[0] ?? undefined : min(obj)),
-  }),
-  ...Rule.createSetter({
-    field: 'max',
-    subscribesTo: ['keys'],
-    run: (obj: Node) =>
-      obj.leaf ? obj.keys[obj.key_num - 1] ?? undefined : max(obj),
-  }),
-  // уменьшать можно только разрядность всего дерева???
-  ...Rule.createAction({
-    on: ['after:update', 'before:delete'],
-    condition: (obj: Node) =>
-      obj.key_num == 0 && obj.size == 1 && obj.parent && !obj.leaf,
-    run: (obj: Node) => {
-      //#ifdef DEBUG
-      if (DEBUG) {
-        console.log(`${obj.id} 'after:update', 'before:delete'`)
-      }
-      //#endif
-      const child = obj.children.pop()
-      const parent = obj.parent
-      // вставляем на прямо на то же место где и был
-      const pos = parent.children.indexOf(obj)
-      parent.children[pos] = child
-      child.parent = parent
-      obj.left?.removeSiblingAtRight()
-      obj.right?.removeSiblingAtLeft()
-      obj.parent = undefined
-      obj.commit()
-      obj.delete()
-      parent.commit()
-    },
-  }),
-
-  ...Rule.createAction({
-    on: ['after:update'],
-    condition: (obj: Node) => obj.parent?.size > 0,
-    run: (obj: Node) => {
-      //#ifdef DEBUG
-      if (DEBUG) {
-        console.log(`${obj.id} action 'after:update'`)
-      }
-      //#endif
-      obj.parent.commit()
-    },
-  }),
-
-  ...Rule.createAction({
-    on: ['after:delete'],
-    condition: (obj: Node) => {
-      return obj.tree.root != obj
-    },
-    run: (obj: Node) => {
-      unregisterNode(obj.tree, obj)
-      //#ifdef DEBUG
-      if (DEBUG) {
-        console.log(`unregistered ${obj.id}`)
-      }
-      //#endif
-    },
-  }),
-  ...Rule.createAction({
-    on: ['after:create'],
-    run: (obj: Node) => {
-      registerNode(obj.tree, obj)
-      //#ifdef DEBUG
-      if (DEBUG) {
-        console.log(`registered ${obj.id}`)
-      }
-      //#endif
-    },
-  }),
-]
-
-export const ruleRunner = new RuleRunner<Node>(rules)
-
 let node = 0
 
 export function registerNode(tree: BPlusTree, node: Node) {
@@ -163,17 +57,58 @@ export function unregisterNode(tree: BPlusTree, node: Node) {
   tree.nodes.delete(node.id)
 }
 
+export function push_node_up(node: Node) {
+  const child = node.children.pop()
+  const parent = node.parent
+  // вставляем на прямо на то же место где и был
+  const pos = parent.children.indexOf(node)
+  parent.children[pos] = child
+  child.parent = parent
+  node.left?.removeSiblingAtRight()
+  node.right?.removeSiblingAtLeft()
+  node.parent = undefined
+  node.commit()
+  node.delete()
+  parent.commit()
+}
+
+export function push_min_up(node: Node, key: ValueType) {
+  node.min = key
+  let cur = node
+  while (cur.parent) {
+    let parent = cur.parent
+    const pos = parent.children.indexOf(cur)
+    if (pos > 0) {
+      parent.keys[pos - 1] = key
+      break
+    } else {
+      parent.min = key
+      cur = parent
+    }
+  }
+}
+
+export function push_max_up(node: Node, key: ValueType) {
+  node.max = key
+  let cur = node
+  while (cur.parent) {
+    let parent = cur.parent
+    if (parent.max < key) {
+      parent.max = key
+      cur = parent
+    } else break
+  }
+}
 export class Node {
   static createLeaf(tree: BPlusTree) {
-    return ruleRunner.create(new Node(true, tree))
+    return new Node(true, tree)
   }
   static createNode(tree: BPlusTree) {
-    return ruleRunner.create(new Node(false, tree))
+    return new Node(false, tree)
   }
   static createRootFrom(tree: BPlusTree, ...node: Array<Node>) {
     const root = Node.createNode(tree)
-    attach_many_to_right(root, node)
-    root.updateStatics()
+    add_initial_nodes(root, node)
     return root
   }
   static load(tree: BPlusTree) {
@@ -182,15 +117,15 @@ export class Node {
   id = node++
   t: number
   leaf: boolean // является ли узел листом
-  key_num: number // количество ключей узла
-  size: number // значимый размер узла
+  key_num: number = 0 // количество ключей узла
+  size: number = 0 // значимый размер узла
   keys: ValueType[] // ключи узла
   children: Node[] // указатели на детей узла
   pointers: any[] // если лист — указатели на данные
   min: ValueType
   max: ValueType
-  isFull: boolean
-  isEmpty: boolean
+  isFull: boolean = false
+  isEmpty: boolean = true
   tree: BPlusTree
   private constructor(leaf: boolean, tree: BPlusTree) {
     this.tree = tree
@@ -209,26 +144,35 @@ export class Node {
     this.min = undefined
     this.max = undefined
     this.t = tree.t
+    registerNode(this.tree, this)
   }
 
   delete() {
-    ruleRunner.delete(this)
+    if (this.tree.root != this) unregisterNode(this.tree, this)
   }
 
-  insertMany(...items: [/* Node |  */ ValueType, any][]) {
+  insertMany(...items: Array<[ValueType, any]>) {
     items.forEach((item) => this.insert(item))
+    // немного другая логика по обновлению ключей
+    // TODO: переписать код, чтобы вызывал обновления после всего
   }
 
   insert(item: [ValueType, any]) {
-    if (this.leaf) {
-      const [key, value] = item
-      const pos = find_last_key(this.keys, item[0])
-      this.keys.splice(pos, 0, key)
-      this.pointers.splice(pos, 0, value)
-    } else {
-      throw new Error("can't attach value to node")
+    const [key, value] = item
+    const pos = find_last_key(this.keys, item[0])
+    this.keys.splice(pos, 0, key)
+    this.pointers.splice(pos, 0, value)
+
+    this.key_num += 1
+    this.size += 1
+    this.isFull = this.size > this.t << 1
+
+    if (pos == 0) {
+      push_min_up(this, key)
     }
-    this.updateStatics()
+    if (pos == this.keys.length - 1) {
+      push_max_up(this, key)
+    }
   }
 
   remove(item: ValueType | Node): Node | [ValueType, any] {
@@ -259,23 +203,37 @@ export class Node {
   }
 
   updateStatics() {
-    //#ifdef DEBUG
-    if (DEBUG) {
-      console.log(`${this.id} update statics`)
-    }
-    //#endif
-    return ruleRunner.updateFields(this, '*')
+    /**
+      0:'keys'
+      1:'size'
+      2:'isFull'
+      3:'key_num'
+      4:'isEmpty'
+      5:'min'
+      6:'max'
+     */
+    // if (!this.leaf) {
+    //   this.keys = this.children.slice(1).map((c) => c.min)
+    // }
+    this.size = this.leaf ? this.keys.length : this.children.length
+    this.isFull =
+      (this.leaf ? this.keys.length : this.children.length) > this.t << 1
+    this.key_num = this.keys.length
+    this.isEmpty = this.size == 0
+    // this.min = this.leaf ? this.keys[0] ?? undefined : min(this)
+    // this.max = this.leaf ? this.keys[this.key_num - 1] ?? undefined : max(this)
   }
 
   commit() {
-    //#ifdef DEBUG
-    if (DEBUG) {
-      console.log(`${this.id} commit`)
-    }
-    //#endif
     this.updateStatics()
-    return ruleRunner.runAction(this, 'after:update')
+    if (this.key_num == 0 && this.size == 1 && this.parent && !this.leaf) {
+      push_node_up(this)
+    }
+    if (this.parent?.size > 0) {
+      this.parent.commit()
+    }
   }
+
   print(node?: Node) {
     print(
       node?.toJSON() ?? this.toJSON(),

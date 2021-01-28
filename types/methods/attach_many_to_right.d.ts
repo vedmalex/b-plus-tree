@@ -1,4 +1,3 @@
-import { ValueType } from '../btree';
 import { Node } from '../types/Node';
-export declare function attach_many_to_right(obj: Node, right: Array<Node | [ValueType, any]>): void;
+export declare function add_initial_nodes(obj: Node, nodes: Array<Node>): void;
 //# sourceMappingURL=attach_many_to_right.d.ts.map

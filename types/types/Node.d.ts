@@ -1,5 +1,4 @@
 import { ValueType } from '../btree';
-import { RuleRunner } from 'dymanic-rule-runner';
 import { Chainable } from './Chainable';
 import { BPlusTree } from './BPlusTree';
 export declare function addSibling(a: Chainable, b: Chainable, order: 'right' | 'left'): void;
@@ -9,9 +8,11 @@ export declare enum VertexColor {
     blue = 2,
     red = 3
 }
-export declare const ruleRunner: RuleRunner<Node>;
 export declare function registerNode(tree: BPlusTree, node: Node): void;
 export declare function unregisterNode(tree: BPlusTree, node: Node): void;
+export declare function push_node_up(node: Node): void;
+export declare function push_min_up(node: Node, key: ValueType): void;
+export declare function push_max_up(node: Node, key: ValueType): void;
 export declare class Node {
     static createLeaf(tree: BPlusTree): Node;
     static createNode(tree: BPlusTree): Node;
@@ -32,11 +33,11 @@ export declare class Node {
     tree: BPlusTree;
     private constructor();
     delete(): void;
-    insertMany(...items: [/* Node |  */ ValueType, any][]): void;
+    insertMany(...items: Array<[ValueType, any]>): void;
     insert(item: [ValueType, any]): void;
     remove(item: ValueType | Node): Node | [ValueType, any];
-    updateStatics(): number;
-    commit(): Map<string, any>;
+    updateStatics(): void;
+    commit(): void;
     print(node?: Node): void;
     toJSON(): any;
     _parent: number;
