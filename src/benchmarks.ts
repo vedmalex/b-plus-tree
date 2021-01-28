@@ -1,4 +1,4 @@
-import { BPlusTree } from './types/BPlusTree'
+import { BPlusTree, find } from './types/BPlusTree'
 import BTree from 'sorted-btree'
 
 export class Timer {
@@ -99,6 +99,27 @@ for (let size of [1000, 10000, 100000, 1000000]) {
     (map) => `find ${map.size()} items in BPlusTree`,
     () => {
       for (let i of indexes) bptree.find(keys[i])
+      return bptree
+    },
+  )
+  measure(
+    (map) => `find ${map.size()} items in find with BPlusTree`,
+    () => {
+      for (let i of indexes) find(bptree, keys[i])
+      return bptree
+    },
+  )
+  measure(
+    (map) => `find ${map.size()} items in find_previous with BPlusTree`,
+    () => {
+      for (let i of indexes) find(bptree, keys[i], { skip: 1 })
+      return bptree
+    },
+  )
+  measure(
+    (map) => `find ${map.size()} items in find_next with BPlusTree`,
+    () => {
+      for (let i of indexes) find(bptree, keys[i], { skip: 1, forward: false })
       return bptree
     },
   )

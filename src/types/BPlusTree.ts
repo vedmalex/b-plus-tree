@@ -11,56 +11,91 @@ import { find_first_key } from '../methods/find_first_key'
 import { find_first_node } from '../methods/find_first_node'
 import { find_last_key } from '../methods/find_last_key'
 
-export type InnerCursor = {
-  node: number
-  pos: number
-  value: any
-}
 export type Cursor = {
   node: number
   pos: number
   value: any
 }
 
-export function get_current_value(tree: BPlusTree, location: Cursor) {
-  const node = tree.nodes.get(location.node)
-  if (node) {
-    return node.pointers[location.pos]
-  } else {
-    throw new Error('invalid cursor')
+export function evaluate(tree: BPlusTree, id: number, pos: number): Cursor {
+  let cur = tree.nodes.get(id)
+  while (cur) {
+    let len = cur.pointers.length
+    if (pos > len) {
+      cur = cur.right
+      pos -= len
+    } else if (len < 0) {
+      cur = cur.left
+      pos += cur.pointers.length
+    } else {
+      return get_current(cur, pos)
+    }
   }
+  // throw new Error('invalid cursor')
 }
 
-export function get_next_value(tree: BPlusTree, location: Cursor): Cursor {
-  let node = tree.nodes.get(location.node)
-  if (node) {
-    let next = location.pos + 1
-    if (next == node.pointers.length) {
-      if (node.right) {
-        node = node.right
-        next = 0
-      }
-    }
-    return { node: node.id, pos: next, value: node.pointers[next] }
-  } else {
-    throw new Error('invalid cursor')
-  }
+export function get_current(cur: Node, pos: number) {
+  return { node: cur.id, pos, value: cur.pointers[pos] }
 }
 
-export function get_previous_value(tree: BPlusTree, location: Cursor) {
-  let node = tree.nodes.get(location.node)
-  if (node) {
-    let next = location.pos - 1
-    if (next == -1) {
-      if (node.left) {
-        node = node.left
-        next = 0
+export function eval_current(tree: BPlusTree, id: number, pos: number) {
+  return evaluate(tree, id, pos)
+}
+
+export function eval_next(tree: BPlusTree, id: number, pos: number) {
+  return evaluate(tree, id, pos + 1)
+}
+
+export function eval_previous(tree: BPlusTree, id: number, pos: number) {
+  return evaluate(tree, id, pos - 1)
+}
+
+export type SearchOptions = { skip: number; take: number; forward: boolean }
+
+export function find_first(
+  tree: BPlusTree,
+  key: ValueType,
+  forward: boolean = true,
+): Cursor {
+  let node: Node, index: number
+  if (forward) {
+    node = find_last_node(tree, key)
+    index = find_last_key(node.keys, key)
+  } else {
+    node = find_last_node(tree, key)
+    index = find_last_key(node.keys, key)
+  }
+  return { node: node.id, pos: index, value: node.pointers[index] }
+}
+
+// можно сделать мемоизацию на операцию, кэш значений для поиска
+
+export function find(
+  tree: BPlusTree,
+  key: ValueType,
+  options?: Partial<SearchOptions>,
+) {
+  let { skip = 0, take = -1, forward = true } = options ?? {}
+  const result = []
+  const cursor = find_first(tree, key, forward)
+  let cur: Cursor
+  if (skip == 0) {
+    cur = cursor
+  } else {
+    cur = evaluate(tree, cursor.node, cursor.pos + (forward ? skip : -skip))
+  }
+  if (cur) {
+    if (take == -1) {
+      result.push(cur.value)
+    } else {
+      while (cur || take == 0) {
+        result.push(cur.value)
+        take -= 1
+        cur = evaluate(tree, cur.node, cur.pos + (forward ? 1 : -1))
       }
     }
-    return { node: node.id, pos: next, value: node.pointers[next] }
-  } else {
-    throw new Error('invalid cursor')
   }
+  return result
 }
 
 // можно использовать скип, относительное перемещение по страницам... зная их размер,можно просто пропускать сколько нужно
@@ -110,6 +145,7 @@ export class BPlusTree {
     const index = find_last_key(node.keys, key)
     return { node: node.id, pos: index, value: node.pointers[index] }
   }
+
   count(key: ValueType) {
     return count(key, this.root)
   }
