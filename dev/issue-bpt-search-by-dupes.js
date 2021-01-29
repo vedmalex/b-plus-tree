@@ -2,10 +2,10 @@ const fs = require('fs')
 var BPlusTree = require('../dist').BPlusTree
 
 // const comparator = (a, b) => a[0] - b[0]
-const N = 10
+const N = 100
 // const MAX_RAND = 10000000
 // const SAMPLES = 1000
-const T = 1
+const T = 2
 const dupes = 1
 
 const itemsToGet = JSON.parse(fs.readFileSync('dev/test_data.json').toString())

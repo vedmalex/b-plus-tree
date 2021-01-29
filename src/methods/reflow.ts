@@ -44,7 +44,7 @@ export function reflow(tree: BPlusTree, node: Node) {
               left_sibling.commit()
             }
           } else if (right_sibling) {
-            merge_with_left(right_sibling, node, node.size)
+            merge_with_left(right_sibling, node)
             const parent = node.parent
             if (parent) {
               remove_node(parent, node)

@@ -179,7 +179,7 @@ export function remove_node(obj: Node, item: Node): Node {
     insert_new_min(obj, min)
   }
   // as far as we splice last item from node it is now at length position
-  if (pos == obj.keys.length) {
+  if (pos == obj.size) {
     const max = obj.children[obj.key_num]?.max
     insert_new_max(obj, max)
   }
@@ -247,15 +247,12 @@ export class Node {
     this.keys.splice(pos, 0, key)
     this.pointers.splice(pos, 0, value)
 
-    this.key_num += 1
-    this.size += 1
-    this.isFull = this.size > this.t << 1
-    this.isEmpty = this.size <= 0
+    update_state(this)
 
     if (pos == 0) {
       insert_new_min(this, key)
     }
-    if (pos == this.keys.length - 1) {
+    if (pos == this.size - 1) {
       insert_new_max(this, key)
     }
   }
@@ -280,11 +277,11 @@ export class Node {
     console.log(`commit ${this.id}`)
     if (this.key_num == 0 && this.size == 1 && this.parent && !this.leaf) {
       console.log('push_node_up')
-      this.print()
+      // this.print()
       push_node_up(this)
       if (this.parent?.size > 0) {
         console.log('parent.commit')
-        this.print()
+        // this.print()
         this.parent.commit()
       }
     }
