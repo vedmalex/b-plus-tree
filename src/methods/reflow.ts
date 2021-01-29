@@ -1,7 +1,7 @@
 import { BPlusTree } from '../types/BPlusTree'
-import { Node } from '../types/Node'
-import { borrow_left } from './borrow_left'
-import { borrow_right } from './borrow_right'
+import { Node, remove_node } from '../types/Node'
+import { borrow_left, merge_with_left } from './borrow_left'
+import { borrow_right, merge_with_right } from './borrow_right'
 import { can_borrow_left } from './can_borrow_left'
 import { can_borrow_right } from './can_borrow_right'
 
@@ -28,54 +28,56 @@ export function reflow(tree: BPlusTree, node: Node) {
         if (!node.isEmpty) {
           // слева не пустой элемент
           if (left_sibling) {
-            if (node.leaf) {
-              left_sibling.keys.push(...node.keys)
-              left_sibling.pointers.push(...node.pointers)
-              node.keys.length = 0
-              node.pointers.length = 0
-            } else {
-              left_sibling.keys.push(node.min, ...node.keys)
-              node.keys.length = 0
-              left_sibling.children.push(
-                ...node.children.map((c) => {
-                  c.parent = left_sibling
-                  return c
-                }),
-              )
-              node.children.length = 0
-            }
-            left_sibling.updateStatics()
+            merge_with_right(left_sibling, node, node.size)
+            // if (node.leaf) {
+            //   left_sibling.keys.push(...node.keys)
+            //   left_sibling.pointers.push(...node.pointers)
+            //   node.keys.length = 0
+            //   node.pointers.length = 0
+            // } else {
+            //   left_sibling.keys.push(node.min, ...node.keys)
+            //   node.keys.length = 0
+            //   left_sibling.children.push(
+            //     ...node.children.map((c) => {
+            //       c.parent = left_sibling
+            //       return c
+            //     }),
+            //   )
+            //   node.children.length = 0
+            // }
+            // left_sibling.updateStatics()
             left_sibling.removeSiblingAtRight()
             const parent = node.parent
             if (parent) {
-              parent.remove(node)
+              remove_node(parent, node)
             }
             node.commit()
             reflow(tree, parent)
             if (parent != left_sibling.parent) reflow(tree, left_sibling.parent)
           } else if (right_sibling) {
-            if (node.leaf) {
-              right_sibling.keys.unshift(...node.keys)
-              right_sibling.pointers.unshift(...node.pointers)
-              node.keys.length = 0
-              node.pointers.length = 0
-            } else {
-              right_sibling.keys.unshift(...node.keys, node.min)
-              node.keys.length = 0
-              right_sibling.children.unshift(
-                ...node.children.map((c) => {
-                  c.parent = right_sibling
-                  return c
-                }),
-              )
-              node.children.length = 0
-            }
+            merge_with_left(right_sibling, node, node.size)
+            // if (node.leaf) {
+            //   right_sibling.keys.unshift(...node.keys)
+            //   right_sibling.pointers.unshift(...node.pointers)
+            //   node.keys.length = 0
+            //   node.pointers.length = 0
+            // } else {
+            //   right_sibling.keys.unshift(...node.keys, node.min)
+            //   node.keys.length = 0
+            //   right_sibling.children.unshift(
+            //     ...node.children.map((c) => {
+            //       c.parent = right_sibling
+            //       return c
+            //     }),
+            //   )
+            //   node.children.length = 0
+            // }
 
-            right_sibling.updateStatics()
-            right_sibling.removeSiblingAtLeft()
+            // right_sibling.updateStatics()
+            // right_sibling.removeSiblingAtLeft()
             const parent = node.parent
             if (parent) {
-              parent.remove(node)
+              remove_node(parent, node)
             }
             node.commit()
             reflow(tree, parent)
@@ -86,7 +88,7 @@ export function reflow(tree: BPlusTree, node: Node) {
             node.right?.removeSiblingAtLeft()
             node.left?.removeSiblingAtRight()
             if (parent) {
-              parent.remove(node)
+              remove_node(parent, node)
             }
             reflow(tree, parent)
             node.commit()
@@ -100,7 +102,7 @@ export function reflow(tree: BPlusTree, node: Node) {
           }
           const parent = node.parent
           if (parent) {
-            parent.remove(node)
+            remove_node(parent, node)
           }
           node.commit()
           reflow(tree, parent)

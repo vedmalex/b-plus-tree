@@ -1,4 +1,4 @@
-import { Node } from '../types/Node'
+import { Node, update_min_max } from '../types/Node'
 
 export function borrow_left(node: Node, count: number = 1) {
   const left_sibling = node.left
@@ -8,7 +8,7 @@ export function borrow_left(node: Node, count: number = 1) {
   node.commit()
 }
 
-function merge_with_left(node: Node, left_sibling: Node, count: number) {
+export function merge_with_left(node: Node, left_sibling: Node, count: number) {
   if (node.leaf) {
     node.keys.unshift(
       ...left_sibling.keys.splice(left_sibling.keys.length - count),
@@ -19,19 +19,20 @@ function merge_with_left(node: Node, left_sibling: Node, count: number) {
     // update node
     node.key_num += count
     node.size += count
-    node.isEmpty = false
+    node.isFull = node.size > node.t << 1
+    node.isEmpty = node.size <= 0
 
     // update and push all needed max and min
-    node.min = node.keys[0]
-    node.max = node.keys[node.key_num - 1]
+    update_min_max(node)
 
     // update sibling
     left_sibling.key_num -= count
     left_sibling.size -= count
-    left_sibling.isFull = false
+    left_sibling.isFull = left_sibling.size > left_sibling.t << 1
+    left_sibling.isEmpty = left_sibling.size <= 0
 
-    left_sibling.min = left_sibling.keys[0]
-    left_sibling.max = left_sibling.keys[left_sibling.key_num - 1]
+    update_min_max(left_sibling)
+
     // not pushin up because we in process of attaching
     // not updating parent yet
   } else {
@@ -53,19 +54,17 @@ function merge_with_left(node: Node, left_sibling: Node, count: number) {
     // update node
     node.key_num += count - 1
     node.size += count
-    node.isEmpty = false
-
+    node.isFull = node.size > node.t << 1
+    node.isEmpty = node.size <= 0
     // update and push all needed max and min
-    node.min = node.children[0].min
-    node.max = node.children[node.key_num].max
-
+    update_min_max(node)
     // update sibling
     left_sibling.key_num -= count
     left_sibling.size -= count
-    left_sibling.isFull = false
+    left_sibling.isFull = left_sibling.size > left_sibling.t << 1
+    left_sibling.isEmpty = left_sibling.size <= 0
 
-    left_sibling.min = left_sibling.children[0].min
-    left_sibling.max = left_sibling.children[left_sibling.key_num].max
+    update_min_max(left_sibling)
     // not pushin up because we in process of attaching
     // not updating parent yet
   }

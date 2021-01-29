@@ -72,7 +72,7 @@ export function push_node_up(node: Node) {
   parent.commit()
 }
 
-export function push_min_up(node: Node, key: ValueType) {
+export function insert_new_min(node: Node, key: ValueType) {
   node.min = key
   let cur = node
   while (cur.parent) {
@@ -88,7 +88,7 @@ export function push_min_up(node: Node, key: ValueType) {
   }
 }
 
-export function push_max_up(node: Node, key: ValueType) {
+export function insert_new_max(node: Node, key: ValueType) {
   node.max = key
   let cur = node
   while (cur.parent) {
@@ -99,6 +99,81 @@ export function push_max_up(node: Node, key: ValueType) {
     } else break
   }
 }
+
+export function update_min_max(node: Node) {
+  if (!node.isEmpty) {
+    if (node.leaf) {
+      replace_min(node, node.keys[0])
+      replace_max(node, node.keys[node.size - 1])
+    } else {
+      replace_min(node, node.children[0].min)
+      replace_max(node, node.children[node.size - 1].max)
+    }
+  } else {
+    node.min = undefined
+    node.max = undefined
+  }
+}
+
+export function replace_min(node: Node, key: ValueType) {
+  node.min = key
+  let cur = node
+  while (cur.parent) {
+    let parent = cur.parent
+    const pos = parent.children.indexOf(cur)
+    if (pos > 0) {
+      parent.keys[pos - 1] = key
+      break
+    } else {
+      parent.min = key
+      cur = parent
+    }
+  }
+}
+
+export function replace_max(node: Node, key: ValueType) {
+  node.max = key
+  let cur = node
+  while (cur.parent) {
+    let parent = cur.parent
+    const pos = parent.children.indexOf(cur)
+    if (pos == parent.children.length - 1) {
+      parent.max = key
+      cur = parent
+    } else break
+  }
+}
+
+export function remove_node(obj: Node, item: Node): Node {
+  const pos = obj.children.indexOf(item)
+  obj.children.splice(pos, 1)
+  obj.keys.shift()
+  item.parent = undefined
+  item.right?.removeSiblingAtLeft()
+  item.left?.removeSiblingAtRight()
+
+  item.key_num = 0
+  item.size = 0
+  item.isEmpty = true
+  item.isFull = false
+
+  obj.key_num -= 1
+  obj.size -= 1
+  obj.isFull = obj.size > obj.t << 1
+  obj.isEmpty = obj.size <= 0
+
+  if (pos == 0) {
+    const min = obj.children[0].min
+    insert_new_min(obj, min)
+  }
+  // as far as we splice last item from node it is now at length position
+  if (pos == obj.keys.length) {
+    const max = obj.children[obj.key_num].max
+    insert_new_max(obj, max)
+  }
+  return item
+}
+
 export class Node {
   static createLeaf(tree: BPlusTree) {
     return new Node(true, tree)
@@ -140,7 +215,7 @@ export class Node {
       this.children = []
     }
     this.isFull = false
-    this.isEmpty = true
+    this.isEmpty = this.size <= 0
     this.min = undefined
     this.max = undefined
     this.t = tree.t
@@ -166,40 +241,33 @@ export class Node {
     this.key_num += 1
     this.size += 1
     this.isFull = this.size > this.t << 1
+    this.isEmpty = this.size <= 0
 
     if (pos == 0) {
-      push_min_up(this, key)
+      insert_new_min(this, key)
     }
     if (pos == this.keys.length - 1) {
-      push_max_up(this, key)
+      insert_new_max(this, key)
     }
   }
 
-  remove(item: ValueType | Node): Node | [ValueType, any] {
-    if (item instanceof Node) {
-      const pos = this.children.indexOf(item)
-      this.children.splice(pos, 1)
-      item.parent = undefined
-      item.right?.removeSiblingAtLeft()
-      item.left?.removeSiblingAtRight()
-      this.updateStatics()
-      return item
-    } else {
-      if (this.leaf) {
-        const pos = find_first_item(this.keys, item)
-        const res: [ValueType, any] = [item, this.pointers.splice(pos, 1)[0]]
-        this.keys.splice(pos, 1)
-        this.updateStatics()
-        return res
-      } else {
-        // const pos = find_last_pos_to_insert(this.keys, item)
-        const pos = find_first_key(this.keys, item)
-        const res = this.children.splice(pos, 1)[0]
-        res.parent = undefined
-        this.updateStatics()
-        return res
-      }
+  remove(item: ValueType): [ValueType, any] {
+    const pos = find_first_item(this.keys, item)
+    const res: [ValueType, any] = [item, this.pointers.splice(pos, 1)[0]]
+    this.keys.splice(pos, 1)
+    this.key_num -= 1
+    this.size -= 1
+    this.isFull = false
+    this.isEmpty = this.size <= 0
+
+    if (pos == 0) {
+      replace_min(this, this.keys[0])
     }
+    // as far as we splice last item from node it is now at length position
+    if (pos == this.keys.length) {
+      replace_max(this, this.keys[pos - 1])
+    }
+    return res
   }
 
   updateStatics() {
@@ -219,7 +287,7 @@ export class Node {
     this.isFull =
       (this.leaf ? this.keys.length : this.children.length) > this.t << 1
     this.key_num = this.keys.length
-    this.isEmpty = this.size == 0
+    this.isEmpty = this.size <= 0
     // this.min = this.leaf ? this.keys[0] ?? undefined : min(this)
     // this.max = this.leaf ? this.keys[this.key_num - 1] ?? undefined : max(this)
   }

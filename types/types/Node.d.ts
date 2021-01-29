@@ -11,8 +11,12 @@ export declare enum VertexColor {
 export declare function registerNode(tree: BPlusTree, node: Node): void;
 export declare function unregisterNode(tree: BPlusTree, node: Node): void;
 export declare function push_node_up(node: Node): void;
-export declare function push_min_up(node: Node, key: ValueType): void;
-export declare function push_max_up(node: Node, key: ValueType): void;
+export declare function insert_new_min(node: Node, key: ValueType): void;
+export declare function insert_new_max(node: Node, key: ValueType): void;
+export declare function update_min_max(node: Node): void;
+export declare function replace_min(node: Node, key: ValueType): void;
+export declare function replace_max(node: Node, key: ValueType): void;
+export declare function remove_node(obj: Node, item: Node): Node;
 export declare class Node {
     static createLeaf(tree: BPlusTree): Node;
     static createNode(tree: BPlusTree): Node;
@@ -35,7 +39,7 @@ export declare class Node {
     delete(): void;
     insertMany(...items: Array<[ValueType, any]>): void;
     insert(item: [ValueType, any]): void;
-    remove(item: ValueType | Node): Node | [ValueType, any];
+    remove(item: ValueType): [ValueType, any];
     updateStatics(): void;
     commit(): void;
     print(node?: Node): void;
