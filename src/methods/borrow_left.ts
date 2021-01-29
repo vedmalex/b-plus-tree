@@ -1,11 +1,12 @@
 import { Node, update_min_max, update_state } from '../types/Node'
 
-export function borrow_left(node: Node, count: number = 1) {
+export function borrow_left(node: Node, count: number) {
   const left_sibling = node.left
 
   merge_with_left(node, left_sibling, count)
 
-  node.commit()
+  // node.commit()
+  // left_sibling.commit()
 }
 
 export function merge_with_left(node: Node, left_sibling: Node, count: number) {

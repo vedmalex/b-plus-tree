@@ -19,9 +19,11 @@ export function reflow(tree: BPlusTree, node: Node) {
         if (bl > br) {
           //1. слева есть откуда брать и количество элементов достаточно
           borrow_left(node, bl)
+          node.commit()
         } else {
           // 2. крайний справа элемент есть и в нем достаточно элементов для займа
           borrow_right(node, br)
+          node.commit()
         }
       } else {
         // не у кого взять данных - удаляем узел
@@ -36,7 +38,11 @@ export function reflow(tree: BPlusTree, node: Node) {
             }
             node.commit()
             reflow(tree, parent)
-            if (parent != left_sibling.parent) reflow(tree, left_sibling.parent)
+            if (parent != left_sibling.parent) {
+              reflow(tree, left_sibling.parent)
+            } else {
+              left_sibling.commit()
+            }
           } else if (right_sibling) {
             merge_with_left(right_sibling, node, node.size)
             const parent = node.parent

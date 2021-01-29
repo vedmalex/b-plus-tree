@@ -67,7 +67,7 @@ export function push_node_up(node: Node) {
   node.left?.removeSiblingAtRight()
   node.right?.removeSiblingAtLeft()
   node.parent = undefined
-  node.commit()
+  // node.commit()
   node.delete()
   parent.commit()
 }
@@ -277,6 +277,8 @@ export class Node {
   }
 
   commit() {
+    console.log(`commit ${this.id}`)
+    this.print()
     if (this.key_num == 0 && this.size == 1 && this.parent && !this.leaf) {
       push_node_up(this)
     }

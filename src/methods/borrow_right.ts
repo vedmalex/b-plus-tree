@@ -1,10 +1,10 @@
 import { Node, update_min_max, update_state } from '../types/Node'
 import { size } from './size'
 
-export function borrow_right(node: Node, count: number = 1) {
+export function borrow_right(node: Node, count: number) {
   const right_sibling = node.right
   merge_with_right(node, right_sibling, count)
-  node.commit()
+  // node.commit()
 }
 
 export function merge_with_right(

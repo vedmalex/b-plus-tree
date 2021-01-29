@@ -9,6 +9,7 @@ export function insert(tree: BPlusTree, key: ValueType, value: any): boolean {
     if (tree.unique) return false
   }
   leaf.insert([key, value])
+  leaf.print()
   if (leaf.isFull) {
     split(tree, leaf) // Разбиваем узел
   }
