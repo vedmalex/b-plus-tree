@@ -278,12 +278,15 @@ export class Node {
 
   commit() {
     console.log(`commit ${this.id}`)
-    this.print()
     if (this.key_num == 0 && this.size == 1 && this.parent && !this.leaf) {
+      console.log('push_node_up')
+      this.print()
       push_node_up(this)
-    }
-    if (this.parent?.size > 0) {
-      this.parent.commit()
+      if (this.parent?.size > 0) {
+        console.log('parent.commit')
+        this.print()
+        this.parent.commit()
+      }
     }
   }
 

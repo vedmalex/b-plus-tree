@@ -15,18 +15,12 @@ export function split(tree: BPlusTree, node: Node) {
 
   if (node == tree.root) {
     tree.root = Node.createRootFrom(tree, node, new_node)
-    new_node.commit()
-    // node.commit()
   } else {
     const parent = node.parent
     attach_one_to_right_after(parent, new_node, node)
     if (parent.isFull) {
       split(tree, parent)
-      new_node.commit()
-      // parent.commit() // ?will be committed with new items
-    } else {
-      new_node.commit()
-      // node.commit()
     }
   }
+  new_node.commit()
 }
