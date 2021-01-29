@@ -1,5 +1,6 @@
 !eslint.js
 /dist
+/types
 # compiled output
 *.log
 /tmp
