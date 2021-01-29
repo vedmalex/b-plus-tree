@@ -2,9 +2,10 @@ import { Node } from '../types/Node'
 import { ValueType } from '../btree'
 
 export function min(node: Node): ValueType {
+  const nodes = node.tree.nodes
   return node.leaf
     ? node.keys[0] ?? undefined
     : node.children?.length
-    ? node.children[0].min
+    ? nodes.get(node.children[0]).min
     : undefined
 }

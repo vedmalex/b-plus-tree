@@ -7,9 +7,10 @@ export function size(node: Node) {
   if (node.leaf) {
     return node.key_num
   } else {
+    const nodes = node.tree.nodes
     const len = node.size
     while (i < len) {
-      const res = size(node.children[i])
+      const res = size(nodes.get(node.children[i]))
       lres += res
       i++
     }

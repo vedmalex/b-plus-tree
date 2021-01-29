@@ -1,3 +1,9 @@
+/**
+ * fast search in ordered array
+ * @param a array
+ * @param key key to find
+ * @returns
+ */
 export function find_first_item(a: Array<any>, key: any) {
   // l, r — левая и правая границы
   let l = -1
@@ -9,16 +15,4 @@ export function find_first_item(a: Array<any>, key: any) {
     else l = m // Сужение границ
   }
   return a[r] == key ? r : -1
-}
-
-export function find_first_item_s(array: Array<any>, value: any) {
-  const len = array.length
-  let res = -1
-  for (let i = 0; i < len; i++) {
-    if (value == array[i]) {
-      res = i
-      break
-    }
-  }
-  return res
 }

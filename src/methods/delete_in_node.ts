@@ -2,6 +2,7 @@ import { BPlusTree } from '../types/BPlusTree'
 import { Node } from '../types/Node'
 import { ValueType } from '../btree'
 import { reflow } from './reflow'
+import { find_first_item } from './find_first_item'
 
 export function delete_in_node(
   tree: BPlusTree,
@@ -10,7 +11,7 @@ export function delete_in_node(
   all: boolean = false,
 ) {
   if (all) {
-    while (node.keys.indexOf(key) != -1) {
+    while (find_first_item(node.keys, key) != -1) {
       node.remove(key)
     }
   } else {
@@ -19,7 +20,8 @@ export function delete_in_node(
   reflow(tree, node)
   if (tree.root.size == 1 && !tree.root.leaf) {
     const node = tree.root
-    tree.root = tree.root.children.pop()
+    const nodes = node.tree.nodes
+    tree.root = nodes.get(tree.root.children.pop())
     tree.root.parent = undefined
     node.delete()
   }

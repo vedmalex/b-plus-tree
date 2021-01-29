@@ -5,6 +5,8 @@ import { find_first_key } from './find_first_key'
 export function count(key: ValueType, node: Node) {
   let lres = 0
   let start = find_first_key(node.keys, key)
+  const nodes = node.tree.nodes
+
   let i = start
   if (node.leaf) {
     while (node.keys[i] == key) {
@@ -14,7 +16,7 @@ export function count(key: ValueType, node: Node) {
   } else {
     const len = node.size
     while (i < len) {
-      const res = count(key, node.children[i])
+      const res = count(key, nodes.get(node.children[i]))
       lres += res
       i++
     }

@@ -37,11 +37,12 @@ function borrow(node: Node, left_sibling: Node, count: number) {
     // remove left because it is not balanced with children we have
     left_sibling.keys.pop()
 
+    const nodes = node.tree.nodes
     node.children.unshift(
       ...left_sibling.children
         .splice(left_sibling.children.length - count)
         .map((c) => {
-          c.parent = node
+          nodes.get(c).parent = node
           return c
         }),
     )
@@ -84,9 +85,10 @@ export function merge_with_left(node: Node, left_sibling: Node) {
     // remove left because it is not balanced with children we have
     left_sibling.keys.pop()
 
+    const nodes = node.tree.nodes
     node.children.unshift(
       ...left_sibling.children.map((c) => {
-        c.parent = node
+        nodes.get(c).parent = node
         return c
       }),
     )

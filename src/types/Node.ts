@@ -54,11 +54,11 @@ export function unregisterNode(tree: BPlusTree, node: Node) {
 }
 
 export function push_node_up(node: Node) {
-  const child = node.children.pop()
+  const child = node.tree.nodes.get(node.children.pop())
   const parent = node.parent
   // вставляем на прямо на то же место где и был
-  const pos = parent.children.indexOf(node)
-  parent.children[pos] = child
+  const pos = parent.children.indexOf(node.id)
+  parent.children[pos] = child.id
   child.parent = parent
   node.left?.removeSiblingAtRight()
   node.right?.removeSiblingAtLeft()
@@ -73,7 +73,7 @@ export function insert_new_min(node: Node, key: ValueType) {
   let cur = node
   while (cur.parent) {
     let parent = cur.parent
-    const pos = parent.children.indexOf(cur)
+    const pos = parent.children.indexOf(cur.id)
     if (pos > 0) {
       parent.keys[pos - 1] = key
       break
@@ -98,12 +98,13 @@ export function insert_new_max(node: Node, key: ValueType) {
 
 export function update_min_max(node: Node) {
   if (!node.isEmpty) {
+    const nodes = node.tree.nodes
     if (node.leaf) {
       replace_min(node, node.keys[0])
       replace_max(node, node.keys[node.size - 1])
     } else {
-      replace_min(node, node.children[0].min)
-      replace_max(node, node.children[node.size - 1].max)
+      replace_min(node, nodes.get(node.children[0]).min)
+      replace_max(node, nodes.get(node.children[node.size - 1]).max)
     }
   } else {
     node.min = undefined
@@ -130,7 +131,7 @@ export function replace_min(node: Node, key: ValueType) {
   let cur = node
   while (cur.parent) {
     let parent = cur.parent
-    const pos = parent.children.indexOf(cur)
+    const pos = parent.children.indexOf(cur.id)
     if (pos > 0) {
       parent.keys[pos - 1] = key
       break
@@ -146,7 +147,7 @@ export function replace_max(node: Node, key: ValueType) {
   let cur = node
   while (cur.parent) {
     let parent = cur.parent
-    const pos = parent.children.indexOf(cur)
+    const pos = parent.children.indexOf(cur.id)
     if (pos == parent.children.length - 1) {
       parent.max = key
       cur = parent
@@ -155,7 +156,7 @@ export function replace_max(node: Node, key: ValueType) {
 }
 
 export function remove_node(obj: Node, item: Node): Node {
-  const pos = obj.children.indexOf(item)
+  const pos = obj.children.indexOf(item.id)
   obj.children.splice(pos, 1)
   if (pos == 0) {
     obj.keys.shift()
@@ -170,13 +171,14 @@ export function remove_node(obj: Node, item: Node): Node {
 
   update_state(obj)
 
+  const nodes = obj.tree.nodes
   if (pos == 0) {
-    const min = obj.children[0]?.min
+    const min = nodes.get(obj.children[0])?.min
     insert_new_min(obj, min)
   }
   // as far as we splice last item from node it is now at length position
   if (pos == obj.size) {
-    const max = obj.children[obj.key_num]?.max
+    const max = nodes.get(obj.children[obj.key_num])?.max
     insert_new_max(obj, max)
   }
   return item
@@ -203,7 +205,6 @@ export class Node {
   key_num: number // количество ключей узла
   size: number // значимый размер узла
   keys: ValueType[] // ключи узла
-  children: Node[] // указатели на детей узла
   pointers: any[] // если лист — указатели на данные
   min: ValueType
   max: ValueType
@@ -315,6 +316,7 @@ export class Node {
         isFull: this.isFull,
       }
     } else {
+      const nodes = this.tree.nodes
       return {
         id: this.id,
         leaf: this.leaf,
@@ -324,7 +326,7 @@ export class Node {
         max: this.max,
         left: this.left?.id,
         right: this.right?.id,
-        children: this.children.map((c) => c.toJSON()),
+        children: this.children.map((c) => nodes.get(c).toJSON()),
         parent: this.parent?.id,
         isFull: this.isFull,
       }
@@ -334,6 +336,10 @@ export class Node {
   // left: Node
   // right: Node
   // parent: Node
+  // children: Node[] // указатели на детей узла
+
+  children: number[] // ключи на детей узла
+
   // указатель на отца
   _parent: number
 

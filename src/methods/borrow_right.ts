@@ -30,9 +30,11 @@ function borrow(node: Node, right_sibling: Node, count: number) {
       right_sibling.min,
       ...right_sibling.keys.splice(0, count - 1),
     )
+
+    const nodes = node.tree.nodes
     node.children.push(
       ...right_sibling.children.splice(0, count).map((c) => {
-        c.parent = node
+        nodes.get(c).parent = node
         return c
       }),
     )
@@ -74,9 +76,11 @@ export function merge_with_right(node: Node, right_sibling: Node) {
     // not updating parent yet
   } else {
     node.keys.push(right_sibling.min, ...right_sibling.keys)
+
+    const nodes = node.tree.nodes
     node.children.push(
       ...right_sibling.children.map((c) => {
-        c.parent = node
+        nodes.get(c).parent = node
         return c
       }),
     )

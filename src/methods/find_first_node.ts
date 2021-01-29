@@ -4,9 +4,11 @@ import { find_first_key } from './find_first_key'
 
 export function find_first_node(tree: BPlusTree, key: ValueType) {
   let cur = tree.root
+  const nodes = tree.nodes
+
   while (cur.leaf != true) {
     let i = find_first_key(cur.keys, key)
-    cur = cur.children[i]
+    cur = nodes.get(cur.children[i])
     // for non unique index
     if (!tree.unique) {
       if (key <= cur.min && key <= cur.left?.max) {
