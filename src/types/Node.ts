@@ -274,13 +274,13 @@ export class Node {
   }
 
   commit() {
-    console.log(`commit ${this.id}`)
+    // console.log(`commit ${this.id}`)
     if (this.key_num == 0 && this.size == 1 && this.parent && !this.leaf) {
-      console.log('push_node_up')
+      // console.log('push_node_up')
       // this.print()
       push_node_up(this)
       if (this.parent?.size > 0) {
-        console.log('parent.commit')
+        // console.log('parent.commit')
         // this.print()
         this.parent.commit()
       }

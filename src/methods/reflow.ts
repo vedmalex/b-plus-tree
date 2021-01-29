@@ -30,7 +30,7 @@ export function reflow(tree: BPlusTree, node: Node) {
         if (!node.isEmpty) {
           // слева не пустой элемент
           if (left_sibling) {
-            merge_with_right(left_sibling, node, node.size)
+            merge_with_right(left_sibling, node)
             // left_sibling.removeSiblingAtRight()
             const parent = node.parent
             if (parent) {
