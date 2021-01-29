@@ -1,4 +1,4 @@
-import { Node, update_min_max } from '../types/Node'
+import { Node, update_min_max, update_state } from '../types/Node'
 import { size } from './size'
 
 export function borrow_right(node: Node, count: number = 1) {
@@ -26,10 +26,7 @@ export function merge_with_right(
     update_min_max(node)
 
     // update sibling
-    right_sibling.key_num -= count
-    right_sibling.size -= count
-    right_sibling.isFull = right_sibling.size > right_sibling.t << 1
-    right_sibling.isEmpty = right_sibling.size <= 0
+    update_state(right_sibling)
 
     update_min_max(right_sibling)
     // not pushin up because we in process of attaching
@@ -47,20 +44,14 @@ export function merge_with_right(
     )
 
     // update node
-    node.key_num += count - 1
-    node.size += count
-    node.isFull = node.size > node.t << 1
-    node.isEmpty = node.size <= 0
+    update_state(node)
 
     // update and push all needed max and min
 
     update_min_max(node)
 
     // update sibling
-    right_sibling.key_num -= count
-    right_sibling.size -= count
-    right_sibling.isFull = right_sibling.size > right_sibling.t << 1
-    right_sibling.isEmpty = right_sibling.size <= 0
+    update_state(right_sibling)
 
     update_min_max(right_sibling)
 

@@ -115,6 +115,20 @@ export function update_min_max(node: Node) {
   }
 }
 
+export function update_state(node: Node) {
+  if (node.leaf) {
+    node.key_num = node.keys.length
+    node.size = node.keys.length
+    node.isFull = node.size > node.t << 1
+    node.isEmpty = node.size <= 0
+  } else {
+    node.key_num = node.keys.length
+    node.size = node.children.length
+    node.isFull = node.size > node.t << 1
+    node.isEmpty = node.size <= 0
+  }
+}
+
 export function replace_min(node: Node, key: ValueType) {
   node.min = key
   let cur = node
@@ -156,15 +170,9 @@ export function remove_node(obj: Node, item: Node): Node {
   item.right?.removeSiblingAtLeft()
   item.left?.removeSiblingAtRight()
 
-  item.key_num = 0
-  item.size = 0
-  item.isEmpty = true
-  item.isFull = false
+  update_state(item)
 
-  obj.key_num -= 1
-  obj.size -= 1
-  obj.isFull = obj.size > obj.t << 1
-  obj.isEmpty = obj.size <= 0
+  update_state(obj)
 
   if (pos == 0) {
     const min = obj.children[0].min
@@ -196,30 +204,27 @@ export class Node {
   id = node++
   t: number
   leaf: boolean // является ли узел листом
-  key_num: number = 0 // количество ключей узла
-  size: number = 0 // значимый размер узла
+  key_num: number // количество ключей узла
+  size: number // значимый размер узла
   keys: ValueType[] // ключи узла
   children: Node[] // указатели на детей узла
   pointers: any[] // если лист — указатели на данные
   min: ValueType
   max: ValueType
-  isFull: boolean = false
-  isEmpty: boolean = true
+  isFull: boolean
+  isEmpty: boolean
   tree: BPlusTree
   private constructor(leaf: boolean, tree: BPlusTree) {
     this.tree = tree
     if (leaf == undefined) throw new Error('leaf type expected')
     this.leaf = leaf
     this.keys = []
-    this.key_num = 0
-    this.size = 0
     if (this.leaf) {
       this.pointers = []
     } else {
       this.children = []
     }
-    this.isFull = false
-    this.isEmpty = this.size <= 0
+    update_state(this)
     this.min = undefined
     this.max = undefined
     this.t = tree.t
@@ -259,10 +264,7 @@ export class Node {
     const pos = find_first_item(this.keys, item)
     const res: [ValueType, any] = [item, this.pointers.splice(pos, 1)[0]]
     this.keys.splice(pos, 1)
-    this.key_num -= 1
-    this.size -= 1
-    this.isFull = false
-    this.isEmpty = this.size <= 0
+    update_state(this)
 
     if (pos == 0) {
       replace_min(this, this.keys[0])

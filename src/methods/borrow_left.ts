@@ -1,4 +1,4 @@
-import { Node, update_min_max } from '../types/Node'
+import { Node, update_min_max, update_state } from '../types/Node'
 
 export function borrow_left(node: Node, count: number = 1) {
   const left_sibling = node.left
@@ -17,19 +17,13 @@ export function merge_with_left(node: Node, left_sibling: Node, count: number) {
       ...left_sibling.pointers.splice(left_sibling.pointers.length - count),
     )
     // update node
-    node.key_num += count
-    node.size += count
-    node.isFull = node.size > node.t << 1
-    node.isEmpty = node.size <= 0
+    update_state(node)
 
     // update and push all needed max and min
     update_min_max(node)
 
     // update sibling
-    left_sibling.key_num -= count
-    left_sibling.size -= count
-    left_sibling.isFull = left_sibling.size > left_sibling.t << 1
-    left_sibling.isEmpty = left_sibling.size <= 0
+    update_state(left_sibling)
 
     update_min_max(left_sibling)
 
@@ -52,17 +46,11 @@ export function merge_with_left(node: Node, left_sibling: Node, count: number) {
     )
 
     // update node
-    node.key_num += count - 1
-    node.size += count
-    node.isFull = node.size > node.t << 1
-    node.isEmpty = node.size <= 0
+    update_state(node)
     // update and push all needed max and min
     update_min_max(node)
     // update sibling
-    left_sibling.key_num -= count
-    left_sibling.size -= count
-    left_sibling.isFull = left_sibling.size > left_sibling.t << 1
-    left_sibling.isEmpty = left_sibling.size <= 0
+    update_state(left_sibling)
 
     update_min_max(left_sibling)
     // not pushin up because we in process of attaching
