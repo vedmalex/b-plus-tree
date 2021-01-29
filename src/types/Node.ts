@@ -270,30 +270,7 @@ export class Node {
     return res
   }
 
-  updateStatics() {
-    /**
-      0:'keys'
-      1:'size'
-      2:'isFull'
-      3:'key_num'
-      4:'isEmpty'
-      5:'min'
-      6:'max'
-     */
-    // if (!this.leaf) {
-    //   this.keys = this.children.slice(1).map((c) => c.min)
-    // }
-    this.size = this.leaf ? this.keys.length : this.children.length
-    this.isFull =
-      (this.leaf ? this.keys.length : this.children.length) > this.t << 1
-    this.key_num = this.keys.length
-    this.isEmpty = this.size <= 0
-    // this.min = this.leaf ? this.keys[0] ?? undefined : min(this)
-    // this.max = this.leaf ? this.keys[this.key_num - 1] ?? undefined : max(this)
-  }
-
   commit() {
-    this.updateStatics()
     if (this.key_num == 0 && this.size == 1 && this.parent && !this.leaf) {
       push_node_up(this)
     }
