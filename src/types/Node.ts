@@ -175,12 +175,12 @@ export function remove_node(obj: Node, item: Node): Node {
   update_state(obj)
 
   if (pos == 0) {
-    const min = obj.children[0].min
+    const min = obj.children[0]?.min
     insert_new_min(obj, min)
   }
   // as far as we splice last item from node it is now at length position
   if (pos == obj.keys.length) {
-    const max = obj.children[obj.key_num].max
+    const max = obj.children[obj.key_num]?.max
     insert_new_max(obj, max)
   }
   return item
