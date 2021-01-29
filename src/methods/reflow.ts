@@ -29,7 +29,7 @@ export function reflow(tree: BPlusTree, node: Node) {
           // слева не пустой элемент
           if (left_sibling) {
             merge_with_right(left_sibling, node, node.size)
-            left_sibling.removeSiblingAtRight()
+            // left_sibling.removeSiblingAtRight()
             const parent = node.parent
             if (parent) {
               remove_node(parent, node)

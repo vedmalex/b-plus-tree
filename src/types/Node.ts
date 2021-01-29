@@ -147,7 +147,11 @@ export function replace_max(node: Node, key: ValueType) {
 export function remove_node(obj: Node, item: Node): Node {
   const pos = obj.children.indexOf(item)
   obj.children.splice(pos, 1)
-  obj.keys.shift()
+  if (pos == 0) {
+    obj.keys.shift()
+  } else {
+    obj.keys.splice(pos - 1, 1)
+  }
   item.parent = undefined
   item.right?.removeSiblingAtLeft()
   item.left?.removeSiblingAtRight()
