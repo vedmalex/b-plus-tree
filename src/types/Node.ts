@@ -45,11 +45,13 @@ let node = 0
 
 export function registerNode(tree: BPlusTree, node: Node) {
   if (tree.nodes.has(node.id)) throw new Error('already here')
+  node.tree = tree
   tree.nodes.set(node.id, node)
 }
 
 export function unregisterNode(tree: BPlusTree, node: Node) {
   if (!tree.nodes.has(node.id)) throw new Error(`already removed ${node.id}`)
+  node.tree = undefined
   tree.nodes.delete(node.id)
 }
 
@@ -63,7 +65,6 @@ export function push_node_up(node: Node) {
   node.left?.removeSiblingAtRight()
   node.right?.removeSiblingAtLeft()
   node.parent = undefined
-  // node.commit()
   node.delete()
   parent.commit()
 }
@@ -184,12 +185,41 @@ export function remove_node(obj: Node, item: Node): Node {
   return item
 }
 
+export type PortableNode = {
+  id: number
+  t: number
+  _parent: number
+  _left: number
+  _right: number
+  isEmpty: boolean
+  isFull: boolean
+  leaf: boolean
+  max: ValueType
+  min: ValueType
+  size: number
+  keys: ValueType[]
+  key_num: number
+  pointers: any[]
+  children: number[]
+}
+
+// TODO: MAKE NODE SIMPLE OBJECT
 export class Node {
   static createLeaf(tree: BPlusTree) {
-    return new Node(true, tree)
+    const node = new Node()
+    node.leaf = true
+    node.t = tree.t
+    node.pointers = []
+    registerNode(tree, node)
+    return node
   }
   static createNode(tree: BPlusTree) {
-    return new Node(false, tree)
+    const node = new Node()
+    node.children = []
+    node.leaf = false
+    node.t = tree.t
+    registerNode(tree, node)
+    return node
   }
   static createRootFrom(tree: BPlusTree, ...node: Array<Node>) {
     const root = Node.createNode(tree)
@@ -199,6 +229,62 @@ export class Node {
   static load(tree: BPlusTree) {
     const node = Node.createNode(tree)
   }
+  static serialize(node: Node): PortableNode {
+    const {
+      id,
+      leaf,
+      t,
+      _parent,
+      _left,
+      _right,
+      isEmpty,
+      isFull,
+      max,
+      min,
+      size,
+      keys,
+      key_num,
+      pointers,
+      children,
+    } = node
+    return {
+      id,
+      leaf,
+      t,
+      _parent,
+      _left,
+      _right,
+      isEmpty,
+      isFull,
+      max,
+      min,
+      size,
+      keys,
+      key_num,
+      pointers,
+      children,
+    }
+  }
+  static deserialize(stored: PortableNode) {
+    const node = new Node()
+    node.id = stored.id
+    node.leaf = stored.leaf
+    node.t = stored.t
+    node._parent = stored._parent
+    node._left = stored._left
+    node._right = stored._right
+    node.isEmpty = stored.isEmpty
+    node.isFull = stored.isFull
+    node.max = stored.max
+    node.min = stored.min
+    node.size = stored.size
+    node.keys = stored.keys
+    node.key_num = stored.key_num
+    node.pointers = stored.pointers
+    node.children = stored.children
+    return node
+  }
+
   id = node++
   t: number
   leaf: boolean // является ли узел листом
@@ -211,31 +297,18 @@ export class Node {
   isFull: boolean
   isEmpty: boolean
   tree: BPlusTree
-  private constructor(leaf: boolean, tree: BPlusTree) {
-    this.tree = tree
-    if (leaf == undefined) throw new Error('leaf type expected')
-    this.leaf = leaf
+  private constructor() {
     this.keys = []
-    if (this.leaf) {
-      this.pointers = []
-    } else {
-      this.children = []
-    }
-    update_state(this)
+    this.key_num = 0
+    this.size = 0
+    this.isFull = false
+    this.isEmpty = true
     this.min = undefined
     this.max = undefined
-    this.t = tree.t
-    registerNode(this.tree, this)
   }
 
   delete() {
-    if (this.tree.root != this) unregisterNode(this.tree, this)
-  }
-
-  insertMany(...items: Array<[ValueType, any]>) {
-    items.forEach((item) => this.insert(item))
-    // немного другая логика по обновлению ключей
-    // TODO: переписать код, чтобы вызывал обновления после всего
+    if (this.tree.root != this.id) unregisterNode(this.tree, this)
   }
 
   insert(item: [ValueType, any]) {
@@ -383,7 +456,7 @@ export class Node {
 }
 
 /**
- * все манипуляции с деревом простое обхединение массивов
+ * все манипуляции с деревом простое объединение массивов
  * поскольку мы знаем что и откуда надо брать
  * отсюда: все операции это просто функции
  *

@@ -52,7 +52,7 @@ console.log(bpt.size())
 const res = bpt.find(simple[3], {skip:1, take:6})
 console.log(res)
 
-const get = bpt.find(undefined,{skip:17, take:20})
+const get = bpt.list({skip:17, take:20})
 console.log(get)
 console.log(bpt.count(simple[3]))
 console.log(bpt.size())

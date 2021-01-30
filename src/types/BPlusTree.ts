@@ -9,10 +9,12 @@ import { find_last_node } from '../methods/find_last_node'
 import { find_first_key } from '../methods/find_first_key'
 import { find_first_node } from '../methods/find_first_node'
 import { find_last_key } from '../methods/find_last_key'
+import { find_first_item } from '../methods/find_first_item'
 
 export type Cursor = {
   node: number
   pos: number
+  key: ValueType
   value: any
 }
 
@@ -20,7 +22,7 @@ export function evaluate(tree: BPlusTree, id: number, pos: number): Cursor {
   let cur = tree.nodes.get(id)
   while (cur) {
     let len = cur.pointers.length
-    if (pos > len) {
+    if (pos >= len) {
       cur = cur.right
       pos -= len
     } else if (len < 0) {
@@ -34,7 +36,7 @@ export function evaluate(tree: BPlusTree, id: number, pos: number): Cursor {
 }
 
 export function get_current(cur: Node, pos: number) {
-  return { node: cur.id, pos, value: cur.pointers[pos] }
+  return { node: cur.id, pos, key: cur.keys[pos], value: cur.pointers[pos] }
 }
 
 export function eval_current(tree: BPlusTree, id: number, pos: number) {
@@ -59,12 +61,12 @@ export function find_first(
   let node: Node, index: number
   if (forward) {
     node = find_last_node(tree, key)
-    index = find_last_key(node.keys, key)
+    index = find_first_item(node.keys, key)
   } else {
     node = find_last_node(tree, key)
-    index = find_last_key(node.keys, key)
+    index = find_first_item(node.keys, key)
   }
-  return { node: node.id, pos: index, value: node.pointers[index] }
+  return { node: node.id, pos: index, key, value: node.pointers[index] }
 }
 
 // можно сделать мемоизацию на операцию, кэш значений для поиска
@@ -77,20 +79,57 @@ export function find(
   let { skip = 0, take = -1, forward = true } = options ?? {}
   const result = []
   const cursor = find_first(tree, key, forward)
-  let cur: Cursor
-  if (skip == 0) {
-    cur = cursor
-  } else {
-    cur = evaluate(tree, cursor.node, cursor.pos + (forward ? skip : -skip))
-  }
-  if (cur) {
-    if (take == -1) {
-      result.push(cur.value)
+  if (cursor.pos >= 0) {
+    let cur: Cursor
+    if (skip == 0) {
+      cur = cursor
     } else {
-      while (cur || take == 0) {
+      cur = evaluate(tree, cursor.node, cursor.pos + (forward ? skip : -skip))
+    }
+    if (cur?.key == key) {
+      if (take == -1) {
         result.push(cur.value)
-        take -= 1
-        cur = evaluate(tree, cur.node, cur.pos + (forward ? 1 : -1))
+      } else {
+        while (cur || take == 0) {
+          if (cur.pos >= 0) {
+            result.push(cur.value)
+            take -= 1
+            cur = evaluate(tree, cur.node, cur.pos + (forward ? 1 : -1))
+          } else {
+            break
+          }
+        }
+      }
+    }
+  }
+  return result
+}
+
+export function list(tree: BPlusTree, options?: Partial<SearchOptions>) {
+  let { skip = 0, take = -1, forward = true } = options ?? {}
+  const result = []
+  const key = options.forward ? tree.min() : tree.max()
+  const cursor = find_first(tree, key, forward)
+  if (cursor.pos >= 0) {
+    let cur: Cursor
+    if (skip == 0) {
+      cur = cursor
+    } else {
+      cur = evaluate(tree, cursor.node, cursor.pos + (forward ? skip : -skip))
+    }
+    if (cur) {
+      if (take == -1) {
+        result.push(cur.value)
+      } else {
+        while (cur && take != 0) {
+          if (cur.pos >= 0) {
+            result.push(cur.value)
+            take -= 1
+            cur = evaluate(tree, cur.node, cur.pos + (forward ? 1 : -1))
+          } else {
+            break
+          }
+        }
       }
     }
   }
@@ -108,14 +147,15 @@ export function find(
 
 export class BPlusTree {
   public t: number // минимальная степень дерева
-  public root: Node // указатель на корень дерева
+  public root: number // указатель на корень дерева
   public unique: boolean
   public nodes = new Map<number, Node>()
   constructor(t: number, unique: boolean) {
     this.t = t
     this.unique = unique
-    this.root = Node.createLeaf(this)
+    this.root = Node.createLeaf(this).id
   }
+
   find(
     key?: ValueType,
     {
@@ -125,6 +165,14 @@ export class BPlusTree {
     }: { skip?: number; take?: number; forward?: boolean } = {},
   ) {
     return find(this, key, { skip, take, forward })
+  }
+
+  list({
+    skip = 0,
+    take = -1,
+    forward = true,
+  }: { skip?: number; take?: number; forward?: boolean } = {}) {
+    return list(this, { skip, take, forward })
   }
 
   findFirst(key: ValueType) {
@@ -142,14 +190,14 @@ export class BPlusTree {
   cursor(key: ValueType): Cursor {
     const node = find_last_node(this, key)
     const index = find_last_key(node.keys, key)
-    return { node: node.id, pos: index, value: node.pointers[index] }
+    return { node: node.id, pos: index, key, value: node.pointers[index] }
   }
 
   count(key: ValueType) {
-    return count(key, this.root)
+    return count(key, this.nodes.get(this.root))
   }
   size() {
-    return size(this.root)
+    return size(this.nodes.get(this.root))
   }
   insert(key: ValueType, value: any): boolean {
     return insert(this, key, value)
@@ -161,16 +209,16 @@ export class BPlusTree {
     return remove(this, key, true)
   }
   min() {
-    return this.root.min
+    return this.nodes.get(this.root).min
   }
   max() {
-    return this.root.max
+    return this.nodes.get(this.root).max
   }
   toJSON() {
     return {
       t: this.t,
       unique: this.unique,
-      root: this.root.toJSON(),
+      root: this.nodes.get(this.root).toJSON(),
     }
   }
   print(node?: Node) {

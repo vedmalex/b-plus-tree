@@ -13,8 +13,8 @@ export function split(tree: BPlusTree, node: Node) {
   let bl = can_borrow_left(new_node)
   borrow_left(new_node, bl)
 
-  if (node == tree.root) {
-    tree.root = Node.createRootFrom(tree, node, new_node)
+  if (node.id == tree.root) {
+    tree.root = Node.createRootFrom(tree, node, new_node).id
   } else {
     const parent = node.parent
     attach_one_to_right_after(parent, new_node, node)

@@ -3,8 +3,8 @@ import { ValueType } from '../btree'
 import { find_first_key } from './find_first_key'
 
 export function find_first_node(tree: BPlusTree, key: ValueType) {
-  let cur = tree.root
   const nodes = tree.nodes
+  let cur = nodes.get(tree.root)
 
   while (cur.leaf != true) {
     let i = find_first_key(cur.keys, key)
