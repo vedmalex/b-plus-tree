@@ -57,6 +57,12 @@ console.log(get)
 console.log(bpt.count(simple[3]))
 console.log(bpt.size())
 
+const stored = BPlusTree.serialize(bpt)
+
+fs.writeFileSync('bpj.json', JSON.stringify(stored))
+
+BPlusTree.deserialize(bpt, stored)
+
 let result
 let i =0
 do {

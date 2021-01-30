@@ -1,5 +1,5 @@
 import print from 'print-tree'
-import { Node } from './Node'
+import { Node, PortableNode } from './Node'
 import { ValueType } from '../btree'
 import { remove } from '../methods/remove'
 import { insert } from '../methods/insert'
@@ -145,15 +145,52 @@ export function list(tree: BPlusTree, options?: Partial<SearchOptions>) {
  * но тут можно хранить и значения
  */
 
+export type PortableBPlusTree = {
+  t: number
+  next_node_id: number
+  root: number
+  unique: boolean
+  nodes: PortableNode[]
+}
+
 export class BPlusTree {
   public t: number // минимальная степень дерева
   public root: number // указатель на корень дерева
   public unique: boolean
   public nodes = new Map<number, Node>()
+  protected next_node_id = 0
+  get_next_id() {
+    return this.next_node_id++
+  }
   constructor(t: number, unique: boolean) {
     this.t = t
     this.unique = unique
     this.root = Node.createLeaf(this).id
+  }
+
+  static serialize(tree: BPlusTree): PortableBPlusTree {
+    const { t, root, unique, nodes, next_node_id } = tree
+    return {
+      t,
+      next_node_id,
+      root,
+      unique,
+      nodes: [...nodes.values()].map((n) => Node.serialize(n)),
+    }
+  }
+
+  static deserialize(tree: BPlusTree, stored: PortableBPlusTree) {
+    tree.nodes.clear()
+    const { t, next_node_id, root, unique, nodes } = stored
+    tree.t = t
+    tree.next_node_id = next_node_id
+    tree.root = root
+    tree.unique = unique
+    nodes.forEach((n) => {
+      const node = Node.deserialize(n)
+      node.tree = tree
+      tree.nodes.set(n.id, node)
+    })
   }
 
   find(

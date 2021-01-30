@@ -41,11 +41,12 @@ export enum VertexColor {
   red = 3,
 }
 
-let node = 0
+// let node = 0
 
 export function registerNode(tree: BPlusTree, node: Node) {
   if (tree.nodes.has(node.id)) throw new Error('already here')
   node.tree = tree
+  node.id = tree.get_next_id()
   tree.nodes.set(node.id, node)
 }
 
@@ -203,7 +204,7 @@ export type PortableNode = {
   children: number[]
 }
 
-// TODO: MAKE NODE SIMPLE OBJECT
+// TODO: MAKE NODE SIMPLE OBJECT with static methods?????
 export class Node {
   static createLeaf(tree: BPlusTree) {
     const node = new Node()
@@ -225,9 +226,6 @@ export class Node {
     const root = Node.createNode(tree)
     add_initial_nodes(root, node)
     return root
-  }
-  static load(tree: BPlusTree) {
-    const node = Node.createNode(tree)
   }
   static serialize(node: Node): PortableNode {
     const {
@@ -285,7 +283,7 @@ export class Node {
     return node
   }
 
-  id = node++
+  id: number
   t: number
   leaf: boolean // является ли узел листом
   key_num: number // количество ключей узла
