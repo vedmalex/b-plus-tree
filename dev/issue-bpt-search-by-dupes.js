@@ -59,7 +59,7 @@ console.log(bpt.size())
 
 const stored = BPlusTree.serialize(bpt)
 
-fs.writeFileSync('bpj.json', JSON.stringify(stored))
+// fs.writeFileSync('bpj.json', JSON.stringify(stored))
 
 BPlusTree.deserialize(bpt, stored)
 
