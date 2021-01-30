@@ -3,7 +3,6 @@ import { Node } from './Node'
 import { ValueType } from '../btree'
 import { remove } from '../methods/remove'
 import { insert } from '../methods/insert'
-import { walkthrought } from '../methods/walkthrought'
 import { count } from '../methods/count'
 import { size } from '../methods/size'
 import { find_last_node } from '../methods/find_last_node'
@@ -125,7 +124,7 @@ export class BPlusTree {
       forward = true,
     }: { skip?: number; take?: number; forward?: boolean } = {},
   ) {
-    return walkthrought({ tree: this, key, skip, take, forward })
+    return find(this, key, { skip, take, forward })
   }
 
   findFirst(key: ValueType) {
