@@ -1,11 +1,13 @@
 import { BPlusTree } from '../types/BPlusTree'
 import { Node, remove_node } from '../types/Node'
-import { borrow_left, merge_with_left } from './borrow_left'
-import { borrow_right, merge_with_right } from './borrow_right'
+import { merge_with_left } from './borrow_left'
+import { merge_with_right } from './borrow_right'
 import { can_borrow_left } from './can_borrow_left'
 import { can_borrow_right } from './can_borrow_right'
 
 export function reflow(tree: BPlusTree, node: Node) {
+  console.log(`reflow:start ${node.id}`)
+  node.print()
   if (node) {
     if (node.key_num < tree.t - 1 || node.isEmpty) {
       const right_sibling = node.right
@@ -18,19 +20,21 @@ export function reflow(tree: BPlusTree, node: Node) {
         // берем у кого больше
         if (bl > br) {
           //1. слева есть откуда брать и количество элементов достаточно
-          borrow_left(node, bl)
+          merge_with_left(node, left_sibling, bl)
           node.commit()
         } else {
           // 2. крайний справа элемент есть и в нем достаточно элементов для займа
-          borrow_right(node, br)
+          merge_with_right(node, right_sibling, br)
           node.commit()
         }
+        // reflow(tree, parent)
+        // if (parent != right_sibling.parent) reflow(tree, right_sibling.parent)
       } else {
         // не у кого взять данных - удаляем узел
         if (!node.isEmpty) {
           // слева не пустой элемент
           if (left_sibling) {
-            merge_with_right(left_sibling, node)
+            merge_with_right(left_sibling, node, node.size)
             // left_sibling.removeSiblingAtRight()
             const parent = node.parent
             if (parent) {
@@ -44,7 +48,7 @@ export function reflow(tree: BPlusTree, node: Node) {
               left_sibling.commit()
             }
           } else if (right_sibling) {
-            merge_with_left(right_sibling, node)
+            merge_with_left(right_sibling, node, node.size)
             const parent = node.parent
             if (parent) {
               remove_node(parent, node)
@@ -75,14 +79,16 @@ export function reflow(tree: BPlusTree, node: Node) {
             remove_node(parent, node)
           }
           node.commit()
-          reflow(tree, parent)
-          if (left_sibling) {
-            if (parent != left_sibling.parent) {
-              reflow(tree, left_sibling.parent)
-            }
-          } else if (right_sibling) {
-            if (parent != right_sibling.parent) {
-              reflow(tree, right_sibling.parent)
+          if (parent) {
+            reflow(tree, parent)
+            if (left_sibling) {
+              if (parent != left_sibling.parent) {
+                reflow(tree, left_sibling.parent)
+              }
+            } else if (right_sibling) {
+              if (parent != right_sibling.parent) {
+                reflow(tree, right_sibling.parent)
+              }
             }
           }
         }
@@ -93,4 +99,6 @@ export function reflow(tree: BPlusTree, node: Node) {
       node.commit()
     }
   }
+  console.log(`reflow:end ${node.id}`)
+  node.print()
 }

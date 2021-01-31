@@ -48,15 +48,18 @@ export function registerNode(tree: BPlusTree, node: Node) {
   node.tree = tree
   node.id = tree.get_next_id()
   tree.nodes.set(node.id, node)
+  console.log(`register ${node.id}`)
 }
 
 export function unregisterNode(tree: BPlusTree, node: Node) {
+  console.log(`unregister ${node.id}`)
   if (!tree.nodes.has(node.id)) throw new Error(`already removed ${node.id}`)
   node.tree = undefined
   tree.nodes.delete(node.id)
 }
 
 export function push_node_up(node: Node) {
+  console.log(`push_node_up ${node.id}`)
   const child = node.tree.nodes.get(node.children.pop())
   const parent = node.parent
   // вставляем на прямо на то же место где и был
@@ -71,6 +74,7 @@ export function push_node_up(node: Node) {
 }
 
 export function insert_new_min(node: Node, key: ValueType) {
+  console.log(`insert_new_min ${node.id}`)
   node.min = key
   let cur = node
   while (cur.parent) {
@@ -87,11 +91,12 @@ export function insert_new_min(node: Node, key: ValueType) {
 }
 
 export function insert_new_max(node: Node, key: ValueType) {
+  console.log(`insert_new_max ${node.id} ${key}`)
   node.max = key
   let cur = node
   while (cur.parent) {
     let parent = cur.parent
-    if (parent.max < key) {
+    if (parent.children.indexOf(cur.id) == parent.key_num) {
       parent.max = key
       cur = parent
     } else break
@@ -99,6 +104,7 @@ export function insert_new_max(node: Node, key: ValueType) {
 }
 
 export function update_min_max(node: Node) {
+  console.log(`update_min_max ${node.id}`)
   if (!node.isEmpty) {
     const nodes = node.tree.nodes
     if (node.leaf) {
@@ -158,6 +164,8 @@ export function replace_max(node: Node, key: ValueType) {
 }
 
 export function remove_node(obj: Node, item: Node): Node {
+  console.log(`remove_node:start ${obj.id} -${item.id}:`)
+  obj.print()
   const pos = obj.children.indexOf(item.id)
   obj.children.splice(pos, 1)
   if (pos == 0) {
@@ -183,6 +191,8 @@ export function remove_node(obj: Node, item: Node): Node {
     const max = nodes.get(obj.children[obj.key_num])?.max
     insert_new_max(obj, max)
   }
+  console.log(`remove_node:end ${obj.id} -${item.id}:`)
+  obj.print()
   return item
 }
 
@@ -306,6 +316,7 @@ export class Node {
   }
 
   delete() {
+    console.log(`delete ${this.id}`)
     if (this.tree.root != this.id) unregisterNode(this.tree, this)
   }
 
@@ -326,6 +337,8 @@ export class Node {
   }
 
   remove(item: ValueType): [ValueType, any] {
+    console.log(`remove:start ${this.id} -${item}`)
+    this.print()
     const pos = find_first_item(this.keys, item)
     const res: [ValueType, any] = [item, this.pointers.splice(pos, 1)[0]]
     this.keys.splice(pos, 1)
@@ -338,18 +351,20 @@ export class Node {
     if (pos == this.keys.length) {
       replace_max(this, this.keys[pos - 1])
     }
+    console.log(`remove:end ${this.id} -${item}`)
+    this.print()
     return res
   }
 
   commit() {
-    // console.log(`commit ${this.id}`)
+    console.log(`commit ${this.id}`)
     if (this.key_num == 0 && this.size == 1 && this.parent && !this.leaf) {
-      // console.log('push_node_up')
-      // this.print()
+      console.log('push_node_up:before')
+      this.print()
       push_node_up(this)
       if (this.parent?.size > 0) {
-        // console.log('parent.commit')
-        // this.print()
+        console.log('parent.commit')
+        this.print()
         this.parent.commit()
       }
     }
@@ -367,10 +382,37 @@ export class Node {
           node.leaf ? 'L' : 'N'
         }${node.left ?? '-'} R:${node.leaf ? 'L' : 'N'}${node.right ?? '-'} ${
           node.leaf ? node.pointers : ''
+        } ${
+          node.errors.length == 0 ? '' : '[error]: ' + node.errors.join(';')
         }`,
       (node: Node) => node.children,
     )
   }
+  get errors() {
+    return this.validate()
+  }
+  validate() {
+    const res = []
+    if (!this.isEmpty) {
+      if (!this.leaf) {
+        if (this.children.length != this.keys.length + 1) {
+          res.push(
+            `!children ${this.leaf ? 'L' : 'N'}${this.id} ${
+              this.children.length
+            } ${this.keys.length}`,
+          )
+        }
+        if (this.keys.length != this.key_num) {
+          res.push(`!keys ${this.id}`)
+        }
+      }
+      if (this.size != (this.leaf ? this.key_num : this.children.length)) {
+        res.push(`!size ${this.id}`)
+      }
+    }
+    return res
+  }
+
   toJSON() {
     if (this.leaf) {
       return {
@@ -381,13 +423,14 @@ export class Node {
         min: this.min,
         max: this.max,
         pointers: this.pointers,
-        left: this.left?.id,
-        right: this.right?.id,
-        parent: this.parent?.id,
+        left: this._left,
+        right: this._right,
+        parent: this._parent,
         isFull: this.isFull,
+        errors: this.validate(),
       }
     } else {
-      const nodes = this.tree.nodes
+      const nodes = this.tree?.nodes
       return {
         id: this.id,
         leaf: this.leaf,
@@ -395,11 +438,14 @@ export class Node {
         key_num: this.key_num,
         min: this.min,
         max: this.max,
-        left: this.left?.id,
-        right: this.right?.id,
-        children: this.children.map((c) => nodes.get(c).toJSON()),
-        parent: this.parent?.id,
+        left: this._left,
+        right: this._right,
+        children: nodes
+          ? this.children.map((c) => nodes.get(c).toJSON())
+          : this.children,
+        parent: this._parent,
         isFull: this.isFull,
+        errors: this.validate(),
       }
     }
   }

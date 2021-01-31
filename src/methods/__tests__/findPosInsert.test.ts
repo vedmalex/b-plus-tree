@@ -6,6 +6,7 @@ import { find_first_item } from '../find_first_item'
 describe('find_first_item', () => {
   it('works as expected', () => {
     expect(find_first_item([78, 89, 91, 98], 79)).toBe(-1)
+    expect(find_last_key([95], 95)).toBe(1)
   })
 })
 

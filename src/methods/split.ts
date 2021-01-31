@@ -1,6 +1,6 @@
 import { BPlusTree } from '../types/BPlusTree'
 import { Node } from '../types/Node'
-import { borrow_left } from './borrow_left'
+import { merge_with_left } from './borrow_left'
 import { can_borrow_left } from './can_borrow_left'
 import { attach_one_to_right_after } from './attach_one_to_right'
 
@@ -11,7 +11,7 @@ export function split(tree: BPlusTree, node: Node) {
   node.addSiblingAtRight(new_node)
 
   let bl = can_borrow_left(new_node)
-  borrow_left(new_node, bl)
+  merge_with_left(new_node, node, bl)
 
   if (node.id == tree.root) {
     tree.root = Node.createRootFrom(tree, node, new_node).id

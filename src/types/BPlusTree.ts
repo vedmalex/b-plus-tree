@@ -193,6 +193,16 @@ export class BPlusTree {
     })
   }
 
+  validate() {
+    this.nodes.forEach((v) => {
+      if (v.children.length != v.keys.length) {
+        console.log(`children ${v.id}`)
+      }
+      if (v.keys.length != v.key_num) debugger
+      if (v.size != (v.leaf ? v.key_num : v.children.length)) debugger
+    })
+  }
+
   find(
     key?: ValueType,
     {
