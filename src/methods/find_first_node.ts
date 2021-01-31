@@ -7,13 +7,18 @@ export function find_first_node(tree: BPlusTree, key: ValueType) {
   let cur = nodes.get(tree.root)
 
   while (cur.leaf != true) {
+    // cur.print()
     let i = find_first_key(cur.keys, key)
     cur = nodes.get(cur.children[i])
     // for non unique index
     if (!tree.unique) {
       if (key <= cur.min && key <= cur.left?.max) {
         while (key <= cur.left?.max) {
-          cur = cur.left
+          if (cur.left) {
+            cur = cur.left
+          } else {
+            break
+          }
         }
       } else if (cur.max < key) {
         while (cur.max < key) {

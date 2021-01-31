@@ -1,10 +1,10 @@
-import print from 'print-tree'
 import { ValueType } from '../btree'
 import { find_last_key } from '../methods/find_last_key'
 import { Chainable } from './Chainable'
 import { add_initial_nodes } from '../methods/add_initial_nodes'
 import { find_first_item } from '../methods/find_first_item'
 import { BPlusTree } from './BPlusTree'
+import { printTree } from '../utils/print-tree'
 
 export function addSibling(
   a: Chainable,
@@ -48,18 +48,18 @@ export function registerNode(tree: BPlusTree, node: Node) {
   node.tree = tree
   node.id = tree.get_next_id()
   tree.nodes.set(node.id, node)
-  console.log(`register ${node.id}`)
+  // console.log(`register ${node.id}`)
 }
 
 export function unregisterNode(tree: BPlusTree, node: Node) {
-  console.log(`unregister ${node.id}`)
+  // console.log(`unregister ${node.id}`)
   if (!tree.nodes.has(node.id)) throw new Error(`already removed ${node.id}`)
   node.tree = undefined
   tree.nodes.delete(node.id)
 }
 
 export function push_node_up(node: Node) {
-  console.log(`push_node_up ${node.id}`)
+  // console.log(`push_node_up ${node.id}`)
   const child = node.tree.nodes.get(node.children.pop())
   const parent = node.parent
   // вставляем на прямо на то же место где и был
@@ -74,7 +74,7 @@ export function push_node_up(node: Node) {
 }
 
 export function insert_new_min(node: Node, key: ValueType) {
-  console.log(`insert_new_min ${node.id}`)
+  // console.log(`insert_new_min ${node.id}`)
   node.min = key
   let cur = node
   while (cur.parent) {
@@ -91,7 +91,7 @@ export function insert_new_min(node: Node, key: ValueType) {
 }
 
 export function insert_new_max(node: Node, key: ValueType) {
-  console.log(`insert_new_max ${node.id} ${key}`)
+  // console.log(`insert_new_max ${node.id} ${key}`)
   node.max = key
   let cur = node
   while (cur.parent) {
@@ -104,7 +104,7 @@ export function insert_new_max(node: Node, key: ValueType) {
 }
 
 export function update_min_max(node: Node) {
-  console.log(`update_min_max ${node.id}`)
+  // console.log(`update_min_max ${node.id}`)
   if (!node.isEmpty) {
     const nodes = node.tree.nodes
     if (node.leaf) {
@@ -164,8 +164,8 @@ export function replace_max(node: Node, key: ValueType) {
 }
 
 export function remove_node(obj: Node, item: Node): Node {
-  console.log(`remove_node:start ${obj.id} -${item.id}:`)
-  obj.print()
+  // console.log(`remove_node:start ${obj.id} -${item.id}:`)
+  // obj.print()
   const pos = obj.children.indexOf(item.id)
   obj.children.splice(pos, 1)
   if (pos == 0) {
@@ -191,8 +191,8 @@ export function remove_node(obj: Node, item: Node): Node {
     const max = nodes.get(obj.children[obj.key_num])?.max
     insert_new_max(obj, max)
   }
-  console.log(`remove_node:end ${obj.id} -${item.id}:`)
-  obj.print()
+  // console.log(`remove_node:end ${obj.id} -${item.id}:`)
+  // obj.print()
   return item
 }
 
@@ -316,8 +316,8 @@ export class Node {
   }
 
   delete() {
-    console.log(`delete ${this.id}`)
-    if (this.tree.root != this.id) unregisterNode(this.tree, this)
+    // console.log(`delete ${this.id}`)
+    if (this.tree?.root != this.id) unregisterNode(this.tree, this)
   }
 
   insert(item: [ValueType, any]) {
@@ -337,8 +337,8 @@ export class Node {
   }
 
   remove(item: ValueType): [ValueType, any] {
-    console.log(`remove:start ${this.id} -${item}`)
-    this.print()
+    // console.log(`remove:start ${this.id} -${item}`)
+    // this.print()
     const pos = find_first_item(this.keys, item)
     const res: [ValueType, any] = [item, this.pointers.splice(pos, 1)[0]]
     this.keys.splice(pos, 1)
@@ -351,27 +351,27 @@ export class Node {
     if (pos == this.keys.length) {
       replace_max(this, this.keys[pos - 1])
     }
-    console.log(`remove:end ${this.id} -${item}`)
-    this.print()
+    // console.log(`remove:end ${this.id} -${item}`)
+    // this.print()
     return res
   }
 
   commit() {
-    console.log(`commit ${this.id}`)
+    // console.log(`commit ${this.id}`)
     if (this.key_num == 0 && this.size == 1 && this.parent && !this.leaf) {
-      console.log('push_node_up:before')
-      this.print()
+      // console.log('push_node_up:before')
+      // this.print()
       push_node_up(this)
       if (this.parent?.size > 0) {
-        console.log('parent.commit')
-        this.print()
+        // console.log('parent.commit')
+        // this.print()
         this.parent.commit()
       }
     }
   }
 
   print(node?: Node) {
-    print(
+    return printTree(
       node?.toJSON() ?? this.toJSON(),
       (node: Node) =>
         `${node.parent ? 'N' : ''}${node.parent ?? ''}${
@@ -461,7 +461,7 @@ export class Node {
   _parent: number
 
   get parent(): Node {
-    return this.tree.nodes.get(this._parent) ?? undefined
+    return this.tree?.nodes.get(this._parent) ?? undefined
   }
   set parent(node: Node) {
     this._parent = node?.id ?? undefined
@@ -470,14 +470,14 @@ export class Node {
   _left: number
   _right: number
   get left(): Node {
-    return this.tree.nodes.get(this._left) ?? undefined
+    return this.tree?.nodes.get(this._left) ?? undefined
   }
   set left(node: Node) {
     this._left = node?.id ?? undefined
   }
   // указатель на правого брата
   get right(): Node {
-    return this.tree.nodes.get(this._right) ?? undefined
+    return this.tree?.nodes.get(this._right) ?? undefined
   }
   set right(node: Node) {
     this._right = node?.id ?? undefined

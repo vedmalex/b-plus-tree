@@ -2,7 +2,7 @@ const fs = require('fs')
 var BPlusTree = require('../dist').BPlusTree
 
 // const comparator = (a, b) => a[0] - b[0]
-const N = 18
+const N = 100
 // const MAX_RAND = 10000000
 // const SAMPLES = 1000
 const T = 2
@@ -28,13 +28,13 @@ const simple = arr.map(i => ordered.indexOf(i))
 
 simple.forEach((i)=>{
   console.log(`\n\n --- insert ${i} --- \n`)
-  // bpt.print()
+  bpt.print()
 
   for(j = 0; j< dupes; j++) {
     bpt.insert(i, `${i}-${j}`)
   }
   console.log(`\nresult:`)
-  // bpt.print()
+  bpt.print()
   console.log(`found: ${bpt.find(i)}`)
 })
 console.log(bpt.size())
@@ -59,7 +59,7 @@ console.log(bpt.size())
 
 const stored = BPlusTree.serialize(bpt)
 
-fs.writeFileSync('bpt.json', JSON.stringify(stored))
+// fs.writeFileSync('bpt.json', JSON.stringify(stored))
 
 // BPlusTree.deserialize(bpt, stored)
 

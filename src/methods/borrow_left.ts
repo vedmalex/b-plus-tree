@@ -10,10 +10,10 @@ import { Node, update_min_max, update_state } from '../types/Node'
 // }
 
 export function merge_with_left(node: Node, left_sibling: Node, count: number) {
-  console.log(`${left_sibling.id} >${count}> ${node.id}`)
-  console.log(`borrow_left:before`)
-  left_sibling.print()
-  node.print()
+  // console.log(`${left_sibling.id} >${count}> ${node.id}`)
+  // console.log(`borrow_left:before`)
+  // left_sibling.print()
+  // node.print()
   if (node.leaf) {
     node.keys.unshift(...left_sibling.keys.splice(-count))
     node.pointers.unshift(...left_sibling.pointers.splice(-count))
@@ -31,23 +31,9 @@ export function merge_with_left(node: Node, left_sibling: Node, count: number) {
     // not pushin up because we in process of attaching
     // not updating parent yet
   } else {
-    const nodeEmpty = node.keys.length == 0
-    const leftEmpty = left_sibling.keys.length == 0
-
-    if (leftEmpty) {
-      node.keys.unshift(node.min)
-    } else if (node.isEmpty) {
-      node.keys.unshift(...left_sibling.keys.splice(-(count - 1)))
-      // remove left because it is not balanced with children we have
-      left_sibling.keys.pop()
-    } else {
-      if (node.keys.length == 0) {
-        node.keys.unshift(left_sibling.min, ...left_sibling.keys.splice(-count))
-        node.keys.pop()
-      } else {
-        node.keys.unshift(...left_sibling.keys.splice(-count))
-      }
-    }
+    if (node.size > 0) node.keys.unshift(node.min)
+    node.keys.unshift(...left_sibling.keys.splice(-count))
+    if (left_sibling.size != count) node.keys.shift()
 
     const nodes = node.tree.nodes
     node.children.unshift(
@@ -68,9 +54,9 @@ export function merge_with_left(node: Node, left_sibling: Node, count: number) {
     // not pushin up because we in process of attaching
     // not updating parent yet
   }
-  console.log(`borrow_left:after`)
-  left_sibling.print()
-  node.print()
+  // console.log(`borrow_left:after`)
+  // left_sibling.print()
+  // node.print()
 }
 
 // export function merge_with_left(node: Node, left_sibling: Node) {

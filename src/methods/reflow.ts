@@ -6,8 +6,8 @@ import { can_borrow_left } from './can_borrow_left'
 import { can_borrow_right } from './can_borrow_right'
 
 export function reflow(tree: BPlusTree, node: Node) {
-  console.log(`reflow:start ${node.id}`)
-  node.print()
+  // console.log(`reflow:start ${node.id}`)
+  // node.print()
   if (node) {
     if (node.key_num < tree.t - 1 || node.isEmpty) {
       const right_sibling = node.right
@@ -99,6 +99,6 @@ export function reflow(tree: BPlusTree, node: Node) {
       node.commit()
     }
   }
-  console.log(`reflow:end ${node.id}`)
-  node.print()
+  // console.log(`reflow:end ${node.id}`)
+  // node.print()
 }

@@ -13,8 +13,8 @@ export function delete_in_node(
   const nodes = tree.nodes
   if (all) {
     while (find_first_item(node.keys, key) != -1) {
-      console.log(`remove node ${node.id} ${key}`)
-      node.tree.print()
+      // console.log(`remove node ${node.id} ${key}`)
+      // node.tree.print()
       node.remove(key)
     }
   } else {

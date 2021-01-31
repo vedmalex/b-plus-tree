@@ -1,4 +1,3 @@
-import print from 'print-tree'
 import { Node, PortableNode } from './Node'
 import { ValueType } from '../btree'
 import { remove } from '../methods/remove'
@@ -10,6 +9,7 @@ import { find_first_key } from '../methods/find_first_key'
 import { find_first_node } from '../methods/find_first_node'
 import { find_last_key } from '../methods/find_last_key'
 import { find_first_item } from '../methods/find_first_item'
+import { printTree } from '../utils/print-tree'
 
 export type Cursor = {
   node: number
@@ -193,16 +193,6 @@ export class BPlusTree {
     })
   }
 
-  validate() {
-    this.nodes.forEach((v) => {
-      if (v.children.length != v.keys.length) {
-        console.log(`children ${v.id}`)
-      }
-      if (v.keys.length != v.key_num) debugger
-      if (v.size != (v.leaf ? v.key_num : v.children.length)) debugger
-    })
-  }
-
   find(
     key?: ValueType,
     {
@@ -269,7 +259,7 @@ export class BPlusTree {
     }
   }
   print(node?: Node) {
-    print(
+    return printTree(
       node?.toJSON() ?? this.toJSON().root,
       (node: Node) =>
         `${node.parent ? 'N' : ''}${node.parent ?? ''}${
