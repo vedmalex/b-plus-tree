@@ -14,11 +14,11 @@ import { printTree } from '../utils/print-tree'
 import { find } from './eval/find'
 import { list } from './eval/list'
 
-export class BPlusTree {
+export class BPlusTree<T> {
   public t: number // минимальная степень дерева
   public root: number // указатель на корень дерева
   public unique: boolean
-  public nodes = new Map<number, Node>()
+  public nodes = new Map<number, Node<T>>()
   protected next_node_id = 0
   get_next_id() {
     return this.next_node_id++
@@ -29,7 +29,7 @@ export class BPlusTree {
     this.root = Node.createLeaf(this).id
   }
 
-  static serialize(tree: BPlusTree): PortableBPlusTree {
+  static serialize<T>(tree: BPlusTree<T>): PortableBPlusTree<T> {
     const { t, root, unique, nodes, next_node_id } = tree
     return {
       t,
@@ -40,7 +40,7 @@ export class BPlusTree {
     }
   }
 
-  static deserialize(tree: BPlusTree, stored: PortableBPlusTree) {
+  static deserialize<T>(tree: BPlusTree<T>, stored: PortableBPlusTree<T>) {
     tree.nodes.clear()
     const { t, next_node_id, root, unique, nodes } = stored
     tree.t = t
@@ -48,7 +48,7 @@ export class BPlusTree {
     tree.root = root
     tree.unique = unique
     nodes.forEach((n) => {
-      const node = Node.deserialize(n)
+      const node = Node.deserialize<T>(n)
       node.tree = tree
       tree.nodes.set(n.id, node)
     })
@@ -85,7 +85,7 @@ export class BPlusTree {
     return node.pointers[index]
   }
 
-  cursor(key: ValueType): Cursor {
+  cursor(key: ValueType): Cursor<T> {
     const node = find_last_node(this, key)
     const index = find_last_key(node.keys, key)
     return { node: node.id, pos: index, key, value: node.pointers[index] }

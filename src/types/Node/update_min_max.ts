@@ -2,7 +2,7 @@ import { Node } from '../Node'
 import { replace_max } from './replace_max'
 import { replace_min } from './replace_min'
 
-export function update_min_max(node: Node) {
+export function update_min_max<T>(node: Node<T>) {
   // console.log(`update_min_max ${node.id}`)
   if (!node.isEmpty) {
     const nodes = node.tree.nodes

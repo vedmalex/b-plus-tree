@@ -1,10 +1,11 @@
+import { ValueType } from '../types/ValueType'
 /**
  * fast search in ordered array
  * @param a array
  * @param key key to find
  * @returns
  */
-export function find_first_item(a: Array<any>, key: any) {
+export function find_first_item(a: Array<ValueType>, key: ValueType) {
   // l, r — левая и правая границы
   let l = -1
   let r: number = a.length

@@ -4,7 +4,11 @@ import { split } from './split'
 import { find_first_node } from './find_first_node'
 import { find_first_item } from './find_first_item'
 
-export function insert(tree: BPlusTree, key: ValueType, value: any): boolean {
+export function insert<T>(
+  tree: BPlusTree<T>,
+  key: ValueType,
+  value: T,
+): boolean {
   let leaf = find_first_node(tree, key)
   if (find_first_item(leaf.keys, key) > -1) {
     if (tree.unique) return false

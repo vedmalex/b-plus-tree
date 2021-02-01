@@ -1,6 +1,6 @@
 import { Node } from '../types/Node'
 
-export function size(node: Node) {
+export function size<T>(node: Node<T>) {
   let lres = 0
   let start = 0
   let i = start

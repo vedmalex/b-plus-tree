@@ -2,7 +2,7 @@ import { Node } from '../types/Node'
 import { update_state } from '../types/Node/update_state'
 import { update_min_max } from '../types/Node/update_min_max'
 
-export function add_initial_nodes(obj: Node, nodes: Array<Node>) {
+export function add_initial_nodes<T>(obj: Node<T>, nodes: Array<Node<T>>) {
   for (let i = 0; i < nodes.length; i++) {
     const right = nodes[i]
     obj.children.push(right.id)

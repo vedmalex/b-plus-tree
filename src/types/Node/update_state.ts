@@ -1,6 +1,6 @@
 import { Node } from '../Node'
 
-export function update_state(node: Node) {
+export function update_state<T>(node: Node<T>) {
   if (node.leaf) {
     node.key_num = node.keys.length
     node.size = node.keys.length

@@ -2,7 +2,11 @@ import { Node } from '../types/Node'
 import { update_state } from '../types/Node/update_state'
 import { update_min_max } from '../types/Node/update_min_max'
 
-export function merge_with_left(node: Node, left_sibling: Node, count: number) {
+export function merge_with_left<T>(
+  node: Node<T>,
+  left_sibling: Node<T>,
+  count: number,
+) {
   // console.log(`${left_sibling.id} >${count}> ${node.id}`)
   // console.log(`borrow_left:before`)
   // left_sibling.print()

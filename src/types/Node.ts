@@ -14,29 +14,29 @@ import { replace_max } from './Node/replace_max'
 import { PortableNode } from './Node/PortableNode'
 
 // TODO: MAKE NODE SIMPLE OBJECT with static methods?????
-export class Node {
-  static createLeaf(tree: BPlusTree) {
-    const node = new Node()
+export class Node<T> {
+  static createLeaf<T>(tree: BPlusTree<T>) {
+    const node = new Node<T>()
     node.leaf = true
     node.t = tree.t
     node.pointers = []
     register_node(tree, node)
     return node
   }
-  static createNode(tree: BPlusTree) {
-    const node = new Node()
+  static createNode<T>(tree: BPlusTree<T>) {
+    const node = new Node<T>()
     node.children = []
     node.leaf = false
     node.t = tree.t
     register_node(tree, node)
     return node
   }
-  static createRootFrom(tree: BPlusTree, ...node: Array<Node>) {
+  static createRootFrom<T>(tree: BPlusTree<T>, ...node: Array<Node<T>>) {
     const root = Node.createNode(tree)
     add_initial_nodes(root, node)
     return root
   }
-  static serialize(node: Node): PortableNode {
+  static serialize<T>(node: Node<T>): PortableNode<T> {
     const {
       id,
       leaf,
@@ -72,8 +72,8 @@ export class Node {
       children,
     }
   }
-  static deserialize(stored: PortableNode) {
-    const node = new Node()
+  static deserialize<T>(stored: PortableNode<T>) {
+    const node = new Node<T>()
     node.id = stored.id
     node.leaf = stored.leaf
     node.t = stored.t
@@ -98,12 +98,12 @@ export class Node {
   key_num: number // количество ключей узла
   size: number // значимый размер узла
   keys: ValueType[] // ключи узла
-  pointers: any[] // если лист — указатели на данные
+  pointers: T[] // если лист — указатели на данные
   min: ValueType
   max: ValueType
   isFull: boolean
   isEmpty: boolean
-  tree: BPlusTree
+  tree: BPlusTree<T>
   private constructor() {
     this.keys = []
 
@@ -120,7 +120,7 @@ export class Node {
     if (this.tree?.root != this.id) unregister_node(this.tree, this)
   }
 
-  insert(item: [ValueType, any]) {
+  insert(item: [ValueType, T]) {
     const [key, value] = item
     const pos = find_last_key(this.keys, item[0])
     this.keys.splice(pos, 0, key)
@@ -136,11 +136,11 @@ export class Node {
     }
   }
 
-  remove(item: ValueType): [ValueType, any] {
+  remove(item: ValueType): [ValueType, T] {
     // console.log(`remove:start ${this.id} -${item}`)
     // this.print()
     const pos = find_first_item(this.keys, item)
-    const res: [ValueType, any] = [item, this.pointers.splice(pos, 1)[0]]
+    const res: [ValueType, T] = [item, this.pointers.splice(pos, 1)[0]]
     this.keys.splice(pos, 1)
     update_state(this)
 
@@ -174,7 +174,7 @@ export class Node {
     return validate_node(this)
   }
 
-  toJSON(): PortableNode & { errors: Array<string> } {
+  toJSON(): PortableNode<T> & { errors: Array<string> } {
     if (this.leaf) {
       return {
         t: this.t,
@@ -221,26 +221,26 @@ export class Node {
   // указатель на отца
   _parent: number
 
-  get parent(): Node {
+  get parent(): Node<T> {
     return this.tree?.nodes.get(this._parent) ?? undefined
   }
-  set parent(node: Node) {
+  set parent(node: Node<T>) {
     this._parent = node?.id ?? undefined
   }
   // указатель на левого брата
   _left: number
   _right: number
-  get left(): Node {
+  get left(): Node<T> {
     return this.tree?.nodes.get(this._left) ?? undefined
   }
-  set left(node: Node) {
+  set left(node: Node<T>) {
     this._left = node?.id ?? undefined
   }
   // указатель на правого брата
-  get right(): Node {
+  get right(): Node<T> {
     return this.tree?.nodes.get(this._right) ?? undefined
   }
-  set right(node: Node) {
+  set right(node: Node<T>) {
     this._right = node?.id ?? undefined
   }
 }
@@ -255,7 +255,7 @@ export class Node {
  *
  */
 
-export function validate_node(node: Node) {
+export function validate_node<T>(node: Node<T>) {
   const res: Array<string> = []
   if (!node.isEmpty) {
     if (!node.leaf) {

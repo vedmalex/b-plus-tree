@@ -1,15 +1,15 @@
-export function get_items_from_array_slice({
+export function get_items_from_array_slice<T>({
   array,
   skip = 0,
   take = -1,
   forward = true,
 }: {
-  array: Array<any>
+  array: Array<T>
   skip?: number
   take?: number
   forward?: boolean
 }) {
-  let result: any[]
+  let result: T[]
   if (take == -1) take = array.length - skip
   if (forward) {
     const start = skip
@@ -25,13 +25,13 @@ export function get_items_from_array_slice({
   return result
 }
 
-export function get_items_from_array({
+export function get_items_from_array<T>({
   array,
   skip = 0,
   take = -1,
   forward = true,
 }: {
-  array: Array<any>
+  array: Array<T>
   skip?: number
   take?: number
   forward?: boolean

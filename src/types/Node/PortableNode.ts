@@ -1,6 +1,6 @@
 import { ValueType } from '../ValueType'
 
-export type PortableNode = {
+export type PortableNode<T> = {
   id: number
   t: number
   _parent: number
@@ -14,7 +14,7 @@ export type PortableNode = {
   size: number
   keys: ValueType[]
   key_num: number
-  pointers: any[]
+  pointers: T[]
   children: number[]
   errors?: Array<string>
 }

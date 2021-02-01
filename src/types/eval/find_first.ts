@@ -5,12 +5,12 @@ import { find_first_item } from '../../methods/find_first_item'
 import { BPlusTree } from '../BPlusTree'
 import { Cursor } from './Cursor'
 
-export function find_first(
-  tree: BPlusTree,
+export function find_first<T>(
+  tree: BPlusTree<T>,
   key: ValueType,
   forward: boolean = true,
-): Cursor {
-  let node: Node, index: number
+): Cursor<T> {
+  let node: Node<T>, index: number
   if (forward) {
     node = find_last_node(tree, key)
     index = find_first_item(node.keys, key)

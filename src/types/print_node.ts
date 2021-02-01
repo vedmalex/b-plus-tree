@@ -3,14 +3,14 @@ import { printTree } from '../utils/print-tree'
 import { PortableNode } from './Node/PortableNode'
 import { Node } from './Node'
 
-export function print_node(tree: BPlusTree, node?: Node) {
+export function print_node<T>(tree: BPlusTree<T>, node?: Node<T>) {
   if (!node) {
     node = tree.node(tree.root)
   }
   const nodes = tree.nodes
   return printTree(
     node?.toJSON(),
-    (node: PortableNode) =>
+    (node: PortableNode<T>) =>
       `${node._parent ? 'N' : ''}${node._parent ?? ''}${
         node._parent ? '<-' : ''
       }${node.isFull ? '!' : ''}${node.leaf ? 'L' : 'N'}${node.id} <${
@@ -20,6 +20,6 @@ export function print_node(tree: BPlusTree, node?: Node) {
       }${node._left ?? '-'} R:${node.leaf ? 'L' : 'N'}${node._right ?? '-'} ${
         node.leaf ? node.pointers : ''
       } ${node.errors.length == 0 ? '' : '[error]: ' + node.errors.join(';')}`,
-    (node: PortableNode) => node.children.map((c) => nodes.get(c).toJSON()),
+    (node: PortableNode<T>) => node.children.map((c) => nodes.get(c).toJSON()),
   )
 }

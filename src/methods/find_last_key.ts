@@ -1,10 +1,11 @@
+import { ValueType } from '../types/ValueType'
 /**
  * search index of possible location item
  * @param a ordered array
  * @param key value to insert into array
  * @returns the position where the value can be inserted
  */
-export function find_last_key(a: Array<any>, key: any) {
+export function find_last_key(a: Array<ValueType>, key: ValueType) {
   // l, r — левая и правая границы
   let l = -1
   let r: number = a.length

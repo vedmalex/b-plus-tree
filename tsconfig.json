@@ -8,7 +8,7 @@
     "declarationMap": true,
     "removeComments": false,
     "strict": false,
-    "noImplicitAny": false,
+    "noImplicitAny": true,
     "noImplicitReturns": false,
     "noFallthroughCasesInSwitch": true,
     "noUnusedParameters": false,

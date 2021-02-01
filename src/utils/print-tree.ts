@@ -6,7 +6,7 @@ export function printTree<T>(
   printNode: PrintNode<T>,
   getChildren: GetChildren<T>,
 ) {
-  const result = []
+  const result: Array<string> = []
   const tree: T = initialTree
   let branch: string = ''
 

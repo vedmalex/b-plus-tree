@@ -4,8 +4,8 @@ import { delete_in_node } from './delete_in_node'
 import { find_first_node } from './find_first_node'
 import { find_first_item } from './find_first_item'
 
-export function remove(
-  tree: BPlusTree,
+export function remove<T>(
+  tree: BPlusTree<T>,
   key: ValueType,
   all: boolean = false,
 ): boolean | number {

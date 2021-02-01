@@ -5,13 +5,12 @@ import { reflow } from './reflow'
 import { find_first_item } from './find_first_item'
 import { pull_up_tree } from './pull_up_tree'
 
-export function delete_in_node(
-  tree: BPlusTree,
-  node: Node,
+export function delete_in_node<T>(
+  tree: BPlusTree<T>,
+  node: Node<T>,
   key: ValueType,
   all: boolean = false,
 ) {
-  const nodes = tree.nodes
   if (all) {
     while (find_first_item(node.keys, key) != -1) {
       // console.log(`remove node ${node.id} ${key}`)
@@ -23,5 +22,5 @@ export function delete_in_node(
   }
   reflow(tree, node)
 
-  pull_up_tree(nodes, tree)
+  pull_up_tree(tree)
 }

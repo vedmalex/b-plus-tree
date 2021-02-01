@@ -1,7 +1,7 @@
 import { ValueType } from '../ValueType'
 import { Node } from '../Node'
 
-export function insert_new_max(node: Node, key: ValueType) {
+export function insert_new_max<T>(node: Node<T>, key: ValueType) {
   // console.log(`insert_new_max ${node.id} ${key}`)
   node.max = key
   let cur = node

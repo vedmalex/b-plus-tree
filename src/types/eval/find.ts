@@ -7,16 +7,16 @@ import { SearchOptions } from './SearchOptions'
 
 // можно сделать мемоизацию на операцию, кэш значений для поиска
 
-export function find(
-  tree: BPlusTree,
+export function find<T>(
+  tree: BPlusTree<T>,
   key: ValueType,
   options?: Partial<SearchOptions>,
 ) {
   let { skip = 0, take = -1, forward = true } = options ?? {}
   const result = []
-  const cursor = find_first(tree, key, forward)
+  const cursor = find_first<T>(tree, key, forward)
   if (cursor.pos >= 0) {
-    let cur: Cursor
+    let cur: Cursor<T>
     if (skip == 0) {
       cur = cursor
     } else {

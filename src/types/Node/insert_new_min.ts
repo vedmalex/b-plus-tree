@@ -1,7 +1,7 @@
 import { ValueType } from '../ValueType'
 import { Node } from '../Node'
 
-export function insert_new_min(node: Node, key: ValueType) {
+export function insert_new_min<T>(node: Node<T>, key: ValueType) {
   // console.log(`insert_new_min ${node.id}`)
   node.min = key
   let cur = node

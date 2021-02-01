@@ -1,8 +1,8 @@
 import { ValueType } from '../ValueType'
 
-export type Cursor = {
+export type Cursor<T> = {
   node: number
   pos: number
   key: ValueType
-  value: any
+  value: T
 }

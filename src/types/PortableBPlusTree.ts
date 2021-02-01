@@ -8,10 +8,10 @@ import { PortableNode } from './Node/PortableNode'
  * но тут можно хранить и значения
  */
 
-export type PortableBPlusTree = {
+export type PortableBPlusTree<T> = {
   t: number
   next_node_id: number
   root: number
   unique: boolean
-  nodes: PortableNode[]
+  nodes: PortableNode<T>[]
 }

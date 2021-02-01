@@ -5,7 +5,7 @@ import { can_borrow_left } from './can_borrow_left'
 import { attach_one_to_right_after } from './attach_one_to_right'
 import { add_sibling } from './chainable/add_sibling'
 
-export function split(tree: BPlusTree, node: Node) {
+export function split<T>(tree: BPlusTree<T>, node: Node<T>) {
   //Создаем новый узел
   let new_node = node.leaf ? Node.createLeaf(tree) : Node.createNode(tree)
   // Перенаправляем right и left указатели

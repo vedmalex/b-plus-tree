@@ -2,9 +2,9 @@ import { Node } from '../types/Node'
 import { update_state } from '../types/Node/update_state'
 import { update_min_max } from '../types/Node/update_min_max'
 
-export function merge_with_right(
-  node: Node,
-  right_sibling: Node,
+export function merge_with_right<T>(
+  node: Node<T>,
+  right_sibling: Node<T>,
   count: number,
 ) {
   if (node.leaf) {

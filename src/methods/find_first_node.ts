@@ -2,7 +2,7 @@ import { BPlusTree } from '../types/BPlusTree'
 import { ValueType } from '../types/ValueType'
 import { find_first_key } from './find_first_key'
 
-export function find_first_node(tree: BPlusTree, key: ValueType) {
+export function find_first_node<T>(tree: BPlusTree<T>, key: ValueType) {
   const nodes = tree.nodes
   let cur = nodes.get(tree.root)
 

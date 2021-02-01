@@ -1,7 +1,7 @@
 import { ValueType } from '../ValueType'
 import { Node } from '../Node'
 
-export function replace_min(node: Node, key: ValueType) {
+export function replace_min<T>(node: Node<T>, key: ValueType) {
   node.min = key
   let cur = node
   while (cur.parent) {

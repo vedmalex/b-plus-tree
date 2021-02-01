@@ -4,7 +4,7 @@ import { update_state } from './update_state'
 import { Node } from '../Node'
 import { remove_sibling } from '../../methods/chainable/remove_sibling'
 
-export function remove_node(obj: Node, item: Node): Node {
+export function remove_node<T>(obj: Node<T>, item: Node<T>): Node<T> {
   // console.log(`remove_node:start ${obj.id} -${item.id}:`)
   // obj.print()
   const pos = obj.children.indexOf(item.id)
