@@ -1,5 +1,5 @@
 import { Node } from '../types/Node'
-import { ValueType } from '../btree'
+import { ValueType } from '../types/ValueType'
 
 export function min(node: Node): ValueType {
   const nodes = node.tree.nodes

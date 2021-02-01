@@ -1,6 +1,6 @@
 import { BPlusTree } from '../types/BPlusTree'
 import { Node } from '../types/Node'
-import { ValueType } from '../btree'
+import { ValueType } from '../types/ValueType'
 import { reflow } from './reflow'
 import { find_first_item } from './find_first_item'
 

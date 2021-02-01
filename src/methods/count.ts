@@ -1,5 +1,5 @@
 import { Node } from '../types/Node'
-import { ValueType } from '../btree'
+import { ValueType } from '../types/ValueType'
 import { find_first_key } from './find_first_key'
 
 export function count(key: ValueType, node: Node) {

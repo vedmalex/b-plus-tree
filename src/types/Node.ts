@@ -1,47 +1,11 @@
-import { ValueType } from '../btree'
+import { ValueType } from './ValueType'
 import { find_last_key } from '../methods/find_last_key'
-import { Chainable } from './Chainable'
 import { add_initial_nodes } from '../methods/add_initial_nodes'
 import { find_first_item } from '../methods/find_first_item'
 import { BPlusTree } from './BPlusTree'
 import { printTree } from '../utils/print-tree'
-
-export function addSibling(
-  a: Chainable,
-  b: Chainable,
-  order: 'right' | 'left',
-) {
-  const right = order
-  const left = order == 'left' ? 'right' : 'left'
-  b[right] = a[right]
-  if (a[right]) {
-    b[right][left] = b
-  }
-  a[right] = b
-  b[left] = a
-}
-
-export function removeSibling(a: Chainable, order: 'right' | 'left') {
-  const right = order
-  const left = order == 'left' ? 'right' : 'left'
-  if (a[right]) {
-    const b = a[right]
-    a[right] = b[right]
-    if (b[right]) {
-      b[right][left] = a
-    }
-    b[left] = undefined
-    b[right] = undefined
-  }
-}
-
-export enum VertexColor {
-  gray = 1,
-  blue = 2,
-  red = 3,
-}
-
-// let node = 0
+import { add_sibling } from '../methods/chainable/add_sibling'
+import { remove_sibling } from '../methods/chainable/remove_sibling'
 
 export function registerNode(tree: BPlusTree, node: Node) {
   if (tree.nodes.has(node.id)) throw new Error('already here')
@@ -483,19 +447,19 @@ export class Node {
     this._right = node?.id ?? undefined
   }
   addSiblingAtRight(b) {
-    addSibling(this, b, 'right')
+    add_sibling(this, b, 'right')
   }
 
   addSiblingAtLeft(b) {
-    addSibling(this, b, 'left')
+    add_sibling(this, b, 'left')
   }
 
   removeSiblingAtRight() {
-    removeSibling(this, 'right')
+    remove_sibling(this, 'right')
   }
 
   removeSiblingAtLeft() {
-    removeSibling(this, 'left')
+    remove_sibling(this, 'left')
   }
 }
 

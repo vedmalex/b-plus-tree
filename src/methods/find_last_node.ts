@@ -1,5 +1,5 @@
 import { BPlusTree } from '../types/BPlusTree'
-import { ValueType } from '../btree'
+import { ValueType } from '../types/ValueType'
 import { find_last_key } from './find_last_key'
 
 export function find_last_node(tree: BPlusTree, key: ValueType) {

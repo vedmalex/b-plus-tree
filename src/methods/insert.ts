@@ -1,5 +1,5 @@
 import { BPlusTree } from '../types/BPlusTree'
-import { ValueType } from '../btree'
+import { ValueType } from '../types/ValueType'
 import { split } from './split'
 import { find_first_node } from './find_first_node'
 import { find_first_item } from './find_first_item'

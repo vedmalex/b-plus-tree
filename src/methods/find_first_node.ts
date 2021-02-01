@@ -1,5 +1,5 @@
 import { BPlusTree } from '../types/BPlusTree'
-import { ValueType } from '../btree'
+import { ValueType } from '../types/ValueType'
 import { find_first_key } from './find_first_key'
 
 export function find_first_node(tree: BPlusTree, key: ValueType) {

@@ -1,4 +1,4 @@
-import { ValueType } from '../btree'
+import { ValueType } from '../types/ValueType'
 import { Node, update_state, update_min_max } from '../types/Node'
 
 export function attach_one_to_right_after(obj: Node, right: Node, after: Node) {

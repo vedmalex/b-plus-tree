@@ -1,5 +1,5 @@
 import { Node } from '../types/Node'
-import { ValueType } from '../btree'
+import { ValueType } from '../types/ValueType'
 import { find_first_item } from './find_first_item'
 
 export function get_items(node: Node, key: ValueType = undefined): Array<any> {
