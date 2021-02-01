@@ -8,6 +8,8 @@
     "declarationMap": true,
     "removeComments": false,
     "strict": false,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitThis": true,
     "noImplicitAny": true,
     "noImplicitReturns": false,
     "noFallthroughCasesInSwitch": true,

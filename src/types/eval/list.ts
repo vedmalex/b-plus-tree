@@ -6,7 +6,7 @@ import { SearchOptions } from './SearchOptions'
 
 export function list<T>(tree: BPlusTree<T>, options?: Partial<SearchOptions>) {
   let { skip = 0, take = -1, forward = true } = options ?? {}
-  const result = []
+  const result: Array<T> = []
   const key = options.forward ? tree.min : tree.max
   const cursor = find_first(tree, key, forward)
   if (cursor.pos >= 0) {

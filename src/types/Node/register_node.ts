@@ -6,5 +6,4 @@ export function register_node<T>(tree: BPlusTree<T>, node: Node<T>) {
   node.tree = tree
   node.id = tree.get_next_id()
   tree.nodes.set(node.id, node)
-  // console.log(`register ${node.id}`)
 }

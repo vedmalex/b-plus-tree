@@ -7,10 +7,6 @@ export function merge_with_left<T>(
   left_sibling: Node<T>,
   count: number,
 ) {
-  // console.log(`${left_sibling.id} >${count}> ${node.id}`)
-  // console.log(`borrow_left:before`)
-  // left_sibling.print()
-  // node.print()
   if (node.leaf) {
     node.keys.unshift(...left_sibling.keys.splice(-count))
     node.pointers.unshift(...left_sibling.pointers.splice(-count))
@@ -51,7 +47,4 @@ export function merge_with_left<T>(
     // not pushin up because we in process of attaching
     // not updating parent yet
   }
-  // console.log(`borrow_left:after`)
-  // left_sibling.print()
-  // node.print()
 }

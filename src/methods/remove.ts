@@ -8,19 +8,18 @@ export function remove<T>(
   tree: BPlusTree<T>,
   key: ValueType,
   all: boolean = false,
-): boolean | number {
+) {
+  const result: Array<[ValueType, T]> = []
   let leaf = find_first_node(tree, key)
-  if (find_first_item(leaf.keys, key) == -1) {
-    return false
-  } else {
+  if (find_first_item(leaf.keys, key) > -1) {
     if (all) {
       do {
-        delete_in_node(tree, leaf, key, all) // Удалить ключ из вершины
+        result.push(...delete_in_node(tree, leaf, key, all)) // Удалить ключ из вершины
         leaf = find_first_node(tree, key)
       } while (find_first_item(leaf.keys, key) != -1)
     } else {
-      delete_in_node(tree, leaf, key, all) // Удалить ключ из вершины
+      result.push(...delete_in_node(tree, leaf, key, all)) // Удалить ключ из вершины
     }
-    return true
   }
+  return result
 }

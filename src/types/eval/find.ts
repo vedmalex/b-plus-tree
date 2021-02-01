@@ -13,7 +13,7 @@ export function find<T>(
   options?: Partial<SearchOptions>,
 ) {
   let { skip = 0, take = -1, forward = true } = options ?? {}
-  const result = []
+  const result: Array<T> = []
   const cursor = find_first<T>(tree, key, forward)
   if (cursor.pos >= 0) {
     let cur: Cursor<T>

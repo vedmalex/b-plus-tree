@@ -14,7 +14,6 @@ export function insert<T>(
     if (tree.unique) return false
   }
   leaf.insert([key, value])
-  // leaf.print()
   if (leaf.isFull) {
     split(tree, leaf) // Разбиваем узел
   }

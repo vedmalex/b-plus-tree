@@ -68,7 +68,7 @@ for (let size of [1000, 10000, 100000, 1000000]) {
     },
   )
   const bptree = measure(
-    (map) => `Insert ${map.size()} pairs in BPlusTree`,
+    (map) => `Insert ${map.size} pairs in BPlusTree`,
     () => {
       let map = new BPlusTree(32, true)
       for (let k of keys) map.insert(k, k)
@@ -83,28 +83,28 @@ for (let size of [1000, 10000, 100000, 1000000]) {
     },
   )
   measure(
-    (map) => `find ${map.size()} items in BPlusTree`,
+    (map) => `find ${map.size} items in BPlusTree`,
     () => {
       for (let i of indexes) bptree.find(keys[i])
       return bptree
     },
   )
   measure(
-    (map) => `find ${map.size()} items in find with BPlusTree`,
+    (map) => `find ${map.size} items in find with BPlusTree`,
     () => {
       for (let i of indexes) find(bptree, keys[i])
       return bptree
     },
   )
   measure(
-    (map) => `find ${map.size()} items in find_previous with BPlusTree`,
+    (map) => `find ${map.size} items in find_previous with BPlusTree`,
     () => {
       for (let i of indexes) find(bptree, keys[i], { skip: 1 })
       return bptree
     },
   )
   measure(
-    (map) => `find ${map.size()} items in find_next with BPlusTree`,
+    (map) => `find ${map.size} items in find_next with BPlusTree`,
     () => {
       for (let i of indexes)
         find(bptree, keys[i], { skip: 1, forward: false })
@@ -112,14 +112,14 @@ for (let size of [1000, 10000, 100000, 1000000]) {
     },
   )
   measure(
-    (map) => `find first ${map.size()} items in BPlusTree`,
+    (map) => `find first ${map.size} items in BPlusTree`,
     () => {
       for (let i of indexes) bptree.findFirst(keys[i])
       return bptree
     },
   )
   measure(
-    (map) => `find last ${map.size()} items in BPlusTree`,
+    (map) => `find last ${map.size} items in BPlusTree`,
     () => {
       for (let i of indexes) bptree.findLast(keys[i])
       return bptree

@@ -5,8 +5,6 @@ import { Node } from '../Node'
 import { remove_sibling } from '../../methods/chainable/remove_sibling'
 
 export function remove_node<T>(obj: Node<T>, item: Node<T>): Node<T> {
-  // console.log(`remove_node:start ${obj.id} -${item.id}:`)
-  // obj.print()
   const pos = obj.children.indexOf(item.id)
   obj.children.splice(pos, 1)
   if (pos == 0) {
@@ -32,7 +30,5 @@ export function remove_node<T>(obj: Node<T>, item: Node<T>): Node<T> {
     const max = nodes.get(obj.children[obj.key_num])?.max
     insert_new_max(obj, max)
   }
-  // console.log(`remove_node:end ${obj.id} -${item.id}:`)
-  // obj.print()
   return item
 }

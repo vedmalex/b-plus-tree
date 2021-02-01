@@ -1,6 +1,7 @@
 const fs = require('fs')
 var BPlusTree = require('../dist').BPlusTree
 
+
 // const comparator = (a, b) => a[0] - b[0]
 const N = 100
 // const MAX_RAND = 10000000
@@ -28,13 +29,13 @@ const simple = arr.map(i => ordered.indexOf(i))
 
 simple.forEach((i)=>{
   console.log(`\n\n --- insert ${i} --- \n`)
-  bpt.print()
+  print_node(bpt)
 
   for(j = 0; j< dupes; j++) {
     bpt.insert(i, `${i}-${j}`)
   }
   console.log(`\nresult:`)
-  bpt.print()
+  print_node(bpt)
   console.log(`found: ${bpt.find(i)}`)
 })
 console.log(bpt.size())
@@ -47,7 +48,7 @@ console.log(bpt.size())
 //   f = f.right
 // } while (f != null)
 
-// bpt.print()
+pt.print_node(bpt)
 
 const res = bpt.find(simple[3], {skip:1, take:6})
 console.log(res)
@@ -76,18 +77,18 @@ do {
   console.log(find.length)
   i+=1
 } while(i < simple.length)
-bpt.print()
+print_node(bpt)
 
 if(dupes > 1){
   do {
     let cur
     cur = simple.shift()
     console.log(`\n\n --- remove all ${cur} --- \n`)
-    bpt.print()
+    print_node(bpt)
 
     result = bpt.removeMany(cur)
     console.log('\nresult:')
-    bpt.print()
+    print_node(bpt)
     const find = bpt.find(cur)
     console.log(find.length)
   } while(simple.length > 0)
@@ -97,7 +98,7 @@ if(dupes > 1){
   }
 }
 
-  bpt.print()
+  print_node(bpt)
   if(bpt.nodes.size > 1) {
     throw new Error('memory leak')
   } else {

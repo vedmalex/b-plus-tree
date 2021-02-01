@@ -8,8 +8,6 @@ import { can_borrow_right } from './can_borrow_right'
 import { remove_sibling } from './chainable/remove_sibling'
 
 export function reflow<T>(tree: BPlusTree<T>, node: Node<T>) {
-  // console.log(`reflow:start ${node.id}`)
-  // node.print()
   if (node) {
     if (node.key_num < tree.t - 1 || node.isEmpty) {
       const right_sibling = node.right
@@ -102,6 +100,4 @@ export function reflow<T>(tree: BPlusTree<T>, node: Node<T>) {
       node.commit()
     }
   }
-  // console.log(`reflow:end ${node.id}`)
-  // node.print()
 }

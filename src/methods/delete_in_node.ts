@@ -3,7 +3,7 @@ import { Node } from '../types/Node'
 import { ValueType } from '../types/ValueType'
 import { reflow } from './reflow'
 import { find_first_item } from './find_first_item'
-import { pull_up_tree } from './pull_up_tree'
+import { try_to_pull_up_tree } from './try_to_pull_up_tree'
 
 export function delete_in_node<T>(
   tree: BPlusTree<T>,
@@ -11,16 +11,16 @@ export function delete_in_node<T>(
   key: ValueType,
   all: boolean = false,
 ) {
+  const result: Array<[ValueType, T]> = []
   if (all) {
     while (find_first_item(node.keys, key) != -1) {
-      // console.log(`remove node ${node.id} ${key}`)
-      // node.tree.print()
-      node.remove(key)
+      result.push(node.remove(key))
     }
   } else {
-    node.remove(key)
+    result.push(node.remove(key))
   }
   reflow(tree, node)
 
-  pull_up_tree(tree)
+  try_to_pull_up_tree(tree)
+  return result
 }

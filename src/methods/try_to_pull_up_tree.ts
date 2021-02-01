@@ -1,7 +1,6 @@
 import { BPlusTree } from '../types/BPlusTree'
-import { Node } from '../types/Node'
 
-export function pull_up_tree<T>(tree: BPlusTree<T>) {
+export function try_to_pull_up_tree<T>(tree: BPlusTree<T>) {
   const nodes = tree.nodes
   const root = nodes.get(tree.root)
   if (root.size == 1 && !root.leaf) {

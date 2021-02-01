@@ -116,7 +116,6 @@ export class Node<T> {
   }
 
   delete() {
-    // console.log(`delete ${this.id}`)
     if (this.tree?.root != this.id) unregister_node(this.tree, this)
   }
 
@@ -137,8 +136,6 @@ export class Node<T> {
   }
 
   remove(item: ValueType): [ValueType, T] {
-    // console.log(`remove:start ${this.id} -${item}`)
-    // this.print()
     const pos = find_first_item(this.keys, item)
     const res: [ValueType, T] = [item, this.pointers.splice(pos, 1)[0]]
     this.keys.splice(pos, 1)
@@ -151,20 +148,13 @@ export class Node<T> {
     if (pos == this.keys.length) {
       replace_max(this, this.keys[pos - 1])
     }
-    // console.log(`remove:end ${this.id} -${item}`)
-    // this.print()
     return res
   }
 
   commit() {
-    // console.log(`commit ${this.id}`)
     if (this.key_num == 0 && this.size == 1 && this.parent && !this.leaf) {
-      // console.log('push_node_up:before')
-      // this.print()
       push_node_up(this)
       if (this.parent?.size > 0) {
-        // console.log('parent.commit')
-        // this.print()
         this.parent.commit()
       }
     }

@@ -7,7 +7,6 @@ export function find_first_node<T>(tree: BPlusTree<T>, key: ValueType) {
   let cur = nodes.get(tree.root)
 
   while (cur.leaf != true) {
-    // cur.print()
     let i = find_first_key(cur.keys, key)
     cur = nodes.get(cur.children[i])
     // for non unique index
