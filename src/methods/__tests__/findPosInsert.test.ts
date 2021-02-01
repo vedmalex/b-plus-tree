@@ -3,10 +3,87 @@ import { find_last_key } from '../find_last_key'
 import { find_first_key } from '../find_first_key'
 import { find_first_item } from '../find_first_item'
 
-describe('find_first_item', () => {
+function find_key(a: number[], key: any, forward: boolean, include: boolean) {
+  let index: number
+  if (forward) {
+    if (include) {
+      index = find_first_key(a, key)
+    } else {
+      index = find_last_key(a, key)
+    }
+  } else {
+    if (include) {
+      index = find_last_key(a, key) - 1
+    } else {
+      index = find_first_key(a, key) - 1
+    }
+  }
+  return index
+}
+
+describe('find keys ', () => {
   it('works as expected', () => {
     expect(find_first_item([78, 89, 91, 98], 79)).toBe(-1)
     expect(find_last_key([95], 95)).toBe(1)
+    expect(find_last_key([95, 95, 97, 97], 96)).toBe(2)
+    expect(find_last_key([95, 95, 96, 97, 97], 96)).toBe(3)
+
+    expect(find_last_key([95, 95, 95, 95, 95, 100], 96)).toBe(5)
+    expect(find_first_key([55, 55, 95, 95, 95, 100], 95)).toBe(2)
+
+    expect(find_first_key([95, 95, 95, 95, 100], 95)).toBe(0)
+  })
+  it('find_range_start', () => {
+    expect(
+      // find first including the item
+      find_key([0, 1, 1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 1, true, true),
+    ).toBe(1)
+    expect(
+      // find first excluding the item
+      find_key([0, 1, 1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 1, true, false),
+    ).toBe(4)
+    expect(
+      // find last including the item
+      find_key([1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 9, 10], 9, false, true),
+    ).toBe(10)
+    expect(
+      // find last excluding the item
+      find_key([1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 9, 10], 9, false, false),
+    ).toBe(7)
+    // крайняя позиция
+    expect(
+      // find first including the item
+      find_key([0, 1, 1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 0, true, true),
+    ).toBe(0)
+    expect(
+      // find first excluding the item
+      find_key([0, 1, 1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 0, true, false),
+    ).toBe(1)
+    expect(
+      // find last including the item
+      find_key([1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 9, 10], 10, false, true),
+    ).toBe(11)
+    expect(
+      // find last excluding the item
+      find_key([1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 9, 10], 10, false, false),
+    ).toBe(10)
+    //
+    expect(
+      // find first including the item
+      find_key([0, 1, 1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 0, false, true),
+    ).toBe(0)
+    expect(
+      // find first excluding the item
+      find_key([0, 1, 1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 0, false, false),
+    ).toBe(-1)
+    expect(
+      // find last including the item
+      find_key([1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 9, 10], 10, true, true),
+    ).toBe(11)
+    expect(
+      // find last excluding the item
+      find_key([1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 9, 10], 10, true, false),
+    ).toBe(12)
   })
 })
 

@@ -13,11 +13,20 @@ export function evaluate<T>(
     if (pos >= len) {
       cur = cur.right
       pos -= len
-    } else if (len < 0) {
+    } else if (pos < 0) {
       cur = cur.left
-      pos += cur.pointers.length
+      if (cur) {
+        pos += cur.pointers.length
+      }
     } else {
       return get_current(cur, pos)
     }
+  }
+  return {
+    node: undefined,
+    pos: undefined,
+    key: undefined,
+    value: undefined,
+    done: true,
   }
 }

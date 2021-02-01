@@ -1,8 +1,6 @@
-import 'jest'
-import { merge_with_left } from '../borrow_left'
-import { BPlusTree } from '../../types/BPlusTree'
-import { merge_with_right } from '../borrow_right'
-import { PortableBPlusTree } from '../../types/PortableBPlusTree'
+import { BPlusTree } from './types/BPlusTree'
+import { PortableBPlusTree } from './types/PortableBPlusTree'
+import { BPlusTreeIterator } from './types/BPlusTreeIterator'
 
 const stored: PortableBPlusTree<number> = {
   root: 10000,
@@ -233,34 +231,16 @@ const stored: PortableBPlusTree<number> = {
     },
   ],
 }
-describe('leaf', () => {
-  it('loads tree from stored', () => {
-    const tree = new BPlusTree<number>(2, false)
-    BPlusTree.deserialize(tree, stored)
-    const size = tree.size
-    expect(size).toBe(100)
-    expect(tree.min).toBe(0)
-    expect(tree.max).toBe(100)
-  })
-  it('moved from one to another', () => {
-    const tree = new BPlusTree<number>(2, false)
-    BPlusTree.deserialize(tree, stored)
-    const left = tree.nodes.get(1000)
-    const right = tree.nodes.get(2000)
-    merge_with_left(right, left, 2)
-    expect(right.errors.length).toBe(0)
-    expect(left.errors.length).toBe(0)
-    merge_with_left(right, left, 3)
-    expect(right.errors.length).toBe(0)
-    expect(left.errors.length).toBe(0)
-    merge_with_right(left, right, 2)
-    expect(right.errors.length).toBe(0)
-    expect(left.errors.length).toBe(0)
-    merge_with_right(left, right, 3)
-    expect(right.errors.length).toBe(0)
-    expect(left.errors.length).toBe(0)
-    merge_with_right(left, right, 5)
-    expect(right.errors.length).toBe(0)
-    expect(left.errors.length).toBe(0)
-  })
-})
+
+const tree = new BPlusTree<number>(2, false)
+BPlusTree.deserialize(tree, stored)
+const iterator = new BPlusTreeIterator(tree)
+let v1 = [...iterator.eq(3)].length
+let v2 = [...iterator.gt(89)].length
+let v3 = [...iterator.gte(89)].length
+let v4 = [...iterator.lt(10)].length
+let v5 = [...iterator.lte(10)].length
+let v6 = [...iterator.in([9, 10, 11, 12, 13, 15])]
+let v7 = [...iterator.nin([9, 10, 11, 12, 13, 15])].map((c) => c.value)
+console.log(v7)
+// [...iterator.forEach([9, 10, 11, 12, 13, 15])].length)

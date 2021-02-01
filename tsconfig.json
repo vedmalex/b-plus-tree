@@ -10,7 +10,7 @@
     "strict": false,
     "noUncheckedIndexedAccess": true,
     "noImplicitThis": true,
-    "noImplicitAny": true,
+    "noImplicitAny": false,
     "noImplicitReturns": false,
     "noFallthroughCasesInSwitch": true,
     "noUnusedParameters": false,

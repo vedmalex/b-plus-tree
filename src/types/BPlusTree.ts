@@ -10,7 +10,6 @@ import { find_last_node } from '../methods/find_last_node'
 import { find_first_key } from '../methods/find_first_key'
 import { find_first_node } from '../methods/find_first_node'
 import { find_last_key } from '../methods/find_last_key'
-import { printTree } from '../utils/print-tree'
 import { find } from './eval/find'
 import { list } from './eval/list'
 
@@ -87,8 +86,9 @@ export class BPlusTree<T> {
 
   cursor(key: ValueType): Cursor<T> {
     const node = find_last_node(this, key)
-    const index = find_last_key(node.keys, key)
-    return { node: node.id, pos: index, key, value: node.pointers[index] }
+    const index = find_first_key(node.keys, key)
+    const value = node.pointers[index]
+    return { node: node.id, pos: index, key, value, done: value === undefined }
   }
 
   get min() {

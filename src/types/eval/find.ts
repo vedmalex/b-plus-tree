@@ -22,17 +22,19 @@ export function find<T>(
     } else {
       cur = evaluate(tree, cursor.node, cursor.pos + (forward ? skip : -skip))
     }
-    if (cur?.key == key) {
-      if (take == -1) {
-        result.push(cur.value)
-      } else {
-        while (cur || take == 0) {
-          if (cur.pos >= 0) {
-            result.push(cur.value)
-            take -= 1
-            cur = evaluate(tree, cur.node, cur.pos + (forward ? 1 : -1))
-          } else {
-            break
+    if (!cur.done) {
+      if (cur.key == key) {
+        if (take == -1) {
+          result.push(cur.value)
+        } else {
+          while (cur || take == 0) {
+            if (cur.pos >= 0) {
+              result.push(cur.value)
+              take -= 1
+              cur = evaluate(tree, cur.node, cur.pos + (forward ? 1 : -1))
+            } else {
+              break
+            }
           }
         }
       }

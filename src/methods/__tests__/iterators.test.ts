@@ -1,8 +1,7 @@
 import 'jest'
-import { merge_with_left } from '../borrow_left'
 import { BPlusTree } from '../../types/BPlusTree'
-import { merge_with_right } from '../borrow_right'
 import { PortableBPlusTree } from '../../types/PortableBPlusTree'
+import { BPlusTreeIterator } from '../../types/BPlusTreeIterator'
 
 const stored: PortableBPlusTree<number> = {
   root: 10000,
@@ -233,34 +232,19 @@ const stored: PortableBPlusTree<number> = {
     },
   ],
 }
-describe('leaf', () => {
-  it('loads tree from stored', () => {
+
+describe('iterators', () => {
+  it('just must workd', () => {
     const tree = new BPlusTree<number>(2, false)
     BPlusTree.deserialize(tree, stored)
-    const size = tree.size
-    expect(size).toBe(100)
-    expect(tree.min).toBe(0)
-    expect(tree.max).toBe(100)
-  })
-  it('moved from one to another', () => {
-    const tree = new BPlusTree<number>(2, false)
-    BPlusTree.deserialize(tree, stored)
-    const left = tree.nodes.get(1000)
-    const right = tree.nodes.get(2000)
-    merge_with_left(right, left, 2)
-    expect(right.errors.length).toBe(0)
-    expect(left.errors.length).toBe(0)
-    merge_with_left(right, left, 3)
-    expect(right.errors.length).toBe(0)
-    expect(left.errors.length).toBe(0)
-    merge_with_right(left, right, 2)
-    expect(right.errors.length).toBe(0)
-    expect(left.errors.length).toBe(0)
-    merge_with_right(left, right, 3)
-    expect(right.errors.length).toBe(0)
-    expect(left.errors.length).toBe(0)
-    merge_with_right(left, right, 5)
-    expect(right.errors.length).toBe(0)
-    expect(left.errors.length).toBe(0)
+    const iterator = new BPlusTreeIterator(tree)
+    expect([...iterator.eq(3)].length).toBe(1)
+    expect([...iterator.gt(89)].length).toBe(10)
+    expect([...iterator.gte(89)].length).toBe(11)
+    expect([...iterator.lt(10)].length).toBe(10)
+    expect([...iterator.lte(10)].length).toBe(11)
+    expect([...iterator.in([9, 10, 11, 12, 13, 15])].length).toBe(6)
+    expect([...iterator.nin([9, 10, 11, 12, 13, 15])].length).toBe(94)
+    // expect([...iterator.forEach([9, 10, 11, 12, 13, 15])].length).toBe(64)
   })
 })

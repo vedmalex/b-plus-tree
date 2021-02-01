@@ -5,4 +5,5 @@ export type Cursor<T> = {
   pos: number
   key: ValueType
   value: T
+  done: boolean
 }
