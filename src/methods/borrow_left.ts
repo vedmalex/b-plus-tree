@@ -1,4 +1,6 @@
-import { Node, update_min_max, update_state } from '../types/Node'
+import { Node } from '../types/Node'
+import { update_state } from '../types/Node/update_state'
+import { update_min_max } from '../types/Node/update_min_max'
 
 export function merge_with_left(node: Node, left_sibling: Node, count: number) {
   // console.log(`${left_sibling.id} >${count}> ${node.id}`)

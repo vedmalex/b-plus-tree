@@ -1,5 +1,7 @@
 import { Node } from './Node'
 import { ValueType } from './ValueType'
+import { PortableBPlusTree } from './PortableBPlusTree'
+import { Cursor } from './eval/Cursor'
 import { remove } from '../methods/remove'
 import { insert } from '../methods/insert'
 import { count } from '../methods/count'
@@ -11,8 +13,6 @@ import { find_last_key } from '../methods/find_last_key'
 import { printTree } from '../utils/print-tree'
 import { find } from './eval/find'
 import { list } from './eval/list'
-import { PortableBPlusTree } from './PortableBPlusTree'
-import { Cursor } from './eval/Cursor'
 
 export class BPlusTree {
   public t: number // минимальная степень дерева
@@ -91,11 +91,20 @@ export class BPlusTree {
     return { node: node.id, pos: index, key, value: node.pointers[index] }
   }
 
+  get min() {
+    return this.nodes.get(this.root).min
+  }
+  get max() {
+    return this.nodes.get(this.root).max
+  }
+  get size() {
+    return size(this.nodes.get(this.root))
+  }
+  node(id: number) {
+    return this.nodes.get(id)
+  }
   count(key: ValueType) {
     return count(key, this.nodes.get(this.root))
-  }
-  size() {
-    return size(this.nodes.get(this.root))
   }
   insert(key: ValueType, value: any): boolean {
     return insert(this, key, value)
@@ -106,33 +115,12 @@ export class BPlusTree {
   removeMany(key: ValueType) {
     return remove(this, key, true)
   }
-  min() {
-    return this.nodes.get(this.root).min
-  }
-  max() {
-    return this.nodes.get(this.root).max
-  }
+
   toJSON() {
     return {
       t: this.t,
       unique: this.unique,
       root: this.nodes.get(this.root).toJSON(),
     }
-  }
-  print(node?: Node) {
-    return printTree(
-      node?.toJSON() ?? this.toJSON().root,
-      (node: Node) =>
-        `${node.parent ? 'N' : ''}${node.parent ?? ''}${
-          node.parent ? '<-' : ''
-        }${node.isFull ? '!' : ''}${node.leaf ? 'L' : 'N'}${node.id} <${
-          node.min ?? ''
-        }:${node.max ?? ''}> ${JSON.stringify(node.keys)} L:${
-          node.leaf ? 'L' : 'N'
-        }${node.left ?? '-'} R:${node.leaf ? 'L' : 'N'}${node.right ?? '-'} ${
-          node.leaf ? node.pointers : ''
-        }`,
-      (node: Node) => node.children,
-    )
   }
 }

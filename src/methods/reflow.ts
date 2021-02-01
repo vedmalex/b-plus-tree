@@ -1,9 +1,11 @@
 import { BPlusTree } from '../types/BPlusTree'
-import { Node, remove_node } from '../types/Node'
+import { Node } from '../types/Node'
+import { remove_node } from '../types/Node/remove_node'
 import { merge_with_left } from './borrow_left'
 import { merge_with_right } from './borrow_right'
 import { can_borrow_left } from './can_borrow_left'
 import { can_borrow_right } from './can_borrow_right'
+import { remove_sibling } from './chainable/remove_sibling'
 
 export function reflow(tree: BPlusTree, node: Node) {
   // console.log(`reflow:start ${node.id}`)
@@ -55,12 +57,13 @@ export function reflow(tree: BPlusTree, node: Node) {
             }
             node.commit()
             reflow(tree, parent)
-            if (parent != right_sibling.parent)
+            if (parent != right_sibling.parent) {
               reflow(tree, right_sibling.parent)
+            }
           } else if (node.isEmpty) {
             const parent = node.parent
-            node.right?.removeSiblingAtLeft()
-            node.left?.removeSiblingAtRight()
+            if (node.right) remove_sibling(node.right, 'left')
+            if (node.left) remove_sibling(node.left, 'right')
             if (parent) {
               remove_node(parent, node)
             }
@@ -70,9 +73,9 @@ export function reflow(tree: BPlusTree, node: Node) {
         } else {
           // пустой узел удалить
           if (left_sibling) {
-            left_sibling.removeSiblingAtRight()
+            remove_sibling(left_sibling, 'right')
           } else if (right_sibling) {
-            right_sibling.removeSiblingAtLeft()
+            remove_sibling(right_sibling, 'left')
           }
           const parent = node.parent
           if (parent) {

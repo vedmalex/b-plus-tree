@@ -1,4 +1,5 @@
-const {find, BPlusTree} = require('../dist/types/BPlusTree')
+const {BPlusTree} = require('../dist/types/BPlusTree')
+const {find} = require('../dist/types/find')
 const BTree = require('sorted-btree').default
 const test_data = require('./test_data_bm')
 globalThis.DEBUG = false

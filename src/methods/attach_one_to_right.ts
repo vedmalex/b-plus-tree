@@ -1,5 +1,7 @@
 import { ValueType } from '../types/ValueType'
-import { Node, update_state, update_min_max } from '../types/Node'
+import { Node } from '../types/Node'
+import { update_state } from '../types/Node/update_state'
+import { update_min_max } from '../types/Node/update_min_max'
 
 export function attach_one_to_right_after(obj: Node, right: Node, after: Node) {
   let pos = obj.children.indexOf(after.id)

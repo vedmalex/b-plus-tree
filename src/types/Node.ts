@@ -3,180 +3,15 @@ import { find_last_key } from '../methods/find_last_key'
 import { add_initial_nodes } from '../methods/add_initial_nodes'
 import { find_first_item } from '../methods/find_first_item'
 import { BPlusTree } from './BPlusTree'
-import { printTree } from '../utils/print-tree'
-import { add_sibling } from '../methods/chainable/add_sibling'
-import { remove_sibling } from '../methods/chainable/remove_sibling'
-
-export function registerNode(tree: BPlusTree, node: Node) {
-  if (tree.nodes.has(node.id)) throw new Error('already here')
-  node.tree = tree
-  node.id = tree.get_next_id()
-  tree.nodes.set(node.id, node)
-  // console.log(`register ${node.id}`)
-}
-
-export function unregisterNode(tree: BPlusTree, node: Node) {
-  // console.log(`unregister ${node.id}`)
-  if (!tree.nodes.has(node.id)) throw new Error(`already removed ${node.id}`)
-  node.tree = undefined
-  tree.nodes.delete(node.id)
-}
-
-export function push_node_up(node: Node) {
-  // console.log(`push_node_up ${node.id}`)
-  const child = node.tree.nodes.get(node.children.pop())
-  const parent = node.parent
-  // вставляем на прямо на то же место где и был
-  const pos = parent.children.indexOf(node.id)
-  parent.children[pos] = child.id
-  child.parent = parent
-  node.left?.removeSiblingAtRight()
-  node.right?.removeSiblingAtLeft()
-  node.parent = undefined
-  node.delete()
-  parent.commit()
-}
-
-export function insert_new_min(node: Node, key: ValueType) {
-  // console.log(`insert_new_min ${node.id}`)
-  node.min = key
-  let cur = node
-  while (cur.parent) {
-    let parent = cur.parent
-    const pos = parent.children.indexOf(cur.id)
-    if (pos > 0) {
-      parent.keys[pos - 1] = key
-      break
-    } else {
-      parent.min = key
-      cur = parent
-    }
-  }
-}
-
-export function insert_new_max(node: Node, key: ValueType) {
-  // console.log(`insert_new_max ${node.id} ${key}`)
-  node.max = key
-  let cur = node
-  while (cur.parent) {
-    let parent = cur.parent
-    if (parent.children.indexOf(cur.id) == parent.key_num) {
-      parent.max = key
-      cur = parent
-    } else break
-  }
-}
-
-export function update_min_max(node: Node) {
-  // console.log(`update_min_max ${node.id}`)
-  if (!node.isEmpty) {
-    const nodes = node.tree.nodes
-    if (node.leaf) {
-      replace_min(node, node.keys[0])
-      replace_max(node, node.keys[node.size - 1])
-    } else {
-      replace_min(node, nodes.get(node.children[0]).min)
-      replace_max(node, nodes.get(node.children[node.size - 1]).max)
-    }
-  } else {
-    node.min = undefined
-    node.max = undefined
-  }
-}
-
-export function update_state(node: Node) {
-  if (node.leaf) {
-    node.key_num = node.keys.length
-    node.size = node.keys.length
-    node.isFull = node.size > node.t << 1
-    node.isEmpty = node.size <= 0
-  } else {
-    node.key_num = node.keys.length
-    node.size = node.children.length
-    node.isFull = node.size > node.t << 1
-    node.isEmpty = node.size <= 0
-  }
-}
-
-export function replace_min(node: Node, key: ValueType) {
-  node.min = key
-  let cur = node
-  while (cur.parent) {
-    let parent = cur.parent
-    const pos = parent.children.indexOf(cur.id)
-    if (pos > 0) {
-      parent.keys[pos - 1] = key
-      break
-    } else {
-      parent.min = key
-      cur = parent
-    }
-  }
-}
-
-export function replace_max(node: Node, key: ValueType) {
-  node.max = key
-  let cur = node
-  while (cur.parent) {
-    let parent = cur.parent
-    const pos = parent.children.indexOf(cur.id)
-    if (pos == parent.children.length - 1) {
-      parent.max = key
-      cur = parent
-    } else break
-  }
-}
-
-export function remove_node(obj: Node, item: Node): Node {
-  // console.log(`remove_node:start ${obj.id} -${item.id}:`)
-  // obj.print()
-  const pos = obj.children.indexOf(item.id)
-  obj.children.splice(pos, 1)
-  if (pos == 0) {
-    obj.keys.shift()
-  } else {
-    obj.keys.splice(pos - 1, 1)
-  }
-  item.parent = undefined
-  item.right?.removeSiblingAtLeft()
-  item.left?.removeSiblingAtRight()
-
-  update_state(item)
-
-  update_state(obj)
-
-  const nodes = obj.tree.nodes
-  if (pos == 0) {
-    const min = nodes.get(obj.children[0])?.min
-    insert_new_min(obj, min)
-  }
-  // as far as we splice last item from node it is now at length position
-  if (pos == obj.size) {
-    const max = nodes.get(obj.children[obj.key_num])?.max
-    insert_new_max(obj, max)
-  }
-  // console.log(`remove_node:end ${obj.id} -${item.id}:`)
-  // obj.print()
-  return item
-}
-
-export type PortableNode = {
-  id: number
-  t: number
-  _parent: number
-  _left: number
-  _right: number
-  isEmpty: boolean
-  isFull: boolean
-  leaf: boolean
-  max: ValueType
-  min: ValueType
-  size: number
-  keys: ValueType[]
-  key_num: number
-  pointers: any[]
-  children: number[]
-}
+import { register_node } from './Node/register_node'
+import { unregister_node } from './Node/unregister_node'
+import { push_node_up } from './Node/push_node_up'
+import { insert_new_min } from './Node/insert_new_min'
+import { insert_new_max } from './Node/insert_new_max'
+import { update_state } from './Node/update_state'
+import { replace_min } from './Node/replace_min'
+import { replace_max } from './Node/replace_max'
+import { PortableNode } from './Node/PortableNode'
 
 // TODO: MAKE NODE SIMPLE OBJECT with static methods?????
 export class Node {
@@ -185,7 +20,7 @@ export class Node {
     node.leaf = true
     node.t = tree.t
     node.pointers = []
-    registerNode(tree, node)
+    register_node(tree, node)
     return node
   }
   static createNode(tree: BPlusTree) {
@@ -193,7 +28,7 @@ export class Node {
     node.children = []
     node.leaf = false
     node.t = tree.t
-    registerNode(tree, node)
+    register_node(tree, node)
     return node
   }
   static createRootFrom(tree: BPlusTree, ...node: Array<Node>) {
@@ -271,6 +106,7 @@ export class Node {
   tree: BPlusTree
   private constructor() {
     this.keys = []
+
     this.key_num = 0
     this.size = 0
     this.isFull = false
@@ -281,7 +117,7 @@ export class Node {
 
   delete() {
     // console.log(`delete ${this.id}`)
-    if (this.tree?.root != this.id) unregisterNode(this.tree, this)
+    if (this.tree?.root != this.id) unregister_node(this.tree, this)
   }
 
   insert(item: [ValueType, any]) {
@@ -334,52 +170,17 @@ export class Node {
     }
   }
 
-  print(node?: Node) {
-    return printTree(
-      node?.toJSON() ?? this.toJSON(),
-      (node: Node) =>
-        `${node.parent ? 'N' : ''}${node.parent ?? ''}${
-          node.parent ? '<-' : ''
-        }${node.isFull ? '!' : ''}${node.leaf ? 'L' : 'N'}${node.id} <${
-          node.min ?? ''
-        }:${node.max ?? ''}> ${JSON.stringify(node.keys)} L:${
-          node.leaf ? 'L' : 'N'
-        }${node.left ?? '-'} R:${node.leaf ? 'L' : 'N'}${node.right ?? '-'} ${
-          node.leaf ? node.pointers : ''
-        } ${
-          node.errors.length == 0 ? '' : '[error]: ' + node.errors.join(';')
-        }`,
-      (node: Node) => node.children,
-    )
-  }
   get errors() {
-    return this.validate()
-  }
-  validate() {
-    const res = []
-    if (!this.isEmpty) {
-      if (!this.leaf) {
-        if (this.children.length != this.keys.length + 1) {
-          res.push(
-            `!children ${this.leaf ? 'L' : 'N'}${this.id} ${
-              this.children.length
-            } ${this.keys.length}`,
-          )
-        }
-        if (this.keys.length != this.key_num) {
-          res.push(`!keys ${this.id}`)
-        }
-      }
-      if (this.size != (this.leaf ? this.key_num : this.children.length)) {
-        res.push(`!size ${this.id}`)
-      }
-    }
-    return res
+    return validate_node(this)
   }
 
-  toJSON() {
+  toJSON(): PortableNode & { errors: Array<string> } {
     if (this.leaf) {
       return {
+        t: this.t,
+        isEmpty: this.isEmpty,
+        size: this.size,
+        children: [],
         id: this.id,
         leaf: this.leaf,
         keys: [...this.keys].map((i) => (typeof i == 'number' ? i : 'empty')),
@@ -387,37 +188,33 @@ export class Node {
         min: this.min,
         max: this.max,
         pointers: this.pointers,
-        left: this._left,
-        right: this._right,
-        parent: this._parent,
+        _left: this._left,
+        _right: this._right,
+        _parent: this._parent,
         isFull: this.isFull,
-        errors: this.validate(),
+        errors: this.errors,
       }
     } else {
-      const nodes = this.tree?.nodes
       return {
         id: this.id,
+        t: this.t,
+        isEmpty: this.isEmpty,
+        size: this.size,
         leaf: this.leaf,
         keys: [...this.keys].map((i) => (typeof i == 'number' ? i : 'empty')),
         key_num: this.key_num,
         min: this.min,
         max: this.max,
-        left: this._left,
-        right: this._right,
-        children: nodes
-          ? this.children.map((c) => nodes.get(c).toJSON())
-          : this.children,
-        parent: this._parent,
+        _left: this._left,
+        _right: this._right,
+        children: this.children,
+        pointers: undefined,
+        _parent: this._parent,
         isFull: this.isFull,
-        errors: this.validate(),
+        errors: this.errors,
       }
     }
   }
-
-  // left: Node
-  // right: Node
-  // parent: Node
-  // children: Node[] // указатели на детей узла
 
   children: number[] // ключи на детей узла
 
@@ -446,21 +243,6 @@ export class Node {
   set right(node: Node) {
     this._right = node?.id ?? undefined
   }
-  addSiblingAtRight(b) {
-    add_sibling(this, b, 'right')
-  }
-
-  addSiblingAtLeft(b) {
-    add_sibling(this, b, 'left')
-  }
-
-  removeSiblingAtRight() {
-    remove_sibling(this, 'right')
-  }
-
-  removeSiblingAtLeft() {
-    remove_sibling(this, 'left')
-  }
 }
 
 /**
@@ -472,3 +254,25 @@ export class Node {
  * а это методы дерева
  *
  */
+
+export function validate_node(node: Node) {
+  const res: Array<string> = []
+  if (!node.isEmpty) {
+    if (!node.leaf) {
+      if (node.children.length != node.keys.length + 1) {
+        res.push(
+          `!children ${node.leaf ? 'L' : 'N'}${node.id} ${
+            node.children.length
+          } ${node.keys.length}`,
+        )
+      }
+      if (node.keys.length != node.key_num) {
+        res.push(`!keys ${node.id}`)
+      }
+    }
+    if (node.size != (node.leaf ? node.key_num : node.children.length)) {
+      res.push(`!size ${node.id}`)
+    }
+  }
+  return res
+}
