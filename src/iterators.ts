@@ -1,6 +1,6 @@
 import { BPlusTree } from './types/BPlusTree'
 import { PortableBPlusTree } from './types/PortableBPlusTree'
-import { BPlusTreeIterator } from './types/BPlusTreeIterator'
+import { $eq, $gt, $gte, $in, $lt, $lte, $nin } from './types/BPlusTreeIterator'
 
 const stored: PortableBPlusTree<number> = {
   root: 10000,
@@ -234,13 +234,12 @@ const stored: PortableBPlusTree<number> = {
 
 const tree = new BPlusTree<number>(2, false)
 BPlusTree.deserialize(tree, stored)
-const iterator = new BPlusTreeIterator(tree)
-let v1 = [...iterator.eq(3)].length
-let v2 = [...iterator.gt(89)].length
-let v3 = [...iterator.gte(89)].length
-let v4 = [...iterator.lt(10)].length
-let v5 = [...iterator.lte(10)].length
-let v6 = [...iterator.in([9, 10, 11, 12, 13, 15])]
-let v7 = [...iterator.nin([9, 10, 11, 12, 13, 15])].map((c) => c.value)
+let v1 = [...$eq(tree, 3)].length
+let v2 = [...$gt(tree, 89)].length
+let v3 = [...$gte(tree, 89)].length
+let v4 = [...$lt(tree, 10)].length
+let v5 = [...$lte(tree, 10)].length
+let v6 = [...$in(tree, [9, 10, 11, 12, 13, 15])]
+let v7 = [...$nin(tree, [9, 10, 11, 12, 13, 15])].map((c) => c.value)
 console.log(v7)
 // [...iterator.forEach([9, 10, 11, 12, 13, 15])].length)
