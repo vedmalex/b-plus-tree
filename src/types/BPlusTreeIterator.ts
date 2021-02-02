@@ -477,7 +477,24 @@ export function map<T, D>(
   }
   return false
 }
-export function reduce() {}
+
+export async function reduce<T, E, D>(
+  tree: BPlusTree<T>,
+  reducer: (cur: T | E, res: D) => D,
+  extractor: (value: [ValueType, T]) => Promise<E>,
+  filter?: (value: [ValueType, T]) => Promise<boolean>,
+  initial?: D,
+): Promise<D> {
+  const iterator = filter
+    ? $filterAsync(tree, filter)
+    : $forwardAsyncIterator(tree, extractor)
+  let result = initial
+  for await (let current of iterator) {
+    result = reducer(current.value, result)
+  }
+  return result
+}
+
 export function some<T>(
   tree: BPlusTree<T>,
   func: (value: [ValueType, T]) => boolean,
