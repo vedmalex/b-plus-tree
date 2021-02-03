@@ -7,3 +7,11 @@ export type Cursor<T> = {
   value: T
   done: boolean
 }
+
+export const EmptyCursor = {
+  done: true,
+  key: undefined,
+  pos: undefined,
+  node: undefined,
+  value: undefined,
+}

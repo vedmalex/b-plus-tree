@@ -1,7 +1,20 @@
 import 'jest'
 import { BPlusTree } from '../../types/BPlusTree'
 import { PortableBPlusTree } from '../../types/PortableBPlusTree'
-import { BPlusTreeIterator } from '../../types/BPlusTreeIterator'
+import { find_range_start } from '../../types/eval/find_range_start'
+import {
+  $eq,
+  $every,
+  $gt,
+  $gte,
+  $in,
+  $lt,
+  $lte,
+  $map,
+  $nin,
+  $range,
+  $some,
+} from '../../types/operations/BPlusTreeIterator'
 
 const stored: PortableBPlusTree<number> = {
   root: 10000,
@@ -237,14 +250,25 @@ describe('iterators', () => {
   it('just must workd', () => {
     const tree = new BPlusTree<number>(2, false)
     BPlusTree.deserialize(tree, stored)
-    const iterator = new BPlusTreeIterator(tree)
-    expect([...iterator.eq(3)].length).toBe(1)
-    expect([...iterator.gt(89)].length).toBe(10)
-    expect([...iterator.gte(89)].length).toBe(11)
-    expect([...iterator.lt(10)].length).toBe(10)
-    expect([...iterator.lte(10)].length).toBe(11)
-    expect([...iterator.in([9, 10, 11, 12, 13, 15])].length).toBe(6)
-    expect([...iterator.nin([9, 10, 11, 12, 13, 15])].length).toBe(94)
-    // expect([...iterator.forEach([9, 10, 11, 12, 13, 15])].length).toBe(64)
+    expect([...$eq(tree, 3)].length).toBe(1)
+    expect([...$gt(tree, 89)].length).toBe(10)
+    expect([...$gte(tree, 89)].length).toBe(11)
+    expect([...$lt(tree, 10)].length).toBe(10)
+    expect([...$lte(tree, 10)].length).toBe(11)
+    expect([...$in(tree, [9, 10, 11, 12, 13, 15])].length).toBe(6)
+    expect([...$nin(tree, [9, 10, 11, 12, 13, 15])].length).toBe(94)
+    expect([...$range(tree, 15, 20, true, true)].length).toBe(6)
+    expect([...$range(tree, 15, 20, false, true)].length).toBe(5)
+    expect([...$range(tree, 15, 20, true, false)].length).toBe(5)
+    expect([...$range(tree, 15, 20, false, false)].length).toBe(4)
+    const start = find_range_start(tree, 10, true)
+    expect(start.key).toBe(10)
+    const end = find_range_start(tree, 20, true, false)
+    expect(end.key).toBe(20)
+    expect([...$map(tree, ([, value]) => value * 2, start)].length).toBe(90)
+    const res = [...$map(tree, ([, value]) => value * 2, start, end)]
+    expect(res.length).toBe(11)
+    expect($every(tree, ([, value]) => value > 0)).toBe(false)
+    expect($some(tree, ([, value]) => value > 0)).toBe(true)
   })
 })

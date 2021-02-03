@@ -1,5 +1,5 @@
-import { ValueType } from './ValueType'
-import { Cursor } from './eval/Cursor'
+import { ValueType } from '../ValueType'
+import { Cursor } from '../eval/Cursor'
 
 // gt, lt, gte, lte, in, nin,
 // update

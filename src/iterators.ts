@@ -1,6 +1,16 @@
 import { BPlusTree } from './types/BPlusTree'
 import { PortableBPlusTree } from './types/PortableBPlusTree'
-import { $eq, $gt, $gte, $in, $lt, $lte, $nin } from './types/BPlusTreeIterator'
+import { $forEach } from './types/operations/consumers/$forEach'
+import { $map } from './types/operations/consumers/$map'
+import { $range } from './types/iterators/$range'
+import { $nin } from './types/iterators/$nin'
+import { $in } from './types/iterators/$in'
+import { $gte } from './types/iterators/$gte'
+import { $gt } from './types/iterators/$gt'
+import { $lte } from './types/iterators/$lte'
+import { $lt } from './types/iterators/$lt'
+import { $eq } from './types/iterators/$eq'
+import { find_range_start } from './types/eval/find_range_start'
 
 const stored: PortableBPlusTree<number> = {
   root: 10000,
@@ -242,4 +252,15 @@ let v5 = [...$lte(tree, 10)].length
 let v6 = [...$in(tree, [9, 10, 11, 12, 13, 15])]
 let v7 = [...$nin(tree, [9, 10, 11, 12, 13, 15])].map((c) => c.value)
 console.log(v7)
+const start = find_range_start(tree, 10, true)
+const end = find_range_start(tree, 20, true, false)
+let v9 = [...$map(tree, ([, value]) => value * 2, start)]
+
+let v10 = [...$map(tree, ([, value]) => value * 2, start, end)]
+
+let v8 = [...$range(tree, 15, 20)]
+console.log(v8)
+$forEach(tree, ([key, value]) => {
+  console.log(key, value)
+})
 // [...iterator.forEach([9, 10, 11, 12, 13, 15])].length)
