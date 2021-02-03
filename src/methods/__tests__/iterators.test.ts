@@ -14,7 +14,7 @@ import {
   $nin,
   $range,
   $some,
-} from '../../types/operations/BPlusTreeIterator'
+} from '../../types/iterators/opresults/$distinct'
 
 const stored: PortableBPlusTree<number> = {
   root: 10000,

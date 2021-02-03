@@ -1,16 +1,18 @@
 import { BPlusTree } from './types/BPlusTree'
+
 import { PortableBPlusTree } from './types/PortableBPlusTree'
-import { $forEach } from './types/operations/consumers/$forEach'
-import { $map } from './types/operations/consumers/$map'
-import { $range } from './types/iterators/$range'
-import { $nin } from './types/iterators/$nin'
-import { $in } from './types/iterators/$in'
-import { $gte } from './types/iterators/$gte'
-import { $gt } from './types/iterators/$gt'
-import { $lte } from './types/iterators/$lte'
-import { $lt } from './types/iterators/$lt'
-import { $eq } from './types/iterators/$eq'
 import { find_range_start } from './types/eval/find_range_start'
+import { $eq } from './types/iterators/opsources/$eq'
+import { $gt } from './types/iterators/opsources/$gt'
+import { $gte } from './types/iterators/opsources/$gte'
+import { $lt } from './types/iterators/opsources/$lt'
+import { $lte } from './types/iterators/opsources/$lte'
+import { $in } from './types/iterators/opsources/$in'
+import { $nin } from './types/iterators/opconsumers/$nin'
+import { $range } from './types/iterators/opsources/$range'
+import { $forEach } from './types/iterators/opresults/$forEach'
+import { $iterator } from './types/iterators/opsources/$iterator'
+import { Operations } from './types/iterators/Operations'
 
 const stored: PortableBPlusTree<number> = {
   root: 10000,
@@ -245,22 +247,31 @@ const stored: PortableBPlusTree<number> = {
 const tree = new BPlusTree<number>(2, false)
 BPlusTree.deserialize(tree, stored)
 let v1 = [...$eq(tree, 3)].length
+console.log(v1)
 let v2 = [...$gt(tree, 89)].length
 let v3 = [...$gte(tree, 89)].length
 let v4 = [...$lt(tree, 10)].length
 let v5 = [...$lte(tree, 10)].length
 let v6 = [...$in(tree, [9, 10, 11, 12, 13, 15])]
-let v7 = [...$nin(tree, [9, 10, 11, 12, 13, 15])].map((c) => c.value)
+
+let v7 = [...$nin($iterator(tree), [9, 10, 11, 12, 13, 15])].map((c) => c.value)
 console.log(v7)
 const start = find_range_start(tree, 10, true)
 const end = find_range_start(tree, 20, true, false)
-let v9 = [...$map(tree, ([, value]) => value * 2, start)]
+// let v9 = [...$map(tree, ([, value]) => value * 2, start)]
 
-let v10 = [...$map(tree, ([, value]) => value * 2, start, end)]
+// let v10 = [...$map(tree, ([, value]) => value * 2, start, end)]
 
 let v8 = [...$range(tree, 15, 20)]
 console.log(v8)
-$forEach(tree, ([key, value]) => {
+$forEach($iterator(tree), ([key, value]) => {
   console.log(key, value)
 })
+
+let op = new Operations(tree)
+let odd = op
+  .range(1, 10, true, true)
+  .filter(([, k]) => k % 2 > 0)
+  .transform.map(([value]) => value)
+console.log([...odd.iterator])
 // [...iterator.forEach([9, 10, 11, 12, 13, 15])].length)
