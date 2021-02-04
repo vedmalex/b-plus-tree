@@ -27,7 +27,7 @@ console.log(print_node(tree).join('\n'))
 const op = new Operations(tree)
 
 const res = [
-  ...op.in([1, 3, 5]).transform.map(([, person]) => ({
+  ...op.in([1, 3, 5]).map(([, person]) => ({
     age: person.age,
     name: person.name,
   })).iterator,
