@@ -272,7 +272,7 @@ $forEach($iterator(tree), ([key, value]) => {
   console.log(key, value)
 })
 
-let op = new Operations(tree) as IOpSrc<number>
+let op = new Operations(tree)
 let odd = op
   // .eq(10)
   .range(1, 100, true, true)

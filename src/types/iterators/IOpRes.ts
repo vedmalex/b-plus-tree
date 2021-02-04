@@ -3,8 +3,6 @@ import { IOpTr } from './IOpTr'
 import { Cursor } from '../eval/Cursor'
 
 export interface IOpRes<T> {
-  readonly result: IOpRes<T>
-  readonly transform: IOpTr<T>
   distinct(): Set<T>
   every(condition: (value: [ValueType, T]) => boolean): boolean
   some(condition: (value: [ValueType, T]) => boolean): boolean

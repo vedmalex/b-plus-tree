@@ -4,8 +4,6 @@ import { IOpTr } from './IOpTr'
 import { Cursor } from '../eval/Cursor'
 
 export interface IOpCons<T> {
-  readonly result: IOpRes<T>
-  readonly transform: IOpTr<T>
   eq(key: ValueType): IOpRes<T>
   ne(key: ValueType): IOpRes<T>
   gt(key: ValueType): IOpCons<T> | IOpRes<T> | IOpTr<T>

@@ -17,30 +17,17 @@ import { $some } from './opresults/$some'
 import { $forEach } from './opresults/$forEach'
 import { $forEachAsync } from './opresults/$forEachAsync'
 import { $reduce } from './opresults/$reduce'
-import { IOpCons } from '../IOpCons'
-import { IOpRes } from '../IOpRes'
 import { isAsyncFunction } from '../isAsyncFunction'
-import { IOpTr } from '../IOpTr'
+import { OperationConsumerAsync } from '../async/OperationConsumerAsync'
+import { $mapAsync } from './opconsumers/$mapAsync'
+import { $reduceAsync } from './opresults/$reduceAsync'
+import { $filterAsync } from './opconsumers/$filterAsync'
 
-export class OperationConsumer<T> implements IOpCons<T>, IOpRes<T>, IOpTr<T> {
+export class OperationResult<T> {
   iterator: Iterable<Cursor<T>>
-
   constructor(iterator?: Iterable<Cursor<T>>) {
     this.iterator = iterator
   }
-
-  get transform() {
-    return this as IOpTr<T>
-  }
-
-  get result() {
-    return this as IOpRes<T>
-  }
-
-  map<D>(func: (value: [ValueType, T]) => D): IOpRes<D> {
-    return new OperationConsumer<D>($map(this.iterator, func))
-  }
-  ///
   distinct(): Set<T> {
     return $distinct(this.iterator)
   }
@@ -57,47 +44,97 @@ export class OperationConsumer<T> implements IOpCons<T>, IOpRes<T>, IOpTr<T> {
       return $forEach(this.iterator, action)
     }
   }
-
   reduce<E, D>(reducer: (cur: T | E, res: D) => D, initial?: D): D {
     return $reduce(this.iterator, reducer, initial)
   }
+}
+
+export class OperationConsumer<T> {
+  iterator: Iterable<Cursor<T>>
+
+  constructor(iterator?: Iterable<Cursor<T>>) {
+    this.iterator = iterator
+  }
+
+  map<D>(func: (value: [ValueType, T]) => D) {
+    return new OperationConsumer<D>($map(this.iterator, func))
+  }
+  mapAsync<D>(func: (value: [ValueType, T]) => Promise<D>) {
+    return new OperationConsumerAsync<D>($mapAsync(this.iterator, func))
+  }
+  ///
+  distinct() {
+    return $distinct(this.iterator)
+  }
+  every(condition: (value: [ValueType, T]) => boolean) {
+    return $every(this.iterator, condition)
+  }
+  some(condition: (value: [ValueType, T]) => boolean) {
+    return $some(this.iterator, condition)
+  }
+  forEach(
+    action:
+      | ((value: [ValueType, T]) => void)
+      | ((value: [ValueType, T]) => Promise<void>),
+  ) {
+    return $forEach(this.iterator, action)
+  }
+
+  forEachAsync(action: (value: [ValueType, T]) => Promise<void>) {
+    return $forEachAsync(this.iterator, action)
+  }
+
+  reduce<E, D>(
+    reducer: (cur: T | E, res: D) => D,
+    initial?: D,
+  ): D | Promise<D> {
+    return $reduce(this.iterator, reducer, initial)
+  }
+
+  reduceAsync<E, D>(
+    reducer: (cur: T | E, res: D) => Promise<D>,
+    initial?: D,
+  ): D | Promise<D> {
+    return $reduceAsync(this.iterator, reducer, initial)
+  }
+
   //
-  eq(key: ValueType): IOpRes<T> {
+  eq(key: ValueType) {
     return new OperationConsumer<T>($eq(this.iterator, key))
   }
-  ne(key: ValueType): IOpRes<T> {
+  ne(key: ValueType) {
     return new OperationConsumer<T>($ne(this.iterator, key))
   }
-  gt(key: ValueType): IOpCons<T> | IOpRes<T> | IOpTr<T> {
+  gt(key: ValueType) {
     return new OperationConsumer<T>($gt(this.iterator, key))
   }
-  gte(key: ValueType): IOpCons<T> | IOpRes<T> | IOpTr<T> {
+  gte(key: ValueType) {
     return new OperationConsumer<T>($gte(this.iterator, key))
   }
-  lt(key: ValueType): IOpCons<T> | IOpRes<T> | IOpTr<T> {
+  lt(key: ValueType) {
     return new OperationConsumer<T>($lt(this.iterator, key))
   }
-  lte(key: ValueType): IOpCons<T> | IOpRes<T> | IOpTr<T> {
+  lte(key: ValueType) {
     return new OperationConsumer<T>($lte(this.iterator, key))
   }
-  in(keys: ValueType[]): IOpCons<T> | IOpRes<T> | IOpTr<T> {
+  in(keys: ValueType[]) {
     return new OperationConsumer<T>($in(this.iterator, keys))
   }
-  nin(keys: ValueType[]): IOpCons<T> {
+  nin(keys: ValueType[]) {
     return new OperationConsumer<T>($nin(this.iterator, keys))
   }
 
-  range(
-    from: ValueType,
-    to: ValueType,
-    fromIncl: boolean,
-    toIncl: boolean,
-  ): IOpCons<T> {
+  range(from: ValueType, to: ValueType, fromIncl: boolean, toIncl: boolean) {
     return new OperationConsumer<T>(
       $range(this.iterator, from, to, fromIncl, toIncl),
     )
   }
-  filter(filter: (value: [ValueType, T]) => boolean): IOpCons<T> {
+
+  filter(filter: (value: [ValueType, T]) => boolean) {
     return new OperationConsumer<T>($filter(this.iterator, filter))
+  }
+
+  filterAsync(filter: (value: [ValueType, T]) => Promise<boolean>) {
+    return new OperationConsumerAsync<T>($filterAsync(this.iterator, filter))
   }
 }
