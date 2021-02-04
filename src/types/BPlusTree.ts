@@ -109,9 +109,14 @@ export class BPlusTree<T> {
   insert(key: ValueType, value: any): boolean {
     return insert(this, key, value)
   }
+
+  removeSpecific(key: ValueType, specific: (pointers: T) => true) {
+    return remove(this, key, false)
+  }
   remove(key: ValueType) {
     return remove(this, key, false)
   }
+
   removeMany(key: ValueType) {
     return remove(this, key, true)
   }
