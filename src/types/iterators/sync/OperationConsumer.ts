@@ -44,7 +44,7 @@ export class OperationResult<T> {
       return $forEach(this.iterator, action)
     }
   }
-  reduce<E, D>(reducer: (cur: T | E, res: D) => D, initial?: D): D {
+  reduce<D>(reducer: (cur: T, res: D) => D, initial?: D): D {
     return $reduce(this.iterator, reducer, initial)
   }
 }
@@ -84,15 +84,12 @@ export class OperationConsumer<T> {
     return $forEachAsync(this.iterator, action)
   }
 
-  reduce<E, D>(
-    reducer: (cur: T | E, res: D) => D,
-    initial?: D,
-  ): D | Promise<D> {
+  reduce<D>(reducer: (cur: T, res: D) => D, initial?: D): D | Promise<D> {
     return $reduce(this.iterator, reducer, initial)
   }
 
-  reduceAsync<E, D>(
-    reducer: (cur: T | E, res: D) => Promise<D>,
+  reduceAsync<D>(
+    reducer: (cur: T, res: D) => Promise<D>,
     initial?: D,
   ): D | Promise<D> {
     return $reduceAsync(this.iterator, reducer, initial)

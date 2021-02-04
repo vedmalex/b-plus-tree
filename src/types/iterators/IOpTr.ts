@@ -4,5 +4,5 @@ import { Cursor } from '../eval/Cursor'
 
 export interface IOpTr<T> {
   map<D>(func: (value: [ValueType, T]) => D): IOpRes<D>
-  reduce<E, D>(reducer: (cur: T | E, res: D) => D, initial?: D): D
+  reduce<D>(reducer: (cur: T, res: D) => D, initial?: D): D
 }

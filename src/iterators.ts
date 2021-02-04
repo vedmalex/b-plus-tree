@@ -288,6 +288,7 @@ const print = print_node(tree)
 const zero = [...op.eq(0).iterator][0]
 const zero_item = delete_by_cursor(tree, zero)
 console.log(print_node(tree))
+console.log(zero_item)
 
 const und = new BPlusTree(2, false)
 

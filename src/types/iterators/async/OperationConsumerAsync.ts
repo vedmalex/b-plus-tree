@@ -29,16 +29,11 @@ export class OperationConsumerAsync<T> {
     this.iterator = iterator
   }
 
-  map<D>(
-    func:
-      | ((value: [ValueType, T]) => D)
-      | ((value: [ValueType, T]) => Promise<D>),
-  ) {
-    if (isAsyncFunction(func)) {
-      return new OperationConsumerAsync<D>($mapAsync(this.iterator, func))
-    } else {
-      return new OperationConsumerAsync<D>($map(this.iterator, func))
-    }
+  map<D>(func: (value: [ValueType, T]) => D) {
+    return new OperationConsumerAsync<D>($map(this.iterator, func))
+  }
+  mapAsync<D>(func: (value: [ValueType, T]) => Promise<D>) {
+    return new OperationConsumerAsync<D>($mapAsync(this.iterator, func))
   }
   ///
   distinct() {
@@ -50,27 +45,20 @@ export class OperationConsumerAsync<T> {
   some(condition: (value: [ValueType, T]) => boolean) {
     return $some(this.iterator, condition)
   }
-  forEach(
-    action:
-      | ((value: [ValueType, T]) => void)
-      | ((value: [ValueType, T]) => Promise<void>),
-  ) {
-    if (isAsyncFunction(action)) {
-      return $forEachAsync(this.iterator, action)
-    } else {
-      return $forEach(this.iterator, action)
-    }
+
+  forEach(action: (value: [ValueType, T]) => void) {
+    return $forEach(this.iterator, action)
   }
 
-  reduce<E, D>(
-    reducer: ((cur: T | E, res: D) => D) | ((cur: T | E, res: D) => Promise<D>),
-    initial?: D,
-  ): D | Promise<D> {
-    if (isAsyncFunction(reducer)) {
-      return $reduceAsync(this.iterator, reducer, initial)
-    } else {
-      return $reduce(this.iterator, reducer, initial)
-    }
+  forEachAsync(action: (value: [ValueType, T]) => Promise<void>) {
+    return $forEachAsync(this.iterator, action)
+  }
+
+  reduce<D>(reducer: (cur: T, res: D) => D, initial?: D) {
+    return $reduce(this.iterator, reducer, initial)
+  }
+  reduceAsync<D>(reducer: (cur: T, res: D) => Promise<D>, initial?: D) {
+    return $reduceAsync(this.iterator, reducer, initial)
   }
   //
   eq(key: ValueType) {

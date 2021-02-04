@@ -1,8 +1,8 @@
 import { Cursor } from '../../../eval/Cursor'
 
-export async function $reduceAsync<T, E, D>(
+export async function $reduceAsync<T, D>(
   source: Iterable<Cursor<T>>,
-  reducer: (cur: T | E, res: D) => Promise<D>,
+  reducer: (cur: T, res: D) => Promise<D>,
   initial?: D,
 ): Promise<D> {
   let result = initial

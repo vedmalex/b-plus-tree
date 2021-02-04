@@ -1,8 +1,8 @@
 import { Cursor } from '../../../eval/Cursor'
 
-export function $reduce<T, E, D>(
+export function $reduce<T, D>(
   source: Iterable<Cursor<T>>,
-  reducer: (cur: T | E, res: D) => D,
+  reducer: (cur: T, res: D) => D,
   initial?: D,
 ): D {
   let result = initial
