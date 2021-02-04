@@ -1,5 +1,5 @@
 import { ValueType } from '../../ValueType'
-import { Cursor, EmptyCursor } from '../../eval/Cursor'
+import { Cursor } from '../../eval/Cursor'
 
 export function* $map<T, D>(
   source: Iterable<Cursor<T>>,

@@ -5,7 +5,7 @@ export async function $forEachAsync<T>(
   source: Iterable<Cursor<T>>,
   action: (value: [ValueType, T]) => Promise<void>,
 ) {
-  for (let value of source) {
-    await action([value.key, value.value])
+  for (let cursor of source) {
+    await action([cursor.key, cursor.value])
   }
 }

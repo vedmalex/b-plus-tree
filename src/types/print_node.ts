@@ -18,7 +18,7 @@ export function print_node<T>(tree: BPlusTree<T>, node?: Node<T>) {
       }:${node.max ?? ''}> ${JSON.stringify(node.keys)} L:${
         node.leaf ? 'L' : 'N'
       }${node._left ?? '-'} R:${node.leaf ? 'L' : 'N'}${node._right ?? '-'} ${
-        node.leaf ? node.pointers : ''
+        node.leaf ? JSON.stringify(node.pointers) : ''
       } ${node.errors.length == 0 ? '' : '[error]: ' + node.errors.join(';')}`,
     (node: PortableNode<T>) => node.children.map((c) => nodes.get(c).toJSON()),
   )

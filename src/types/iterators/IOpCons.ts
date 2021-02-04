@@ -3,9 +3,12 @@ import { IOpRes } from './IOpRes'
 import { IOpTr } from './IOpTr'
 import { Cursor } from '../eval/Cursor'
 
+export interface IOpDataCons<T> {
+  forEach(action: (value: [ValueType, T]) => Promise<void>)
+}
+
 export interface IOpCons<T> {
   readonly iterator: Iterable<Cursor<T>>
-  readonly asyncIterator: AsyncIterable<Cursor<T>>
   readonly result: IOpRes<T>
   readonly transform: IOpTr<T>
   eq(key: ValueType): IOpRes<T>

@@ -10,10 +10,10 @@ export function $mapReduce<T, D, V, O = Map<ValueType, V>>(
   finalize?: (inp: Map<ValueType, V>) => O,
 ): O {
   let result: Map<ValueType, V> = new Map()
-  for (let current of source) {
-    const value = map(current.value)
+  for (let cursor of source) {
+    const value = map(cursor.value)
     const res = reduce(value)
-    result.set(current.key, res)
+    result.set(cursor.key, res)
   }
   return finalize ? finalize(result) : ((result as unknown) as O)
 }

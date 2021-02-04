@@ -7,9 +7,9 @@ export async function $updateAsync<T>(
   source: Iterable<Cursor<T>>,
   action: (T: any) => Promise<T>,
 ) {
-  for (let value of source) {
-    var result = await action([value.key, value.value])
+  for (let cursor of source) {
+    var result = await action([cursor.key, cursor.value])
     // здесь надо проверить не поменялся ли ключ данного объекта
-    direct_update_value(tree, value.node, value.pos, result)
+    direct_update_value(tree, cursor.node, cursor.pos, result)
   }
 }

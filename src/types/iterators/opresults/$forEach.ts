@@ -5,7 +5,7 @@ export function $forEach<T>(
   source: Iterable<Cursor<T>>,
   action: (value: [ValueType, T]) => void,
 ) {
-  for (let value of source) {
-    action([value.key, value.value])
+  for (let cursor of source) {
+    action([cursor.key, cursor.value])
   }
 }

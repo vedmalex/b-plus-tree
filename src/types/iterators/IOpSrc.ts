@@ -1,9 +1,8 @@
 import { ValueType } from '../ValueType'
 import { IOpCons } from './IOpCons'
-import { Cursor } from '../eval/Cursor'
 
 export interface IOpSrc<T> {
-  eq(key: ValueType): IOpCons<T>
+  eq(key: ValueType): Omit<IOpCons<T>, 'eq'>
   gt(key: ValueType): IOpCons<T>
   gte(key: ValueType): IOpCons<T>
   lt(key: ValueType): IOpCons<T>

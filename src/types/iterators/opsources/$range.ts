@@ -1,5 +1,5 @@
 import { ValueType } from '../../ValueType'
-import { Cursor, EmptyCursor } from '../../eval/Cursor'
+import { Cursor } from '../../eval/Cursor'
 import { eval_next } from '../../eval/eval_next'
 import { find_range_start } from '../../eval/find_range_start'
 import { BPlusTree } from '../../BPlusTree'

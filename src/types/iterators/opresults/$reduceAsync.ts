@@ -6,8 +6,8 @@ export async function $reduceAsync<T, E, D>(
   initial?: D,
 ): Promise<D> {
   let result = initial
-  for (let current of source) {
-    result = await reducer(current.value, result)
+  for (let cursor of source) {
+    result = await reducer(cursor.value, result)
   }
   return result
 }

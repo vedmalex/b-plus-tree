@@ -13,6 +13,10 @@ import { $range } from './types/iterators/opsources/$range'
 import { $forEach } from './types/iterators/opresults/$forEach'
 import { $iterator } from './types/iterators/opsources/$iterator'
 import { Operations } from './types/iterators/Operations'
+import { IOpSrc } from './types/iterators/IOpSrc'
+import { delete_by_cursor_list } from './methods/delete_by_cursor_list'
+import { print_node } from './types/print_node'
+import { delete_by_cursor } from './methods/delete_by_cursor'
 
 const stored: PortableBPlusTree<number> = {
   root: 10000,
@@ -268,10 +272,25 @@ $forEach($iterator(tree), ([key, value]) => {
   console.log(key, value)
 })
 
-let op = new Operations(tree)
+let op = new Operations(tree) as IOpSrc<number>
 let odd = op
-  .range(1, 10, true, true)
+  // .eq(10)
+  .range(1, 100, true, true)
   .filter(([, k]) => k % 2 > 0)
-  .transform.map(([value]) => value)
-console.log([...odd.iterator])
+// .transform.map(([value]) => value)
+const list = [...odd.iterator]
+console.log(list)
+const del_result = delete_by_cursor_list(tree, list)
+console.log(del_result)
 // [...iterator.forEach([9, 10, 11, 12, 13, 15])].length)
+const print = print_node(tree)
+
+const zero = [...op.eq(0).iterator][0]
+const zero_item = delete_by_cursor(tree, zero)
+console.log(print_node(tree))
+
+const und = new BPlusTree(2, false)
+
+und.insert(-1, null)
+
+console.log(und.find(-1))

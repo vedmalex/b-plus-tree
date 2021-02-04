@@ -1,5 +1,5 @@
 import { ValueType } from '../../ValueType'
-import { Cursor, EmptyCursor } from '../../eval/Cursor'
+import { Cursor } from '../../eval/Cursor'
 import { eval_next } from '../../eval/eval_next'
 import { find_first } from '../../eval/find_first'
 import { BPlusTree } from '../../BPlusTree'
@@ -23,7 +23,7 @@ export function* $in<T>(
         if (i < keys.length) {
           cursor = undefined
         }
-      } else {
+      } else if (!cursor.done) {
         // i += 1
         yield cursor
         break

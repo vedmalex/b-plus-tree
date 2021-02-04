@@ -6,8 +6,8 @@ export function $reduce<T, E, D>(
   initial?: D,
 ): D {
   let result = initial
-  for (let current of source) {
-    result = reducer(current.value, result)
+  for (let cursor of source) {
+    result = reducer(cursor.value, result)
   }
   return result
 }

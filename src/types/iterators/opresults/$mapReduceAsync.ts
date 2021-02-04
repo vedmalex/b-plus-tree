@@ -8,13 +8,13 @@ export async function $mapReduceAsync<T, D, V, O = Map<ValueType, V>>(
   finalize?: (inp: Map<ValueType, V>) => O | Promise<O>,
 ): Promise<O> {
   let result: Map<ValueType, V> = new Map()
-  for (let current of source) {
-    const value = map([current.key, current.value])
+  for (let cursor of source) {
+    const value = map([cursor.key, cursor.value])
     const res = reduce([
-      current.key,
+      cursor.key,
       value instanceof Promise ? await value : value,
     ])
-    result.set(current.key, res instanceof Promise ? await res : res)
+    result.set(cursor.key, res instanceof Promise ? await res : res)
   }
   return finalize ? finalize(result) : ((result as unknown) as O)
 }
