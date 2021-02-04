@@ -1,5 +1,5 @@
 import { ValueType } from '../../ValueType'
-import { Cursor } from 'src/types/eval/Cursor'
+import { Cursor } from '../../eval/Cursor'
 
 export function $forEach<T>(
   source: Iterable<Cursor<T>>,
