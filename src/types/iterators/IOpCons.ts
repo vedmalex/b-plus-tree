@@ -3,12 +3,7 @@ import { IOpRes } from './IOpRes'
 import { IOpTr } from './IOpTr'
 import { Cursor } from '../eval/Cursor'
 
-export interface IOpDataCons<T> {
-  forEach(action: (value: [ValueType, T]) => Promise<void>)
-}
-
 export interface IOpCons<T> {
-  readonly iterator: Iterable<Cursor<T>>
   readonly result: IOpRes<T>
   readonly transform: IOpTr<T>
   eq(key: ValueType): IOpRes<T>
@@ -25,18 +20,10 @@ export interface IOpCons<T> {
     fromIncl: boolean,
     toIncl: boolean,
   ): IOpCons<T>
-  filter(
-    filter:
-      | ((value: [ValueType, T]) => boolean)
-      | ((value: [ValueType, T]) => Promise<boolean>),
-  ): IOpCons<T>
+  filter(filter: (value: [ValueType, T]) => boolean): IOpCons<T>
 
   distinct(): Set<T>
   every(condition: (value: [ValueType, T]) => boolean): boolean
   some(condition: (value: [ValueType, T]) => boolean): boolean
-  forEach(
-    action:
-      | ((value: [ValueType, T]) => void)
-      | ((value: [ValueType, T]) => Promise<void>),
-  )
+  forEach(action: (value: [ValueType, T]) => void)
 }

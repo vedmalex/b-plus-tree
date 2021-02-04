@@ -6,13 +6,13 @@ import { $gte } from './opsources/$gte'
 import { $lt } from './opsources/$lt'
 import { $lte } from './opsources/$lte'
 import { $in } from './opsources/$in'
-import { $nin } from './opconsumers/$nin'
 import { $iterator } from './opsources/$iterator'
 import { $range } from './opsources/$range'
 import { IOpSrc } from './IOpSrc'
 import { IOpCons } from './IOpCons'
-import { OperationConsumer } from './OperationConsumer'
+import { OperationConsumer } from './sync/OperationConsumer'
 import { IOpTr } from './IOpTr'
+import { $nin } from './sync/opconsumers/$nin'
 
 export class Operations<T> implements IOpSrc<T> {
   tree: BPlusTree<T>

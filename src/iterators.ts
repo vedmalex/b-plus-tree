@@ -8,15 +8,15 @@ import { $gte } from './types/iterators/opsources/$gte'
 import { $lt } from './types/iterators/opsources/$lt'
 import { $lte } from './types/iterators/opsources/$lte'
 import { $in } from './types/iterators/opsources/$in'
-import { $nin } from './types/iterators/opconsumers/$nin'
 import { $range } from './types/iterators/opsources/$range'
-import { $forEach } from './types/iterators/opresults/$forEach'
+import { $forEach } from './types/iterators/sync/opresults/$forEach'
 import { $iterator } from './types/iterators/opsources/$iterator'
 import { Operations } from './types/iterators/Operations'
 import { IOpSrc } from './types/iterators/IOpSrc'
 import { delete_by_cursor_list } from './methods/delete_by_cursor_list'
 import { print_node } from './types/print_node'
 import { delete_by_cursor } from './methods/delete_by_cursor'
+import { $nin } from './types/iterators/sync/opconsumers/$nin'
 
 const stored: PortableBPlusTree<number> = {
   root: 10000,
