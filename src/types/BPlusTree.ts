@@ -12,6 +12,7 @@ import { find_first_node } from '../methods/find_first_node'
 import { find_last_key } from '../methods/find_last_key'
 import { find } from './eval/find'
 import { list } from './eval/list'
+import { Operations } from './iterators/Operations'
 
 export class BPlusTree<T> {
   public t: number // минимальная степень дерева
@@ -38,7 +39,9 @@ export class BPlusTree<T> {
       nodes: [...nodes.values()].map((n) => Node.serialize(n)),
     }
   }
-
+  op() {
+    return new Operations(this)
+  }
   static deserialize<T>(tree: BPlusTree<T>, stored: PortableBPlusTree<T>) {
     tree.nodes.clear()
     const { t, next_node_id, root, unique, nodes } = stored

@@ -51,9 +51,10 @@ console.log()
 console.log(
   '### Insertions at random locations: sorted-btree vs the competition ###',
 )
-for (let size of [1000, 10000, 100000, 1000000]) {
+for (let size of [1000, 10000, 100000, 1000000, 1000000, 20000000]) {
   console.log()
-  var keys = test_data.slice(0, size) //makeArray(size, true)
+  var keys = /* test_data.slice(0, size) */
+  makeArray(size, true)
   const len = keys.length
   const indexes = []
   for (let i = 0; i < 1000; i++) {

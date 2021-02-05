@@ -20,56 +20,56 @@ addPerson({
   name: 'alex',
   age: 42,
   ssn: '000-0000-000001',
-  page: 'ya.ru',
+  page: 'http://ya.ru',
 })
 addPerson({
   id: 1,
   name: 'jame',
   age: 45,
   ssn: '000-0000-000002',
-  page: 'ya.ru',
+  page: 'http://ya.ru',
 })
 addPerson({
   id: 2,
   name: 'mark',
   age: 30,
   ssn: '000-0000-000003',
-  page: 'ya.ru',
+  page: 'http://ya.ru',
 })
 addPerson({
   id: 3,
   name: 'simon',
   age: 24,
   ssn: '000-0000-00004',
-  page: 'ya.ru',
+  page: 'http://ya.ru',
 })
 addPerson({
   id: 4,
   name: 'jason',
   age: 19,
   ssn: '000-0000-000005',
-  page: 'ya.ru',
+  page: 'http://ya.ru',
 })
 addPerson({
   id: 5,
   name: 'jim',
   age: 18,
   ssn: '000-0000-000006',
-  page: 'ya.ru',
+  page: 'http://ya.ru',
 })
 addPerson({
   id: 6,
   name: 'jach',
   age: 29,
   ssn: '000-0000-000007',
-  page: 'ya.ru',
+  page: 'http://ya.ru',
 })
 addPerson({
   id: 7,
   name: 'monika',
   age: 30,
   ssn: '000-0000-000008',
-  page: 'ya.ru',
+  page: 'http://ya.ru',
 })
 
 console.log(print_node(tree).join('\n'))
@@ -83,8 +83,10 @@ const res = [
   })).iterator,
 ]
 console.log(res)
+
 async function print() {
-  const asop = op
+  const asop = await tree
+    .op()
     .in([1, 3, 5])
     .mapAsync(async ([, person]) => ({
       age: person.age,
@@ -94,5 +96,8 @@ async function print() {
     .reduce((cur, res) => {
       res.set(cur.name, cur)
       return res
-    }, new Map<string, any>()) as Promise<any>
+    }, new Map<string, any>())
+  console.log(asop)
 }
+
+print().then((_) => console.log('done'))

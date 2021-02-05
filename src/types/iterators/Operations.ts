@@ -19,6 +19,8 @@ export class Operations<T> {
     this.tree = tree
     this.forward = forward
   }
+  // должна объединять результаты всех курсоров, синхронных или асинхронных
+
   eq(key: ValueType) {
     return new OperationConsumer<T>($eq(this.tree, key))
   }
