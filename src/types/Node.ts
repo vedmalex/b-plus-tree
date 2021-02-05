@@ -18,7 +18,7 @@ export class Node<T> {
   static createLeaf<T>(tree: BPlusTree<T>) {
     const node = new Node<T>()
     node.leaf = true
-    node.t = tree.t
+    // node.t = tree.t
     node.pointers = []
     register_node(tree, node)
     return node
@@ -27,7 +27,7 @@ export class Node<T> {
     const node = new Node<T>()
     node.children = []
     node.leaf = false
-    node.t = tree.t
+    // node.t = tree.t
     register_node(tree, node)
     return node
   }
@@ -76,7 +76,7 @@ export class Node<T> {
     const node = new Node<T>()
     node.id = stored.id
     node.leaf = stored.leaf
-    node.t = stored.t
+    // node.t = stored.t
     node._parent = stored._parent
     node._left = stored._left
     node._right = stored._right
@@ -93,7 +93,10 @@ export class Node<T> {
   }
 
   id: number
-  t: number
+  get t() {
+    return this.tree?.t ?? 32
+  }
+  // t: number
   leaf: boolean // является ли узел листом
   key_num: number // количество ключей узла
   size: number // значимый размер узла
