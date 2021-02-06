@@ -96,6 +96,8 @@ export class Node<T> {
   get t() {
     return this.tree?.t ?? 32
   }
+  //count of containing elements
+  length: number // количество элементов в узле
   // t: number
   leaf: boolean // является ли узел листом
   key_num: number // количество ключей узла

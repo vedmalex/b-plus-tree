@@ -1,7 +1,10 @@
 import { BPlusTree } from './types/BPlusTree'
-import { print_node } from './types/print_node'
-import { Operations } from './types/iterators/Operations'
 import axios from 'axios'
+import { sourceIn } from './types/pipes/sourceIn'
+import { query } from './types/pipes/types'
+import { map } from './types/pipes/map'
+import { reduce } from './types/pipes/reduce'
+import { filter } from './types/pipes/filter'
 
 type Person = {
   id: number
@@ -72,32 +75,27 @@ addPerson({
   page: 'http://ya.ru',
 })
 
-console.log(print_node(tree).join('\n'))
-
-const op = new Operations(tree)
-
-const res = [
-  ...op.in([1, 3, 5]).map(([, person]) => ({
-    age: person.age,
-    name: person.name,
-  })).iterator,
-]
-console.log(res)
+// console.log(print_node(tree).join('\n'))
 
 async function print() {
-  const asop = await tree
-    .op()
-    .in([1, 3, 5])
-    .mapAsync(async ([, person]) => ({
+  const result = await query(
+    sourceIn<Person>([1, 3, 5]),
+    filter((v) => v[1].age > 20),
+    map(async ([, person]) => ({
       age: person.age,
       name: person.name,
-      page: await axios.get(person.page),
-    }))
-    .reduce((cur, res) => {
+      // page: await axios.get(person.page),
+    })),
+    reduce((res, cur) => {
       res.set(cur.name, cur)
       return res
-    }, new Map<string, any>())
-  console.log(asop)
+    }, new Map<string, any>()),
+  )(tree)
+
+  // console.log([...result])
+  for await (let p of result) {
+    console.log(p)
+  }
 }
 
 print().then((_) => console.log('done'))
