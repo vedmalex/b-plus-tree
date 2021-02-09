@@ -4,7 +4,7 @@ import { eval_next } from '../eval/eval_next'
 import { find_first } from '../eval/find_first'
 import { BPlusTree } from '../BPlusTree'
 
-export function sourceIn<T>(keys: Array<ValueType>) {
+export default function sourceIn<T>(keys: Array<ValueType>) {
   return function* (tree: BPlusTree<T>) {
     let cursor: Cursor<T>
     let i = 0

@@ -1,10 +1,12 @@
-import { BPlusTree } from './types/BPlusTree'
+import { BPlusTree } from '../types/BPlusTree'
 import axios from 'axios'
-import { sourceIn } from './types/pipes/sourceIn'
-import { query } from './types/pipes/types'
-import { map } from './types/pipes/map'
-import { reduce } from './types/pipes/reduce'
-import { filter } from './types/pipes/filter'
+import sourceIn from '../types/source/sourceIn'
+import { query } from '../types/query/types'
+import { map } from '../types/query/map'
+import { reduce } from '../types/query/reduce'
+import { filter } from '../types/query/filter'
+import { remove } from '../types/actions/remove'
+import { print_node } from '../types/print_node'
 
 type Person = {
   id: number
@@ -79,7 +81,7 @@ addPerson({
 
 async function print() {
   const result = await query(
-    sourceIn<Person>([1, 3, 5]),
+    tree.includes([1, 3, 5]),
     filter((v) => v[1].age > 20),
     map(async ([, person]) => ({
       age: person.age,
@@ -97,5 +99,29 @@ async function print() {
     console.log(p)
   }
 }
+// придумать and / or
+// обход по всем входящим итераторам +
+// и обработка по условию, все элементы курсора или в любом или только во всех...
 
-print().then((_) => console.log('done'))
+// print().then((_) => console.log('done'))
+
+async function print1() {
+  const result = await query(
+    tree.includes([1, 3, 5]),
+    filter((v) => v[1].age > 20),
+    // filter((v) => v[1].age > 20 && v[1].age < 30),
+    // filter((v) => v[1].age < 30),
+    remove(tree),
+  )(tree)
+
+  console.log(result)
+  console.log(tree.size)
+  console.log(print_node(tree).join('\n'))
+  for await (let p of result) {
+    console.log(p)
+    console.log(tree.find(p[0]))
+  }
+  console.log(print_node(tree).join('\n'))
+}
+
+print1().then((_) => console.log('done'))

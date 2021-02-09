@@ -1,5 +1,5 @@
-import { Cursor } from './eval/Cursor'
-import { BPlusTree } from './BPlusTree'
+import { Cursor } from '../types/eval/Cursor'
+import { BPlusTree } from '../types/BPlusTree'
 
 export function direct_update_value<T>(
   tree: BPlusTree<T>,

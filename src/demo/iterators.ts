@@ -1,10 +1,10 @@
-import { BPlusTree } from './types/BPlusTree'
+import { BPlusTree } from '../types/BPlusTree'
 
-import { PortableBPlusTree } from './types/PortableBPlusTree'
-import { find_range_start } from './types/eval/find_range_start'
-import { delete_by_cursor_list } from './methods/delete_by_cursor_list'
-import { print_node } from './types/print_node'
-import { delete_by_cursor } from './methods/delete_by_cursor'
+import { PortableBPlusTree } from '../types/PortableBPlusTree'
+import { find_range_start } from '../types/eval/find_range_start'
+import { delete_by_cursor_list } from '../methods/delete_by_cursor_list'
+import { print_node } from '../types/print_node'
+import { delete_by_cursor } from '../methods/delete_by_cursor'
 
 const stored: PortableBPlusTree<number> = {
   root: 10000,

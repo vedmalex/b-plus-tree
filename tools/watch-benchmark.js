@@ -1,6 +1,5 @@
 const { startService } = require('esbuild')
 const { watch } = require('chokidar')
-const ifdef = require('esbuild-plugin-ifdef')
 
 const noop = () => {}
 
@@ -40,7 +39,6 @@ const build = async () => {
       tsconfig: './tsconfig.json',
       platform: 'node',
       logLevel: 'error',
-      // plugins: [ifdef(define)],
     })
     // Get time after build ends
     const timerEnd = Date.now()

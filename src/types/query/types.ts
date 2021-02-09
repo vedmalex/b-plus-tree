@@ -1,4 +1,3 @@
-import { BPlusTree } from '../BPlusTree'
 import { Cursor } from '../eval/Cursor'
 
 export interface UnaryFunction<T, R> {
@@ -104,10 +103,16 @@ export function queryFromArray<T, R>(
     return fns[0]
   }
 
-  return function queryd(input: T): R {
+  return function queried(input: T): R {
     return fns.reduce(
       (prev: any, fn: UnaryFunction<T, R>) => fn(prev),
       input as any,
     )
   }
+}
+
+interface CursorFunction<T> {
+  (source: Generator<Cursor<T>> | AsyncGenerator<Cursor<T>>):
+    | Generator<Cursor<T>>
+    | AsyncGenerator<Cursor<T>>
 }

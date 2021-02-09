@@ -12,6 +12,18 @@ import { find_first_node } from '../methods/find_first_node'
 import { find_last_key } from '../methods/find_last_key'
 import { find } from './eval/find'
 import { list } from './eval/list'
+import { query, UnaryFunction, identity } from './query/types'
+import { find_first } from './eval/find_first'
+import { eval_next } from './eval/eval_next'
+import sourceIn from './source/sourceIn'
+import { sourceEq } from './source/sourceEq'
+import { range } from './query/range'
+import { sourceRange } from './source/sourceRange'
+import { sourceEach } from './source/sourceEach'
+import { sourceGt } from './source/sourceGt'
+import { sourceGte } from './source/sourceGte'
+import { sourceLt } from './source/sourceLt'
+import { sourceLte } from './source/sourceLte'
 
 export class BPlusTree<T> {
   public t: number // минимальная степень дерева
@@ -22,6 +34,41 @@ export class BPlusTree<T> {
   get_next_id() {
     return this.next_node_id++
   }
+
+  includes(keys: Array<ValueType>) {
+    return sourceIn<T>(keys)
+  }
+
+  equals(key: ValueType) {
+    return sourceEq<T>(key)
+  }
+
+  range(
+    from: ValueType,
+    to: ValueType,
+    fromIncl: boolean = true,
+    toIncl: boolean = true,
+  ) {
+    return sourceRange<T>(from, to, fromIncl, toIncl)
+  }
+
+  each(forward: boolean = true) {
+    return sourceEach<T>(forward)
+  }
+
+  gt(key: ValueType) {
+    return sourceGt<T>(key)
+  }
+  gte(key: ValueType) {
+    return sourceGte<T>(key)
+  }
+  lt(key: ValueType) {
+    return sourceLt<T>(key)
+  }
+  lte(key: ValueType) {
+    return sourceLte<T>(key)
+  }
+
   constructor(t: number, unique: boolean) {
     this.t = t
     this.unique = unique
