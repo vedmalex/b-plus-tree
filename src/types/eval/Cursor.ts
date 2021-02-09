@@ -1,9 +1,9 @@
 import { ValueType } from '../ValueType'
 
-export type Cursor<T> = {
+export type Cursor<T, K extends ValueType> = {
   node: number
   pos: number
-  key: ValueType
+  key: K
   value: T
   done: boolean
 }

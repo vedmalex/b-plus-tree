@@ -1,6 +1,6 @@
 import { ValueType } from '../ValueType'
 
-export type PortableNode<T> = {
+export type PortableNode<T, K extends ValueType> = {
   id: number
   t: number
   _parent: number
@@ -9,10 +9,10 @@ export type PortableNode<T> = {
   isEmpty: boolean
   isFull: boolean
   leaf: boolean
-  max: ValueType
-  min: ValueType
+  max: K
+  min: K
   size: number
-  keys: ValueType[]
+  keys: K[]
   key_num: number
   pointers: T[]
   children: number[]

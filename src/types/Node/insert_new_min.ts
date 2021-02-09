@@ -1,7 +1,10 @@
 import { ValueType } from '../ValueType'
 import { Node } from '../Node'
 
-export function insert_new_min<T>(node: Node<T>, key: ValueType) {
+export function insert_new_min<T, K extends ValueType>(
+  node: Node<T, K>,
+  key: K,
+) {
   node.min = key
   let cur = node
   while (cur.parent) {

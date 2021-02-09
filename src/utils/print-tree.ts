@@ -1,10 +1,11 @@
-type PrintNode<T> = (node: T, branch: string) => string
-type GetChildren<T> = (node: T) => Array<T>
+import { ValueType } from '../types/ValueType'
+type PrintNode<T, K> = (node: T, branch: string) => string
+type GetChildren<T, K> = (node: T) => Array<T>
 
-export function printTree<T>(
+export function printTree<T, K extends ValueType>(
   initialTree: T,
-  printNode: PrintNode<T>,
-  getChildren: GetChildren<T>,
+  printNode: PrintNode<T, K>,
+  getChildren: GetChildren<T, K>,
 ) {
   const result: Array<string> = []
   const tree: T = initialTree
@@ -14,12 +15,12 @@ export function printTree<T>(
   return result
 }
 
-function printBranch<T>(
+function printBranch<T, K extends ValueType>(
   tree: T,
   branch: string,
   result: Array<string>,
-  printNode: PrintNode<T>,
-  getChildren: GetChildren<T>,
+  printNode: PrintNode<T, K>,
+  getChildren: GetChildren<T, K>,
 ) {
   const isGraphHead = branch.length === 0
   const children = getChildren(tree) || []

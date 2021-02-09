@@ -4,9 +4,9 @@ import { split } from './split'
 import { find_first_node } from './find_first_node'
 import { find_first_item } from './find_first_item'
 
-export function insert<T>(
-  tree: BPlusTree<T>,
-  key: ValueType,
+export function insert<T, K extends ValueType>(
+  tree: BPlusTree<T, K>,
+  key: K,
   value: T,
 ): boolean {
   let leaf = find_first_node(tree, key)

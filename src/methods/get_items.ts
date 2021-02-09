@@ -2,9 +2,9 @@ import { Node } from '../types/Node'
 import { ValueType } from '../types/ValueType'
 import { find_first_item } from './find_first_item'
 
-export function get_items<T>(
-  node: Node<T>,
-  key: ValueType = undefined,
+export function get_items<T, K extends ValueType>(
+  node: Node<T, K>,
+  key: K = undefined,
 ): Array<T> {
   let start = find_first_item(node.keys, key)
   let i = start

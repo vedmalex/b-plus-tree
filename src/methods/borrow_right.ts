@@ -1,10 +1,11 @@
 import { Node } from '../types/Node'
 import { update_state } from '../types/Node/update_state'
 import { update_min_max } from '../types/Node/update_min_max'
+import { ValueType } from '../types/ValueType'
 
-export function merge_with_right<T>(
-  node: Node<T>,
-  right_sibling: Node<T>,
+export function merge_with_right<T, K extends ValueType>(
+  node: Node<T, K>,
+  right_sibling: Node<T, K>,
   count: number,
 ) {
   if (node.leaf) {

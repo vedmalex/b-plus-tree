@@ -1,6 +1,7 @@
 import { Node } from '../Node'
+import { ValueType } from '../ValueType'
 
-export function update_state<T>(node: Node<T>) {
+export function update_state<T, K extends ValueType>(node: Node<T, K>) {
   if (node.leaf) {
     node.key_num = node.keys.length
     node.size = node.keys.length

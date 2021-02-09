@@ -5,7 +5,7 @@ import { ValueType } from '../types/ValueType'
  * @param key value to insert into array
  * @returns the position where the value can be inserted
  */
-export function find_first_key(a: Array<ValueType>, key: ValueType) {
+export function find_first_key<K extends ValueType>(a: Array<K>, key: K) {
   // l, r — левая и правая границы
   let l = -1
   let r: number = a.length

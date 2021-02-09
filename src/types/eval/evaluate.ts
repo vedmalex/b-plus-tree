@@ -1,12 +1,13 @@
 import { BPlusTree } from '../BPlusTree'
 import { Cursor } from './Cursor'
 import { get_current } from './get_current'
+import { ValueType } from '../ValueType'
 
-export function evaluate<T>(
-  tree: BPlusTree<T>,
+export function evaluate<T, K extends ValueType>(
+  tree: BPlusTree<T, K>,
   id: number,
   pos: number,
-): Cursor<T> {
+): Cursor<T, K> {
   let cur = tree.nodes.get(id)
   while (cur) {
     let len = cur.pointers.length

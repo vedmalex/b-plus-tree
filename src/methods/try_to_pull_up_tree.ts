@@ -1,6 +1,9 @@
 import { BPlusTree } from '../types/BPlusTree'
+import { ValueType } from '../types/ValueType'
 
-export function try_to_pull_up_tree<T>(tree: BPlusTree<T>) {
+export function try_to_pull_up_tree<T, K extends ValueType>(
+  tree: BPlusTree<T, K>,
+) {
   const nodes = tree.nodes
   const root = nodes.get(tree.root)
   if (root.size == 1 && !root.leaf) {

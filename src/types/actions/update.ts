@@ -1,13 +1,14 @@
 import { direct_update_value } from '../../methods/direct_update_value'
 import { Cursor } from '../eval/Cursor'
 import { BPlusTree } from '../BPlusTree'
+import { ValueType } from '../ValueType'
 
-export function update<T>(
-  tree: BPlusTree<T>,
+export function update<T, K extends ValueType>(
+  tree: BPlusTree<T, K>,
   action: (T: any) => T | Promise<T>,
 ) {
   return async function* (
-    source: Generator<Cursor<T>> | AsyncGenerator<Cursor<T>>,
+    source: Generator<Cursor<T, K>> | AsyncGenerator<Cursor<T, K>>,
   ) {
     for await (let cursor of source) {
       var result = action([cursor.key, cursor.value])

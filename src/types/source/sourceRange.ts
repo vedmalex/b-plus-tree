@@ -3,13 +3,13 @@ import { eval_next } from '../eval/eval_next'
 import { find_range_start } from '../eval/find_range_start'
 import { BPlusTree } from '../BPlusTree'
 
-export function sourceRange<T>(
-  from: ValueType,
-  to: ValueType,
+export function sourceRange<T, K extends ValueType>(
+  from: K,
+  to: K,
   fromIncl: boolean = true,
   toIncl: boolean = true,
 ) {
-  return function* (tree: BPlusTree<T>) {
+  return function* (tree: BPlusTree<T, K>) {
     const endCursor = find_range_start(tree, to, toIncl, false)
     let cursor = find_range_start(tree, from, fromIncl, true)
     while (!cursor.done) {

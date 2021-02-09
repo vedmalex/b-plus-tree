@@ -1,7 +1,8 @@
 import { Node } from '../Node'
 import { remove_sibling } from '../../methods/chainable/remove_sibling'
+import { ValueType } from '../ValueType'
 
-export function push_node_up<T>(node: Node<T>) {
+export function push_node_up<T, K extends ValueType>(node: Node<T, K>) {
   const child = node.tree.nodes.get(node.children.pop())
   const parent = node.parent
   // вставляем на прямо на то же место где и был

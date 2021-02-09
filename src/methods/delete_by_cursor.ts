@@ -7,10 +7,13 @@ import { update_state } from '../types/Node/update_state'
 import { replace_max } from '../types/Node/replace_max'
 import { replace_min } from '../types/Node/replace_min'
 
-export function delete_by_cursor<T>(tree: BPlusTree<T>, cursor: Cursor<T>) {
+export function delete_by_cursor<T, K extends ValueType>(
+  tree: BPlusTree<T, K>,
+  cursor: Cursor<T, K>,
+) {
   const node = tree.nodes.get(cursor.node)
   const { key, pos } = cursor
-  const res: [ValueType, T] = [key, node.pointers.splice(pos, 1)[0]]
+  const res: [K, T] = [key, node.pointers.splice(pos, 1)[0]]
   node.keys.splice(pos, 1)
   update_state(node)
 

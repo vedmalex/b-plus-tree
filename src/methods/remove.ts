@@ -4,12 +4,12 @@ import { delete_in_node } from './delete_in_node'
 import { find_first_node } from './find_first_node'
 import { find_first_item } from './find_first_item'
 
-export function remove<T>(
-  tree: BPlusTree<T>,
-  key: ValueType,
+export function remove<T, K extends ValueType>(
+  tree: BPlusTree<T, K>,
+  key: K,
   all: boolean = false,
 ) {
-  const result: Array<[ValueType, T]> = []
+  const result: Array<[K, T]> = []
   let leaf = find_first_node(tree, key)
   if (find_first_item(leaf.keys, key) > -1) {
     if (all) {

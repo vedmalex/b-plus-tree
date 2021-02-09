@@ -5,7 +5,7 @@ import { ValueType } from '../types/ValueType'
  * @param key key to find
  * @returns
  */
-export function find_first_item(a: Array<ValueType>, key: ValueType) {
+export function find_first_item<K extends ValueType>(a: Array<K>, key: K) {
   // l, r — левая и правая границы
   let l = -1
   let r: number = a.length

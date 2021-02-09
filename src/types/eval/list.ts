@@ -3,14 +3,18 @@ import { find_first } from './find_first'
 import { BPlusTree } from '../BPlusTree'
 import { Cursor } from './Cursor'
 import { SearchOptions } from './SearchOptions'
+import { ValueType } from '../ValueType'
 
-export function list<T>(tree: BPlusTree<T>, options?: Partial<SearchOptions>) {
+export function list<T, K extends ValueType>(
+  tree: BPlusTree<T, K>,
+  options?: Partial<SearchOptions>,
+) {
   let { skip = 0, take = -1, forward = true } = options ?? {}
   const result: Array<T> = []
   const key = options.forward ? tree.min : tree.max
   const cursor = find_first(tree, key, forward)
   if (cursor.pos >= 0) {
-    let cur: Cursor<T>
+    let cur: Cursor<T, K>
     if (skip == 0) {
       cur = cursor
     } else {

@@ -8,13 +8,13 @@ import { find_last_key } from '../../methods/find_last_key'
 import { find_first_node } from '../../methods/find_first_node'
 import { evaluate } from './evaluate'
 
-export function find_range_start<T>(
-  tree: BPlusTree<T>,
-  key: ValueType,
+export function find_range_start<T, K extends ValueType>(
+  tree: BPlusTree<T, K>,
+  key: K,
   include: boolean,
   forward: boolean = true,
-): Cursor<T> {
-  let node: Node<T>, index: number
+): Cursor<T, K> {
+  let node: Node<T, K>, index: number
   if (forward) {
     node = find_first_node(tree, key)
     if (include) {

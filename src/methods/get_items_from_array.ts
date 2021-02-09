@@ -1,4 +1,4 @@
-export function get_items_from_array_slice<T>({
+export function get_items_from_array_slice<T, K>({
   array,
   skip = 0,
   take = -1,
@@ -25,7 +25,7 @@ export function get_items_from_array_slice<T>({
   return result
 }
 
-export function get_items_from_array<T>({
+export function get_items_from_Array<T>({
   array,
   skip = 0,
   take = -1,

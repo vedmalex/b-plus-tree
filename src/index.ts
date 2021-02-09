@@ -1,4 +1,7 @@
-globalThis.DEBUG = true
-
-import { BPlusTree } from './types/BPlusTree'
-export { BPlusTree }
+export type { PortableBPlusTree } from './types/PortableBPlusTree'
+export { BPlusTree } from './types/BPlusTree'
+export { print_node } from './types/print_node'
+export * from './types/ValueType'
+export * from './types/types'
+export * from './types/query'
+export * from './types/source'

@@ -1,11 +1,12 @@
 import { Cursor } from '../eval/Cursor'
+import { ValueType } from '../ValueType'
 
-export function reduce<T, D>(
+export function reduce<T, K extends ValueType, D>(
   reducer: (res: D, cur: T) => Promise<D> | D,
   initial?: D,
 ) {
   return async function* (
-    source: Generator<Cursor<T>> | AsyncGenerator<Cursor<T>>,
+    source: Generator<Cursor<T, K>> | AsyncGenerator<Cursor<T, K>>,
   ) {
     let result = initial
     for await (let cursor of source) {

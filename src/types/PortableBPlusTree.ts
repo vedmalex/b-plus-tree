@@ -1,4 +1,5 @@
 import { PortableNode } from './Node/PortableNode'
+import { ValueType } from './ValueType'
 
 // можно использовать скип, относительное перемещение по страницам... зная их размер,можно просто пропускать сколько нужно
 // можно в курсорах указывать: отсюда и 10 элементов
@@ -8,10 +9,10 @@ import { PortableNode } from './Node/PortableNode'
  * но тут можно хранить и значения
  */
 
-export type PortableBPlusTree<T> = {
+export type PortableBPlusTree<T, K extends ValueType> = {
   t: number
   next_node_id: number
   root: number
   unique: boolean
-  nodes: PortableNode<T>[]
+  nodes: PortableNode<T, K>[]
 }

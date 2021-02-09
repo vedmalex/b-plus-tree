@@ -1,8 +1,9 @@
 import { Node } from '../Node'
 import { replace_max } from './replace_max'
 import { replace_min } from './replace_min'
+import { ValueType } from '../ValueType'
 
-export function update_min_max<T>(node: Node<T>) {
+export function update_min_max<T, K extends ValueType>(node: Node<T, K>) {
   if (!node.isEmpty) {
     const nodes = node.tree.nodes
     if (node.leaf) {

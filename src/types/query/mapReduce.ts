@@ -1,13 +1,13 @@
 import { ValueType } from '../ValueType'
 import { Cursor } from '../eval/Cursor'
 
-export function mapReduce<T, D, V, O = Map<ValueType, V>>(
-  map: (inp: [ValueType, T]) => D | Promise<D>,
-  reduce: (inp: [ValueType, D]) => V | Promise<V>,
-  finalize?: (inp: Map<ValueType, V>) => O | Promise<O>,
+export function mapReduce<T, K extends ValueType, D, V, O = Map<K, V>>(
+  map: (inp: [K, T]) => D | Promise<D>,
+  reduce: (inp: [K, D]) => V | Promise<V>,
+  finalize?: (inp: Map<K, V>) => O | Promise<O>,
 ) {
-  return async function* (source: Generator<Cursor<T>>) {
-    let result: Map<ValueType, V> = new Map()
+  return async function* (source: Generator<Cursor<T, K>>) {
+    let result: Map<K, V> = new Map()
     for (let cursor of source) {
       const value = await map([cursor.key, cursor.value])
       const res = await reduce([cursor.key, value])

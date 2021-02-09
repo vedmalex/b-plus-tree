@@ -6,7 +6,7 @@ import { delete_by_cursor_list } from '../methods/delete_by_cursor_list'
 import { print_node } from '../types/print_node'
 import { delete_by_cursor } from '../methods/delete_by_cursor'
 
-const stored: PortableBPlusTree<number> = {
+const stored: PortableBPlusTree<number, number> = {
   root: 10000,
   unique: false,
   t: 5,

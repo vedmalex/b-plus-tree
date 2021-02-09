@@ -1,7 +1,7 @@
 import { Node } from '../types/Node'
 import { ValueType } from '../types/ValueType'
 
-export function max<T>(node: Node<T>): ValueType {
+export function max<T, K extends ValueType>(node: Node<T, K>): K {
   const nodes = node.tree.nodes
 
   return node.leaf

@@ -6,8 +6,12 @@ import { merge_with_right } from './borrow_right'
 import { can_borrow_left } from './can_borrow_left'
 import { can_borrow_right } from './can_borrow_right'
 import { remove_sibling } from './chainable/remove_sibling'
+import { ValueType } from '../types/ValueType'
 
-export function reflow<T>(tree: BPlusTree<T>, node: Node<T>) {
+export function reflow<T, K extends ValueType>(
+  tree: BPlusTree<T, K>,
+  node: Node<T, K>,
+) {
   if (node) {
     if (node.key_num < tree.t - 1 || node.isEmpty) {
       const right_sibling = node.right

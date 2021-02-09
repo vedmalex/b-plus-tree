@@ -1,11 +1,12 @@
-import { Cursor } from '../eval/Cursor'
+import { Cursor } from './eval/Cursor'
+import { ValueType } from './ValueType'
 
 export interface UnaryFunction<T, R> {
   (source: T): R
 }
 
 /* eslint:disable:max-line-length */
-export function query<T>(): UnaryFunction<T, T>
+export function query<T, K extends ValueType>(): UnaryFunction<T, T>
 export function query<T, A>(fn1: UnaryFunction<T, A>): UnaryFunction<T, A>
 export function query<T, A, B>(
   fn1: UnaryFunction<T, A>,
@@ -87,7 +88,7 @@ export function query(
   return queryFromArray(fns)
 }
 
-export function identity<T>(x: T): T {
+export function identity<T, K extends ValueType>(x: T): T {
   return x
 }
 
@@ -111,8 +112,8 @@ export function queryFromArray<T, R>(
   }
 }
 
-interface CursorFunction<T> {
-  (source: Generator<Cursor<T>> | AsyncGenerator<Cursor<T>>):
-    | Generator<Cursor<T>>
-    | AsyncGenerator<Cursor<T>>
+export interface CursorFunction<T, K extends ValueType> {
+  (source: Generator<Cursor<T, K>> | AsyncGenerator<Cursor<T, K>>):
+    | Generator<Cursor<T, K>>
+    | AsyncGenerator<Cursor<T, K>>
 }

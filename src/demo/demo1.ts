@@ -1,7 +1,7 @@
 import { BPlusTree } from '../types/BPlusTree'
 import axios from 'axios'
-import sourceIn from '../types/source/sourceIn'
-import { query } from '../types/query/types'
+import { sourceIn } from '../types/source/sourceIn'
+import { query } from '../types/types'
 import { map } from '../types/query/map'
 import { reduce } from '../types/query/reduce'
 import { filter } from '../types/query/filter'
@@ -16,7 +16,7 @@ type Person = {
   page: string
 }
 
-const tree = new BPlusTree<Person>(2, false)
+const tree = new BPlusTree<Person, number>(2, false)
 
 const addPerson = (inp: Person) => tree.insert(inp.id, inp)
 

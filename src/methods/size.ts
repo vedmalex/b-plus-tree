@@ -1,6 +1,7 @@
 import { Node } from '../types/Node'
+import { ValueType } from '../types/ValueType'
 
-export function size<T>(node: Node<T>) {
+export function size<T, K extends ValueType>(node: Node<T, K>) {
   let lres = 0
   let start = 0
   let i = start
