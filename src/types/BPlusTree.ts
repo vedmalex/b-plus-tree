@@ -1,7 +1,7 @@
 import { Node } from './Node'
 import { PortableBPlusTree } from './PortableBPlusTree'
 import { Cursor } from './eval/Cursor'
-import { remove } from '../methods/remove'
+import { remove, remove_specific } from '../methods/remove'
 import { insert } from '../methods/insert'
 import { count } from '../methods/count'
 import { size } from '../methods/size'
@@ -20,7 +20,12 @@ import { sourceGte } from './source/sourceGte'
 import { sourceLt } from './source/sourceLt'
 import { sourceLte } from './source/sourceLte'
 import { ValueType } from './ValueType'
-
+import { sourceEqNulls } from './source/sourceEqNulls'
+/**
+ * tree
+ * T - value to be stored
+ * K - key
+ */
 export class BPlusTree<T, K extends ValueType> {
   public t: number // минимальная степень дерева
   public root: number // указатель на корень дерева
@@ -37,6 +42,10 @@ export class BPlusTree<T, K extends ValueType> {
 
   equals(key: K) {
     return sourceEq<T, K>(key)
+  }
+
+  equalsNulls(key: K) {
+    return sourceEqNulls<T, K>(key)
   }
 
   range(from: K, to: K, fromIncl: boolean = true, toIncl: boolean = true) {
@@ -157,20 +166,26 @@ export class BPlusTree<T, K extends ValueType> {
     return this.nodes.get(id)
   }
   count(key: K) {
+    if (key == undefined) key = null
     return count(key, this.nodes.get(this.root))
   }
   insert(key: K, value: any): boolean {
+    if (key == null) key = Number.NEGATIVE_INFINITY as any
     return insert(this, key, value)
   }
 
-  removeSpecific(key: K, specific: (pointers: T) => true) {
-    return remove(this, key, false)
+  removeSpecific(key: K, specific: (pointers: T) => boolean) {
+    //TODO: допилить эту штуку
+    if (key == undefined) key = null
+    return remove_specific(this, key, specific)
   }
   remove(key: K) {
+    if (key == undefined) key = null
     return remove(this, key, false)
   }
 
   removeMany(key: K) {
+    if (key == undefined) key = null
     return remove(this, key, true)
   }
 

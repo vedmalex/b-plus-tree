@@ -1,7 +1,7 @@
 import 'jest'
 import { find_last_key } from '../find_last_key'
 import { find_first_key } from '../find_first_key'
-import { find_first_item } from '../find_first_item'
+import { find_first_item, find_first_item_remove } from '../find_first_item'
 
 function find_key(a: number[], key: any, forward: boolean, include: boolean) {
   let index: number
@@ -24,14 +24,40 @@ function find_key(a: number[], key: any, forward: boolean, include: boolean) {
 describe('find keys ', () => {
   it('works as expected', () => {
     expect(find_first_item([78, 89, 91, 98], 79)).toBe(-1)
+    expect(
+      find_first_item(
+        [null, '1a', '1a', '1a', '1a', '3f', '5c', 'penthouse'],
+        '1a',
+      ),
+    ).not.toBe(1)
+    expect(
+      find_first_item_remove(
+        [null, '1a', '1a', '1a', '1a', '3f', '5c', 'penthouse'],
+        '1a',
+      ),
+    ).toBe(1)
+    expect(find_first_item([78, 89, 91, 98], null)).toBe(-1)
+    expect(find_first_item([null, 78, 89, 91, 98], null)).toBe(0)
+    expect(find_first_item([null, '78', '89', '91', '98'], null)).toBe(0)
+    expect(
+      find_first_item(
+        [null, '78', '78', '78', '89', '89', '89', '89', '91', '98'],
+        '78',
+      ),
+    ).toBe(1)
+    expect(find_first_item(['78', '89', '91', '98'], null)).toBe(-1)
     expect(find_last_key([95], 95)).toBe(1)
     expect(find_last_key([95, 95, 97, 97], 96)).toBe(2)
     expect(find_last_key([95, 95, 96, 97, 97], 96)).toBe(3)
+    expect(find_last_key([95, 95, 96, 97, 97], null)).toBe(0)
+    expect(find_last_key(['95', '95', '96', '97', '97'], null)).toBe(0)
 
     expect(find_last_key([95, 95, 95, 95, 95, 100], 96)).toBe(5)
     expect(find_first_key([55, 55, 95, 95, 95, 100], 95)).toBe(2)
 
     expect(find_first_key([95, 95, 95, 95, 100], 95)).toBe(0)
+    expect(find_first_key([95, 95, 95, 95, 100], null)).toBe(0)
+    expect(find_first_key(['100', '95', '95', '95', '95'], null)).toBe(0)
   })
   it('find_range_start', () => {
     expect(

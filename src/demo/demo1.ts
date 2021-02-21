@@ -9,11 +9,11 @@ import { remove } from '../types/actions/remove'
 import { print_node } from '../types/print_node'
 
 type Person = {
-  id: number
+  id?: number
   name: string
   age: number
   ssn: string
-  page: string
+  page?: string
 }
 
 const tree = new BPlusTree<Person, number>(2, false)
@@ -35,7 +35,7 @@ addPerson({
   page: 'http://ya.ru',
 })
 addPerson({
-  id: 2,
+  // id: 2,
   name: 'mark',
   age: 30,
   ssn: '000-0000-000003',
