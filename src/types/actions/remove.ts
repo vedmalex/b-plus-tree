@@ -5,6 +5,7 @@ import { update_state } from '../Node/update_state'
 import { replace_min } from '../Node/replace_min'
 import { reflow } from '../../methods/reflow'
 import { try_to_pull_up_tree } from '../../methods/try_to_pull_up_tree'
+import { replace_max } from '../Node/replace_max'
 
 export function remove<T, K extends ValueType>(tree: BPlusTree<T, K>) {
   return async function* (
@@ -39,8 +40,8 @@ export function remove<T, K extends ValueType>(tree: BPlusTree<T, K>) {
       if (node.min != node.keys[0]) {
         replace_min(node, node.keys[0])
       }
-      if (node.min != node.keys[node.keys.length - 1]) {
-        replace_min(node, node.keys[node.keys.length - 1])
+      if (node.max != node.keys[node.keys.length - 1]) {
+        replace_max(node, node.keys[node.keys.length - 1])
       }
     }
     // обновляем дерево

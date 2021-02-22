@@ -40,7 +40,7 @@ export function delete_by_cursor_list<T, K extends ValueType>(
     if (node.min != node.keys[0]) {
       replace_min(node, node.keys[0])
     }
-    if (node.min != node.keys[node.keys.length - 1]) {
+    if (node.max != node.keys[node.keys.length - 1]) {
       replace_max(node, node.keys[node.keys.length - 1])
     }
   }

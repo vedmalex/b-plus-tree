@@ -13,7 +13,7 @@ export function update_state<T, K extends ValueType>(node: Node<T, K>) {
     node.size = node.children.length
     node.isFull = node.size > node.t << 1
     node.isEmpty = node.size <= 0
-    const nodes = node.tree.nodes
+    // const nodes = node.tree.nodes
     // node.length = node.children.reduce((res, cur) => {
     //   return res + nodes.get(cur).length
     // }, 0)
