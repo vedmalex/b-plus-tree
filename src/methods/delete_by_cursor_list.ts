@@ -14,7 +14,7 @@ export function delete_by_cursor_list<T, K extends ValueType>(
   const result: Array<[K, T]> = []
   const touched_nodes = new Set<number>()
   // сначала удаляем все записи какие есть
-  for (let cursor of cursors) {
+  for (const cursor of cursors) {
     const node = tree.nodes.get(cursor.node)
     const { key, pos } = cursor
     result.push([key, node.pointers.splice(pos, 1, undefined)[0]])
@@ -22,7 +22,7 @@ export function delete_by_cursor_list<T, K extends ValueType>(
     touched_nodes.add(cursor.node)
   }
   // обновляем все записи в дереве
-  for (let node_id of touched_nodes) {
+  for (const node_id of touched_nodes) {
     const node = tree.nodes.get(node_id)
     const new_keys = []
     const new_pointers = []
@@ -45,7 +45,7 @@ export function delete_by_cursor_list<T, K extends ValueType>(
     }
   }
   // обновляем дерево
-  for (let node_id of touched_nodes) {
+  for (const node_id of touched_nodes) {
     const node = tree.nodes.get(node_id)
     if (node) {
       reflow(tree, node)

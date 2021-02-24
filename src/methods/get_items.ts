@@ -6,7 +6,7 @@ export function get_items<T, K extends ValueType>(
   node: Node<T, K>,
   key: K = undefined,
 ): Array<T> {
-  let start = find_first_item(node.keys, key)
+  const start = find_first_item(node.keys, key)
   let i = start
   if (node.leaf) {
     if (key === undefined) {

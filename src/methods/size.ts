@@ -3,7 +3,7 @@ import { ValueType } from '../types/ValueType'
 
 export function size<T, K extends ValueType>(node: Node<T, K>) {
   let lres = 0
-  let start = 0
+  const start = 0
   let i = start
   if (node.leaf) {
     return node.key_num

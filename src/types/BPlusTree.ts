@@ -88,7 +88,7 @@ export class BPlusTree<T, K extends ValueType> {
     }
   }
   static createFrom<T, K extends ValueType>(stored: PortableBPlusTree<T, K>) {
-    let res = new BPlusTree()
+    const res = new BPlusTree()
     BPlusTree.deserialize(res, stored)
     return res
   }

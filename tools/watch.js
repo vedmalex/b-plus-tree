@@ -57,7 +57,7 @@ const build = async () => {
   }
 }
 
-const watcher = watch(['src/**/*','tsconfig.json'])
+const watcher = watch(['src/**/*', 'tsconfig.json'])
 console.log('Watching files... \n')
 build()
 watcher.on('change', () => {

@@ -107,8 +107,8 @@ export class Node<T, K extends ValueType> {
   leaf: boolean // является ли узел листом
   key_num: number // количество ключей узла
   size: number // значимый размер узла
-  keys: K[] // ключи узла
-  pointers: T[] // если лист — указатели на данные
+  keys: Array<K> // ключи узла
+  pointers: Array<T> // если лист — указатели на данные
   min: K
   max: K
   isFull: boolean
@@ -220,7 +220,7 @@ export class Node<T, K extends ValueType> {
     }
   }
 
-  children: number[] // ключи на детей узла
+  children: Array<number> // ключи на детей узла
 
   // указатель на отца
   _parent: number

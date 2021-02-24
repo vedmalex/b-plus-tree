@@ -10,7 +10,7 @@ export function find_first_node<T, K extends ValueType>(
   let cur = nodes.get(tree.root)
 
   while (cur.leaf != true) {
-    let i = find_first_key(cur.keys, key)
+    const i = find_first_key(cur.keys, key)
     cur = nodes.get(cur.children[i])
     // for non unique index
     if (!tree.unique) {

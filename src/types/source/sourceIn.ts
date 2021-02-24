@@ -10,7 +10,7 @@ export function sourceIn<T, K extends ValueType>(keys: Array<K>) {
     let i = 0
     do {
       do {
-        let key = keys[i]
+        const key = keys[i]
         if (!cursor) {
           cursor = find_first(tree, key, true)
         } else {

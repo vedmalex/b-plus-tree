@@ -11,11 +11,11 @@ export function split<T, K extends ValueType>(
   node: Node<T, K>,
 ) {
   //Создаем новый узел
-  let new_node = node.leaf ? Node.createLeaf(tree) : Node.createNode(tree)
+  const new_node = node.leaf ? Node.createLeaf(tree) : Node.createNode(tree)
   // Перенаправляем right и left указатели
   add_sibling(node, new_node, 'right')
 
-  let bl = can_borrow_left(new_node)
+  const bl = can_borrow_left(new_node)
   merge_with_left(new_node, node, bl)
 
   if (node.id == tree.root) {

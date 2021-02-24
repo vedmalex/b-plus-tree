@@ -31,8 +31,8 @@ export function remove_specific<T, K extends ValueType>(
   key: K,
   specific: (pointers: T) => boolean,
 ) {
-  let cursors: Array<Cursor<T, K>> = []
-  for (let the_one of tree.equalsNulls(key)(tree)) {
+  const cursors: Array<Cursor<T, K>> = []
+  for (const the_one of tree.equalsNulls(key)(tree)) {
     if (specific(the_one.value)) {
       cursors.push(the_one)
     }

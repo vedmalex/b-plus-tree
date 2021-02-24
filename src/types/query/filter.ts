@@ -7,7 +7,7 @@ export function filter<T, K extends ValueType>(
   return async function* (
     source: Generator<Cursor<T, K>> | AsyncGenerator<Cursor<T, K>>,
   ) {
-    for await (let cursor of source) {
+    for await (const cursor of source) {
       if (await filter([cursor.key, cursor.value])) {
         yield cursor
       }

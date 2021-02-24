@@ -10,7 +10,7 @@ export function evaluate<T, K extends ValueType>(
 ): Cursor<T, K> {
   let cur = tree.nodes.get(id)
   while (cur) {
-    let len = cur.pointers.length
+    const len = cur.pointers.length
     if (pos >= len) {
       cur = cur.right
       pos -= len

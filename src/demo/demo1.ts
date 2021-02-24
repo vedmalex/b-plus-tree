@@ -95,7 +95,7 @@ async function print() {
   )(tree)
 
   // console.log([...result])
-  for await (let p of result) {
+  for await (const p of result) {
     console.log(p)
   }
 }
@@ -117,7 +117,7 @@ async function print1() {
   console.log(result)
   console.log(tree.size)
   console.log(print_node(tree).join('\n'))
-  for await (let p of result) {
+  for await (const p of result) {
     console.log(p)
     console.log(tree.find(p[0]))
   }

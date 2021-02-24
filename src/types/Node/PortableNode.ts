@@ -12,9 +12,9 @@ export type PortableNode<T, K extends ValueType> = {
   max: K
   min: K
   size: number
-  keys: K[]
+  keys: Array<K>
   key_num: number
-  pointers: T[]
-  children: number[]
+  pointers: Array<T>
+  children: Array<number>
   errors?: Array<string>
 }

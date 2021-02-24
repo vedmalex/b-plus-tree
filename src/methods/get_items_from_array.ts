@@ -9,7 +9,7 @@ export function get_items_from_array_slice<T, K>({
   take?: number
   forward?: boolean
 }) {
-  let result: T[]
+  let result: Array<T>
   if (take == -1) take = array.length - skip
   if (forward) {
     const start = skip

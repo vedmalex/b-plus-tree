@@ -12,7 +12,7 @@ export function find_last_key<K extends ValueType>(a: Array<K>, key: K) {
   key = (key == null && typeof a[0] == 'string' ? '' : key) as any
   while (l < r - 1) {
     // Запускаем цикл
-    let m = (l + r) >> 1 // m — середина области поиска
+    const m = (l + r) >> 1 // m — середина области поиска
     if (key >= a[m]) {
       l = m
     } else {

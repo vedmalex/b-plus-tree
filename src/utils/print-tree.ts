@@ -9,7 +9,7 @@ export function printTree<T, K extends ValueType>(
 ) {
   const result: Array<string> = []
   const tree: T = initialTree
-  let branch: string = ''
+  const branch: string = ''
 
   printBranch(tree, branch, result, printNode, getChildren)
   return result

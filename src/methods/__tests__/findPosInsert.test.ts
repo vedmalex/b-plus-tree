@@ -3,7 +3,12 @@ import { find_last_key } from '../find_last_key'
 import { find_first_key } from '../find_first_key'
 import { find_first_item, find_first_item_remove } from '../find_first_item'
 
-function find_key(a: number[], key: any, forward: boolean, include: boolean) {
+function find_key(
+  a: Array<number>,
+  key: any,
+  forward: boolean,
+  include: boolean,
+) {
   let index: number
   if (forward) {
     if (include) {

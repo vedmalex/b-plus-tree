@@ -78,12 +78,12 @@ export function query<T, A, B, C, D, E, F, G, H, I>(
   fn7: UnaryFunction<F, G>,
   fn8: UnaryFunction<G, H>,
   fn9: UnaryFunction<H, I>,
-  ...fns: UnaryFunction<any, any>[]
-): UnaryFunction<T, {}>
+  ...fns: Array<UnaryFunction<any, any>>
+): UnaryFunction<T, unknown>
 /* eslint:enable:max-line-length */
 
 export function query(
-  ...fns: Array<UnaryFunction<any, any>>
+  ...fns: Array<UnaryFunction<unknown, unknown>>
 ): UnaryFunction<any, any> {
   return queryFromArray(fns)
 }

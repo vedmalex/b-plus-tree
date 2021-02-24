@@ -7,8 +7,8 @@ export function mapReduce<T, K extends ValueType, D, V, O = Map<K, V>>(
   finalize?: (inp: Map<K, V>) => O | Promise<O>,
 ) {
   return async function* (source: Generator<Cursor<T, K>>) {
-    let result: Map<K, V> = new Map()
-    for (let cursor of source) {
+    const result: Map<K, V> = new Map()
+    for (const cursor of source) {
       const value = await map([cursor.key, cursor.value])
       const res = await reduce([cursor.key, value])
       result.set(cursor.key, res)

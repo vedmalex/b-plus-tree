@@ -14,7 +14,7 @@ export function remove<T, K extends ValueType>(tree: BPlusTree<T, K>) {
     const result: Array<[K, T]> = []
     const touched_nodes = new Set<number>()
     // сначала удаляем все записи какие есть
-    for await (let cursor of source) {
+    for await (const cursor of source) {
       const node = tree.nodes.get(cursor.node)
       const { key, pos } = cursor
       result.push([key, node.pointers.splice(pos, 1, undefined)[0]])
@@ -22,7 +22,7 @@ export function remove<T, K extends ValueType>(tree: BPlusTree<T, K>) {
       touched_nodes.add(cursor.node)
     }
     // обновляем все записи в дереве
-    for (let node_id of touched_nodes) {
+    for (const node_id of touched_nodes) {
       const node = tree.nodes.get(node_id)
       const new_keys = []
       const new_pointers = []
@@ -45,14 +45,14 @@ export function remove<T, K extends ValueType>(tree: BPlusTree<T, K>) {
       }
     }
     // обновляем дерево
-    for (let node_id of touched_nodes) {
+    for (const node_id of touched_nodes) {
       const node = tree.nodes.get(node_id)
       if (node) {
         reflow(tree, node)
         try_to_pull_up_tree(tree)
       }
     }
-    for (let res of result) {
+    for (const res of result) {
       yield res
     }
   }

@@ -16,8 +16,8 @@ export function reflow<T, K extends ValueType>(
     if (node.key_num < tree.t - 1 || node.isEmpty) {
       const right_sibling = node.right
       const left_sibling = node.left
-      let bl = can_borrow_left(node)
-      let br = can_borrow_right(node)
+      const bl = can_borrow_left(node)
+      const br = can_borrow_right(node)
       // можем ли взять у соседа данных
       if (bl > 0 || br > 0) {
         // нужно взять до половины

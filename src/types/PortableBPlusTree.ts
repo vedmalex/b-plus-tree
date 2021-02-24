@@ -14,5 +14,5 @@ export type PortableBPlusTree<T, K extends ValueType> = {
   next_node_id: number
   root: number
   unique: boolean
-  nodes: PortableNode<T, K>[]
+  nodes: Array<PortableNode<T, K>>
 }

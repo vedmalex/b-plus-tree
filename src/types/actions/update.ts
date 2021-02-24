@@ -10,8 +10,8 @@ export function update<T, K extends ValueType>(
   return async function* (
     source: Generator<Cursor<T, K>> | AsyncGenerator<Cursor<T, K>>,
   ) {
-    for await (let cursor of source) {
-      var result = action([cursor.key, cursor.value])
+    for await (const cursor of source) {
+      const result = action([cursor.key, cursor.value])
       // здесь надо проверить не поменялся ли ключ данного объекта
       // что-то надо придумать, чтобы обновить значение правильно...
       // похоже Cursor должен быть со ссылкой на дерево
