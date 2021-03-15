@@ -8,7 +8,6 @@ import { size } from '../methods/size'
 import { find_last_node } from '../methods/find_last_node'
 import { find_first_key } from '../methods/find_first_key'
 import { find_first_node } from '../methods/find_first_node'
-import { find_last_key } from '../methods/find_last_key'
 import { find } from './eval/find'
 import { list } from './eval/list'
 import { sourceIn } from './source/sourceIn'
@@ -21,6 +20,8 @@ import { sourceLt } from './source/sourceLt'
 import { sourceLte } from './source/sourceLte'
 import { ValueType } from './ValueType'
 import { sourceEqNulls } from './source/sourceEqNulls'
+import { find_first_item } from '../methods/find_first_item'
+import { find_last_item } from '../methods/find_last_item'
 /**
  * tree
  * T - value to be stored
@@ -96,17 +97,24 @@ export class BPlusTree<T, K extends ValueType> {
     tree: BPlusTree<T, K>,
     stored: PortableBPlusTree<T, K>,
   ) {
-    tree.nodes.clear()
     const { t, next_node_id, root, unique, nodes } = stored
-    tree.t = t
-    tree.next_node_id = next_node_id
-    tree.root = root
-    tree.unique = unique
-    nodes.forEach((n) => {
-      const node = Node.deserialize<T, K>(n)
-      node.tree = tree
-      tree.nodes.set(n.id, node)
-    })
+    if (t) {
+      tree.nodes.clear()
+      tree.t = t
+      tree.next_node_id = next_node_id
+      tree.root = root
+      tree.unique = unique
+      nodes.forEach((n) => {
+        const node = Node.deserialize<T, K>(n)
+        node.tree = tree
+        tree.nodes.set(n.id, node)
+      })
+    } else {
+      // key pair serialiation
+      for (const [key, value] of Object.entries(stored)) {
+        tree.insert(key as K, value)
+      }
+    }
   }
 
   find(
@@ -130,13 +138,13 @@ export class BPlusTree<T, K extends ValueType> {
 
   findFirst(key: K) {
     const node = find_first_node(this, key)
-    const index = find_first_key(node.keys, key)
+    const index = find_first_item(node.keys, key)
     return node.pointers[index]
   }
 
   findLast(key: K) {
     const node = find_last_node(this, key)
-    const index = find_last_key(node.keys, key)
+    const index = find_last_item(node.keys, key)
     return node.pointers[index]
   }
 
