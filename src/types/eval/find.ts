@@ -12,7 +12,8 @@ export function find<T, K extends ValueType>(
   key: K,
   options?: Partial<SearchOptions>,
 ) {
-  let { skip = 0, take = -1, forward = true } = options ?? {}
+  const { skip = 0, forward = true, take: initial_take = -1 } = options ?? {}
+  let { take = -1 } = options ?? {}
   const result: Array<T> = []
   const cursor = find_first<T, K>(tree, key, forward)
   if (cursor.pos >= 0) {
@@ -24,7 +25,7 @@ export function find<T, K extends ValueType>(
     }
     if (!cur.done) {
       if (cur.key == key) {
-        if (take == -1) {
+        if (take == -1 && initial_take != -1) {
           result.push(cur.value)
         } else {
           while (cur || take == 0) {
