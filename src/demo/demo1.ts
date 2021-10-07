@@ -1,6 +1,4 @@
 import { BPlusTree } from '../types/BPlusTree'
-import axios from 'axios'
-import { sourceIn } from '../types/source/sourceIn'
 import { query } from '../types/types'
 import { map } from '../types/query/map'
 import { reduce } from '../types/query/reduce'
@@ -83,7 +81,7 @@ async function print() {
   const result = await query(
     tree.includes([1, 3, 5]),
     filter((v) => v[1].age > 20),
-    map(async ([, person]) => ({
+    map(([, person]) => ({
       age: person.age,
       name: person.name,
       // page: await axios.get(person.page),
@@ -91,7 +89,7 @@ async function print() {
     reduce((res, cur) => {
       res.set(cur.name, cur)
       return res
-    }, new Map<string, any>()),
+    }, new Map<string, unknown>()),
   )(tree)
 
   // console.log([...result])

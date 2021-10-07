@@ -4,7 +4,7 @@ import { Node } from '../Node'
 export function insert_new_min<T, K extends ValueType>(
   node: Node<T, K>,
   key: K,
-) {
+): void {
   node.min = key
   let cur = node
   while (cur.parent) {

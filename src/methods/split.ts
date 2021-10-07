@@ -9,7 +9,7 @@ import { ValueType } from '../types/ValueType'
 export function split<T, K extends ValueType>(
   tree: BPlusTree<T, K>,
   node: Node<T, K>,
-) {
+): void {
   //Создаем новый узел
   const new_node = node.leaf ? Node.createLeaf(tree) : Node.createNode(tree)
   // Перенаправляем right и left указатели

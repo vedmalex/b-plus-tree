@@ -2,7 +2,10 @@ import { Node } from '../types/Node'
 import { ValueType } from '../types/ValueType'
 import { find_first_key } from './find_first_key'
 
-export function count<T, K extends ValueType>(key: K, node: Node<T, K>) {
+export function count<T, K extends ValueType>(
+  key: K,
+  node: Node<T, K>,
+): number {
   let lres = 0
   const start = find_first_key(node.keys, key)
   const nodes = node.tree.nodes

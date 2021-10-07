@@ -15,7 +15,7 @@ import { PortableNode } from './Node/PortableNode'
 
 // TODO: MAKE NODE SIMPLE OBJECT with static methods?????
 export class Node<T, K extends ValueType> {
-  static createLeaf<T, K extends ValueType>(tree: BPlusTree<T, K>) {
+  static createLeaf<T, K extends ValueType>(tree: BPlusTree<T, K>): Node<T, K> {
     const node = new Node<T, K>()
     node.leaf = true
     // node.t = tree.t
@@ -23,7 +23,7 @@ export class Node<T, K extends ValueType> {
     register_node(tree, node)
     return node
   }
-  static createNode<T, K extends ValueType>(tree: BPlusTree<T, K>) {
+  static createNode<T, K extends ValueType>(tree: BPlusTree<T, K>): Node<T, K> {
     const node = new Node<T, K>()
     node.children = []
     node.leaf = false
@@ -34,7 +34,7 @@ export class Node<T, K extends ValueType> {
   static createRootFrom<T, K extends ValueType>(
     tree: BPlusTree<T, K>,
     ...node: Array<Node<T, K>>
-  ) {
+  ): Node<T, K> {
     const root = Node.createNode(tree)
     add_initial_nodes(root, node)
     return root
@@ -77,7 +77,9 @@ export class Node<T, K extends ValueType> {
       children,
     }
   }
-  static deserialize<T, K extends ValueType>(stored: PortableNode<T, K>) {
+  static deserialize<T, K extends ValueType>(
+    stored: PortableNode<T, K>,
+  ): Node<T, K> {
     const node = new Node<T, K>()
     node.id = stored.id
     node.leaf = stored.leaf
@@ -98,7 +100,7 @@ export class Node<T, K extends ValueType> {
   }
 
   id: number
-  get t() {
+  get t(): number {
     return this.tree?.t ?? 32
   }
   //count of containing elements
@@ -125,11 +127,11 @@ export class Node<T, K extends ValueType> {
     this.max = undefined
   }
 
-  delete() {
+  delete(): void {
     if (this.tree?.root != this.id) unregister_node(this.tree, this)
   }
 
-  insert(item: [K, T]) {
+  insert(item: [K, T]): void {
     const [key, value] = item
     const pos = find_last_key(this.keys, item[0])
     this.keys.splice(pos, 0, key)
@@ -161,7 +163,7 @@ export class Node<T, K extends ValueType> {
     return res
   }
 
-  commit() {
+  commit(): void {
     if (this.key_num == 0 && this.size == 1 && this.parent && !this.leaf) {
       push_node_up(this)
       if (this.parent?.size > 0) {
@@ -170,7 +172,7 @@ export class Node<T, K extends ValueType> {
     }
   }
 
-  get errors() {
+  get errors(): Array<string> {
     return validate_node(this)
   }
 
@@ -185,7 +187,7 @@ export class Node<T, K extends ValueType> {
         leaf: this.leaf,
         keys: [...this.keys].map((i) =>
           typeof i == 'number' ? i : 'empty',
-        ) as any,
+        ) as Array<K>,
         key_num: this.key_num,
         min: this.min,
         max: this.max,
@@ -205,7 +207,7 @@ export class Node<T, K extends ValueType> {
         leaf: this.leaf,
         keys: [...this.keys].map((i) =>
           typeof i == 'number' ? i : 'empty',
-        ) as any,
+        ) as Array<K>,
         key_num: this.key_num,
         min: this.min,
         max: this.max,
@@ -259,7 +261,9 @@ export class Node<T, K extends ValueType> {
  *
  */
 
-export function validate_node<T, K extends ValueType>(node: Node<T, K>) {
+export function validate_node<T, K extends ValueType>(
+  node: Node<T, K>,
+): Array<string> {
   const res: Array<string> = []
   if (!node.isEmpty) {
     if (!node.leaf) {

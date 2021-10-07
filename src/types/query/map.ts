@@ -6,11 +6,12 @@ export function map<T, K extends ValueType, R>(
 ) {
   return async function* (
     source: Generator<Cursor<T, K>> | AsyncGenerator<Cursor<T, K>>,
-  ) {
+  ): AsyncGenerator<Cursor<T, K, R>, void> {
     for await (const cursor of source) {
+      const value = await func([cursor.key, cursor.value])
       yield {
         ...cursor,
-        value: await func([cursor.key, cursor.value]),
+        value,
       }
     }
   }

@@ -10,7 +10,7 @@ export function remove<T, K extends ValueType>(
   tree: BPlusTree<T, K>,
   key: K,
   all: boolean = false,
-) {
+): Array<[K, T]> {
   const result: Array<[K, T]> = []
   let leaf = find_first_node(tree, key)
   if (find_first_item_remove(leaf.keys, key) > -1) {
@@ -30,7 +30,7 @@ export function remove_specific<T, K extends ValueType>(
   tree: BPlusTree<T, K>,
   key: K,
   specific: (pointers: T) => boolean,
-) {
+): Array<[K, T]> {
   const cursors: Array<Cursor<T, K>> = []
   for (const the_one of tree.equalsNulls(key)(tree)) {
     if (specific(the_one.value)) {

@@ -1,6 +1,6 @@
 import { Chainable } from './Chainable'
 
-export function remove_sibling(a: Chainable, order: 'right' | 'left') {
+export function remove_sibling(a: Chainable, order: 'right' | 'left'): void {
   const right = order
   const left = order == 'left' ? 'right' : 'left'
   if (a[right]) {

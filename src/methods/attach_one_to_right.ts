@@ -7,7 +7,7 @@ export function attach_one_to_right_after<T, K extends ValueType>(
   obj: Node<T, K>,
   right: Node<T, K>,
   after: Node<T, K>,
-) {
+): void {
   const pos = obj.children.indexOf(after.id)
   obj.children.splice(pos + 1, 0, right.id)
   obj.keys.splice(pos, 0, right.min)

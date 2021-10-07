@@ -10,7 +10,7 @@ export function delete_in_node<T, K extends ValueType>(
   node: Node<T, K>,
   key: K,
   all: boolean = false,
-) {
+): Array<[K, T]> {
   const result: Array<[K, T]> = []
   if (all) {
     while (find_first_item(node.keys, key) != -1) {

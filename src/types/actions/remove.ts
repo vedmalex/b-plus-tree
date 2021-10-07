@@ -10,7 +10,7 @@ import { replace_max } from '../Node/replace_max'
 export function remove<T, K extends ValueType>(tree: BPlusTree<T, K>) {
   return async function* (
     source: Generator<Cursor<T, K>> | AsyncGenerator<Cursor<T, K>>,
-  ) {
+  ): AsyncGenerator<[K, T], void> {
     const result: Array<[K, T]> = []
     const touched_nodes = new Set<number>()
     // сначала удаляем все записи какие есть

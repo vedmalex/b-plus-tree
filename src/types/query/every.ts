@@ -6,7 +6,7 @@ export function every<T, K extends ValueType>(
 ) {
   return async function* (
     source: Generator<Cursor<T, K>> | AsyncGenerator<Cursor<T, K>>,
-  ) {
+  ): AsyncGenerator<boolean, void, unknown> {
     for await (const cursor of source) {
       if (!(await func([cursor.key, cursor.value]))) {
         yield false

@@ -3,8 +3,9 @@ import { merge_with_left } from '../borrow_left'
 import { BPlusTree } from '../../types/BPlusTree'
 import { merge_with_right } from '../borrow_right'
 import { PortableBPlusTree } from '../../types/PortableBPlusTree'
+import { ValueType } from '../../types/ValueType'
 
-const stored: PortableBPlusTree<number> = {
+const stored: PortableBPlusTree<number, ValueType> = {
   root: 10000,
   unique: false,
   t: 5,
@@ -235,7 +236,7 @@ const stored: PortableBPlusTree<number> = {
 }
 describe('leaf', () => {
   it('loads tree from stored', () => {
-    const tree = new BPlusTree<number>(2, false)
+    const tree = new BPlusTree<number, ValueType>(2, false)
     BPlusTree.deserialize(tree, stored)
     const size = tree.size
     expect(size).toBe(100)
@@ -243,7 +244,7 @@ describe('leaf', () => {
     expect(tree.max).toBe(100)
   })
   it('moved from one to another', () => {
-    const tree = new BPlusTree<number>(2, false)
+    const tree = new BPlusTree<number, ValueType>(2, false)
     BPlusTree.deserialize(tree, stored)
     const left = tree.nodes.get(1000)
     const right = tree.nodes.get(2000)

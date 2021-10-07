@@ -6,7 +6,7 @@ export function forEach<T, K extends ValueType>(
 ) {
   return async function* (
     source: Generator<Cursor<T, K>> | AsyncGenerator<Cursor<T, K>>,
-  ) {
+  ): AsyncGenerator<Cursor<T, K>, void> {
     for await (const cursor of source) {
       await action([cursor.key, cursor.value])
       yield cursor

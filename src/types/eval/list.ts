@@ -8,8 +8,9 @@ import { ValueType } from '../ValueType'
 export function list<T, K extends ValueType>(
   tree: BPlusTree<T, K>,
   options?: Partial<SearchOptions>,
-) {
-  let { skip = 0, take = -1, forward = true } = options ?? {}
+): Array<T> {
+  let { take = -1 } = options ?? {}
+  const { skip = 0, forward = true } = options ?? {}
   const result: Array<T> = []
   const key = options.forward ? tree.min : tree.max
   const cursor = find_first(tree, key, forward)

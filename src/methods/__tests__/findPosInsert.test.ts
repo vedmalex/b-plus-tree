@@ -5,7 +5,7 @@ import { find_first_item, find_first_item_remove } from '../find_first_item'
 
 function find_key(
   a: Array<number>,
-  key: any,
+  key: number,
   forward: boolean,
   include: boolean,
 ) {

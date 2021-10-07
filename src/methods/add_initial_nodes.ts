@@ -6,7 +6,7 @@ import { ValueType } from '../types/ValueType'
 export function add_initial_nodes<T, K extends ValueType>(
   obj: Node<T, K>,
   nodes: Array<Node<T, K>>,
-) {
+): void {
   for (let i = 0; i < nodes.length; i++) {
     const right = nodes[i]
     obj.children.push(right.id)

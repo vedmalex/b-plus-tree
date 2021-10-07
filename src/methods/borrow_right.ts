@@ -7,7 +7,7 @@ export function merge_with_right<T, K extends ValueType>(
   node: Node<T, K>,
   right_sibling: Node<T, K>,
   count: number,
-) {
+): void {
   if (node.leaf) {
     node.keys.push(...right_sibling.keys.splice(0, count))
     node.pointers.push(...right_sibling.pointers.splice(0, count))

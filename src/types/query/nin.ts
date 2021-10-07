@@ -1,6 +1,13 @@
+import { Cursor } from '../eval/Cursor'
 import { ValueType } from '../ValueType'
 import { filter } from './filter'
 
-export function nin<T, K extends ValueType>(keys: Array<ValueType>) {
+export function nin<T, K extends ValueType>(
+  keys: Array<ValueType>,
+): (
+  source:
+    | Generator<Cursor<T, K>, void, unknown>
+    | AsyncGenerator<Cursor<T, K>, void, unknown>,
+) => AsyncGenerator<Cursor<T, K>, void, unknown> {
   return filter<T, K>(([key]) => !keys.includes(key))
 }

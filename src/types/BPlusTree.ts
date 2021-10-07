@@ -22,6 +22,7 @@ import { ValueType } from './ValueType'
 import { sourceEqNulls } from './source/sourceEqNulls'
 import { find_first_item } from '../methods/find_first_item'
 import { find_last_item } from '../methods/find_last_item'
+import { PortableNode } from './Node/PortableNode'
 /**
  * tree
  * T - value to be stored
@@ -33,40 +34,51 @@ export class BPlusTree<T, K extends ValueType> {
   public unique: boolean
   public nodes = new Map<number, Node<T, K>>()
   protected next_node_id = 0
-  get_next_id() {
+  get_next_id(): number {
     return this.next_node_id++
   }
 
-  includes(keys: Array<K>) {
+  includes(
+    keys: Array<K>,
+  ): (tree: BPlusTree<T, K>) => Generator<Cursor<T, K>, void> {
     return sourceIn<T, K>(keys)
   }
 
-  equals(key: K) {
+  equals(key: K): (tree: BPlusTree<T, K>) => Generator<Cursor<T, K>, void> {
     return sourceEq<T, K>(key)
   }
 
-  equalsNulls(key: K) {
+  equalsNulls(
+    key: K,
+  ): (tree: BPlusTree<T, K>) => Generator<Cursor<T, K>, void> {
     return sourceEqNulls<T, K>(key)
   }
 
-  range(from: K, to: K, fromIncl: boolean = true, toIncl: boolean = true) {
+  range(
+    from: K,
+    to: K,
+    fromIncl: boolean = true,
+    toIncl: boolean = true,
+  ): (tree: BPlusTree<T, K>) => Generator<Cursor<T, K>, void> {
     return sourceRange<T, K>(from, to, fromIncl, toIncl)
   }
 
-  each(forward: boolean = true) {
+  each(
+    forward: boolean = true,
+  ): (tree: BPlusTree<T, K>) => Generator<Cursor<T, K>, void> {
     return sourceEach<T, K>(forward)
   }
 
-  gt(key: K) {
+  gt(key: K): (tree: BPlusTree<T, K>) => Generator<Cursor<T, K>, void> {
     return sourceGt<T, K>(key)
   }
-  gte(key: K) {
+  gte(key: K): (tree: BPlusTree<T, K>) => Generator<Cursor<T, K>, void> {
     return sourceGte<T, K>(key)
   }
-  lt(key: K) {
+  lt(key: K): (tree: BPlusTree<T, K>) => Generator<Cursor<T, K>, void> {
     return sourceLt<T, K>(key)
   }
-  lte(key: K) {
+  lte(key: K): (tree: BPlusTree<T, K>) => Generator<Cursor<T, K>, void> {
     return sourceLte<T, K>(key)
   }
 
@@ -88,15 +100,17 @@ export class BPlusTree<T, K extends ValueType> {
       nodes: [...nodes.values()].map((n) => Node.serialize(n)),
     }
   }
-  static createFrom<T, K extends ValueType>(stored: PortableBPlusTree<T, K>) {
-    const res = new BPlusTree()
+  static createFrom<T, K extends ValueType>(
+    stored: PortableBPlusTree<T, K>,
+  ): BPlusTree<T, K> {
+    const res = new BPlusTree<T, K>()
     BPlusTree.deserialize(res, stored)
     return res
   }
   static deserialize<T, K extends ValueType>(
     tree: BPlusTree<T, K>,
     stored: PortableBPlusTree<T, K>,
-  ) {
+  ): void {
     const { t, next_node_id, root, unique, nodes } = stored
     if (t) {
       tree.nodes.clear()
@@ -112,7 +126,7 @@ export class BPlusTree<T, K extends ValueType> {
     } else {
       // key pair serialiation
       for (const [key, value] of Object.entries(stored)) {
-        tree.insert(key as K, value)
+        tree.insert(key as K, (value as unknown) as T)
       }
     }
   }
@@ -124,7 +138,7 @@ export class BPlusTree<T, K extends ValueType> {
       take = -1,
       forward = true,
     }: { skip?: number; take?: number; forward?: boolean } = {},
-  ) {
+  ): Array<T> {
     return find(this, key, { skip, take, forward })
   }
 
@@ -132,17 +146,17 @@ export class BPlusTree<T, K extends ValueType> {
     skip = 0,
     take = -1,
     forward = true,
-  }: { skip?: number; take?: number; forward?: boolean } = {}) {
+  }: { skip?: number; take?: number; forward?: boolean } = {}): Array<T> {
     return list(this, { skip, take, forward })
   }
 
-  findFirst(key: K) {
+  findFirst(key: K): T {
     const node = find_first_node(this, key)
     const index = find_first_item(node.keys, key)
     return node.pointers[index]
   }
 
-  findLast(key: K) {
+  findLast(key: K): T {
     const node = find_last_node(this, key)
     const index = find_last_item(node.keys, key)
     return node.pointers[index]
@@ -155,49 +169,53 @@ export class BPlusTree<T, K extends ValueType> {
     return { node: node.id, pos: index, key, value, done: value === undefined }
   }
 
-  reset() {
+  reset(): void {
     this.next_node_id = 0
     this.nodes.clear()
     this.root = Node.createLeaf(this).id
   }
 
-  get min() {
+  get min(): K {
     return this.nodes.get(this.root).min
   }
-  get max() {
+  get max(): K {
     return this.nodes.get(this.root).max
   }
-  get size() {
+  get size(): number {
     return size(this.nodes.get(this.root))
   }
-  node(id: number) {
+  node(id: number): Node<T, K> {
     return this.nodes.get(id)
   }
-  count(key: K) {
+  count(key: K): number {
     if (key == undefined) key = null
     return count(key, this.nodes.get(this.root))
   }
-  insert(key: K, value: any): boolean {
-    if (key == null) key = Number.NEGATIVE_INFINITY as any
+  insert(key: K, value: T): boolean {
+    if (key == null) key = (Number.NEGATIVE_INFINITY as unknown) as K
     return insert(this, key, value)
   }
 
-  removeSpecific(key: K, specific: (pointers: T) => boolean) {
+  removeSpecific(key: K, specific: (pointers: T) => boolean): Array<[K, T]> {
     //TODO: допилить эту штуку
     if (key == undefined) key = null
     return remove_specific(this, key, specific)
   }
-  remove(key: K) {
+  remove(key: K): Array<[K, T]> {
     if (key == undefined) key = null
     return remove(this, key, false)
   }
 
-  removeMany(key: K) {
+  removeMany(key: K): Array<[K, T]> {
     if (key == undefined) key = null
     return remove(this, key, true)
   }
 
-  toJSON() {
+  toJSON(): {
+    t: number
+    unique: boolean
+    root: PortableNode<T, K> & { errors: Array<string> }
+  } {
     return {
       t: this.t,
       unique: this.unique,

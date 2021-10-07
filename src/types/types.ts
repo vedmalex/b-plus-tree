@@ -78,37 +78,42 @@ export function query<T, A, B, C, D, E, F, G, H, I>(
   fn7: UnaryFunction<F, G>,
   fn8: UnaryFunction<G, H>,
   fn9: UnaryFunction<H, I>,
-  ...fns: Array<UnaryFunction<any, any>>
+  ...fns: Array<UnaryFunction<unknown, unknown>>
 ): UnaryFunction<T, unknown>
 /* eslint:enable:max-line-length */
 
 export function query(
   ...fns: Array<UnaryFunction<unknown, unknown>>
-): UnaryFunction<any, any> {
+): UnaryFunction<unknown, unknown> {
   return queryFromArray(fns)
 }
 
-export function identity<T, K extends ValueType>(x: T): T {
+export function identity<T>(x: T): T {
   return x
 }
 
 /** @internal */
 export function queryFromArray<T, R>(
   fns: Array<UnaryFunction<T, R>>,
-): UnaryFunction<T, R> {
+): UnaryFunction<T, R> | ((input: T) => UnaryFunction<T, R>) {
   if (fns.length === 0) {
-    return identity as UnaryFunction<any, any>
+    return identity as UnaryFunction<T, R>
   }
 
   if (fns.length === 1) {
     return fns[0]
   }
 
-  return function queried(input: T): R {
-    return fns.reduce(
-      (prev: any, fn: UnaryFunction<T, R>) => fn(prev),
-      input as any,
-    )
+  return function (input: T) {
+    let res: T | R = input
+    fns.forEach((fn) => {
+      res = fn(res as T)
+    })
+    return (res as unknown) as R
+    // return fns.reduce(
+    //   (prev: T, fn: UnaryFunction<T, R>) => fn(prev),
+    //   input as any,
+    // )
   }
 }
 

@@ -1,7 +1,10 @@
 import { ValueType } from '../ValueType'
 import { Node } from '../Node'
 
-export function replace_max<T, K extends ValueType>(node: Node<T, K>, key: K) {
+export function replace_max<T, K extends ValueType>(
+  node: Node<T, K>,
+  key: K,
+): void {
   node.max = key
   let cur = node
   while (cur.parent) {

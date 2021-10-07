@@ -11,7 +11,7 @@ export function find<T, K extends ValueType>(
   tree: BPlusTree<T, K>,
   key: K,
   options?: Partial<SearchOptions>,
-) {
+): Array<T> {
   const { skip = 0, forward = true, take: initial_take = -1 } = options ?? {}
   let { take = -1 } = options ?? {}
   const result: Array<T> = []

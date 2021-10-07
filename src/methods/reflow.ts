@@ -11,7 +11,7 @@ import { ValueType } from '../types/ValueType'
 export function reflow<T, K extends ValueType>(
   tree: BPlusTree<T, K>,
   node: Node<T, K>,
-) {
+): void {
   if (node) {
     if (node.key_num < tree.t - 1 || node.isEmpty) {
       const right_sibling = node.right

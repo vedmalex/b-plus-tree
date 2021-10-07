@@ -5,11 +5,11 @@ import { ValueType } from '../ValueType'
 
 export function update<T, K extends ValueType>(
   tree: BPlusTree<T, K>,
-  action: (T: any) => T | Promise<T>,
+  action: (inp: [K, T]) => T | Promise<T>,
 ) {
   return async function* (
     source: Generator<Cursor<T, K>> | AsyncGenerator<Cursor<T, K>>,
-  ) {
+  ): AsyncGenerator<void, void> {
     for await (const cursor of source) {
       const result = action([cursor.key, cursor.value])
       // здесь надо проверить не поменялся ли ключ данного объекта

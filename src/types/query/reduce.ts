@@ -7,7 +7,7 @@ export function reduce<T, K extends ValueType, D>(
 ) {
   return async function* (
     source: Generator<Cursor<T, K>> | AsyncGenerator<Cursor<T, K>>,
-  ) {
+  ): AsyncGenerator<D, void> {
     let result = initial
     for await (const cursor of source) {
       result = await reducer(result, cursor.value)

@@ -10,7 +10,7 @@ import { replace_min } from '../types/Node/replace_min'
 export function delete_by_cursor_list<T, K extends ValueType>(
   tree: BPlusTree<T, K>,
   cursors: Array<Cursor<T, K>>,
-) {
+): Array<[K, T]> {
   const result: Array<[K, T]> = []
   const touched_nodes = new Set<number>()
   // сначала удаляем все записи какие есть

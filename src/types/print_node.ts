@@ -7,7 +7,7 @@ import { ValueType } from './ValueType'
 export function print_node<T, K extends ValueType>(
   tree: BPlusTree<T, K>,
   node?: Node<T, K>,
-) {
+): Array<string> {
   if (!node) {
     node = tree.node(tree.root)
   }

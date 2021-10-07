@@ -5,7 +5,7 @@ import { BPlusTree } from '../BPlusTree'
 import { Cursor } from '../eval/Cursor'
 
 export function sourceEqNulls<T, K extends ValueType>(key: K) {
-  return function* (tree: BPlusTree<T, K>): Iterable<Cursor<T, K>> {
+  return function* (tree: BPlusTree<T, K>): Generator<Cursor<T, K>, void> {
     let cursor = find_first_remove(tree, key, true)
     while (!cursor.done) {
       if (cursor.key == key) {

@@ -8,7 +8,7 @@ export function get_items_from_array_slice<T, K>({
   skip?: number
   take?: number
   forward?: boolean
-}) {
+}): Array<T> {
   let result: Array<T>
   if (take == -1) take = array.length - skip
   if (forward) {
@@ -35,7 +35,7 @@ export function get_items_from_Array<T>({
   skip?: number
   take?: number
   forward?: boolean
-}) {
+}): Array<T> {
   const result = []
   if (take == -1) take = array.length - skip
   if (forward) {

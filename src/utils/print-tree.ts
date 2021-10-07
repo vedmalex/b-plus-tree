@@ -6,7 +6,7 @@ export function printTree<T, K extends ValueType>(
   initialTree: T,
   printNode: PrintNode<T, K>,
   getChildren: GetChildren<T, K>,
-) {
+): Array<string> {
   const result: Array<string> = []
   const tree: T = initialTree
   const branch: string = ''

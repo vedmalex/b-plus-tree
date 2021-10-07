@@ -3,7 +3,7 @@ import { ValueType } from '../types/ValueType'
 
 export function try_to_pull_up_tree<T, K extends ValueType>(
   tree: BPlusTree<T, K>,
-) {
+): void {
   const nodes = tree.nodes
   const root = nodes.get(tree.root)
   if (root.size == 1 && !root.leaf) {

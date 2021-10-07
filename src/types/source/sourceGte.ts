@@ -5,7 +5,7 @@ import { find_range_start } from '../eval/find_range_start'
 import { BPlusTree } from '../BPlusTree'
 
 export function sourceGte<T, K extends ValueType>(key: K) {
-  return function* (tree: BPlusTree<T, K>) {
+  return function* (tree: BPlusTree<T, K>): Generator<Cursor<T, K>, void> {
     let cursor: Cursor<T, K> = find_range_start(tree, key, true, true)
     while (!cursor.done) {
       yield cursor

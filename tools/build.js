@@ -12,7 +12,7 @@ build({
   // minify: true,
   bundle: true,
   sourcemap: true,
-  tsconfig: './tsconfig.bundle',
+  tsconfig: './tsconfig.bundle.json',
   platform: 'node',
   logLevel: 'error',
   external: ['node_modules/*'],

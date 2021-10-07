@@ -3,7 +3,7 @@ import { replace_max } from './replace_max'
 import { replace_min } from './replace_min'
 import { ValueType } from '../ValueType'
 
-export function update_min_max<T, K extends ValueType>(node: Node<T, K>) {
+export function update_min_max<T, K extends ValueType>(node: Node<T, K>): void {
   if (!node.isEmpty) {
     const nodes = node.tree.nodes
     if (node.leaf) {

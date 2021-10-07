@@ -6,7 +6,7 @@ export function filter<T, K extends ValueType>(
 ) {
   return async function* (
     source: Generator<Cursor<T, K>> | AsyncGenerator<Cursor<T, K>>,
-  ) {
+  ): AsyncGenerator<Cursor<T, K>, void, unknown> {
     for await (const cursor of source) {
       if (await filter([cursor.key, cursor.value])) {
         yield cursor
