@@ -1,4 +1,6 @@
 node_modules
 dev
+src
+tools
 *.txt
 src

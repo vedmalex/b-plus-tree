@@ -126,7 +126,7 @@ export class BPlusTree<T, K extends ValueType> {
     } else {
       // key pair serialiation
       for (const [key, value] of Object.entries(stored)) {
-        tree.insert(key as K, (value as unknown) as T)
+        tree.insert(key as K, value as unknown as T)
       }
     }
   }
@@ -192,7 +192,7 @@ export class BPlusTree<T, K extends ValueType> {
     return count(key, this.nodes.get(this.root))
   }
   insert(key: K, value: T): boolean {
-    if (key == null) key = (Number.NEGATIVE_INFINITY as unknown) as K
+    if (key == null) key = Number.NEGATIVE_INFINITY as unknown as K
     return insert(this, key, value)
   }
 
