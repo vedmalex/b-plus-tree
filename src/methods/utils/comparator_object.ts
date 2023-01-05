@@ -1,5 +1,5 @@
 import { ValueType } from '../../types/ValueType'
-export function compare_keys<K extends Record<string, ValueType>>(
+export function compare_keys_object<K extends Record<string, ValueType>>(
   key1: K,
   key2: K,
 ): number {
