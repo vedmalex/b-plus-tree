@@ -42,7 +42,7 @@ suite
   .add('bplTree#find', function () {
     for (let i = 0; i < itemsToGet.length; i++) {
       const item = itemsToGet[i]
-      bpt.find(item).keys.indexOf(item)
+      bpt.find(item).indexOf(item)
     }
   })
   .add('RBTree#find', function () {

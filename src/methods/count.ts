@@ -7,7 +7,7 @@ export function count<T, K extends ValueType>(
   node: Node<T, K>,
 ): number {
   let lres = 0
-  const start = find_first_key(node.keys, key)
+  const start = find_first_key(node.keys, key, node.tree.comparator)
   const nodes = node.tree.nodes
 
   let i = start

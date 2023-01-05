@@ -18,8 +18,8 @@ export function print_node<T, K extends ValueType>(
       `${node._parent ? 'N' : ''}${node._parent ?? ''}${
         node._parent ? '<-' : ''
       }${node.isFull ? '!' : ''}${node.leaf ? 'L' : 'N'}${node.id} <${
-        node.min ?? ''
-      }:${node.max ?? ''}> ${JSON.stringify(node.keys)} L:${
+        JSON.stringify(node.min) ?? ''
+      }:${JSON.stringify(node.max) ?? ''}> ${JSON.stringify(node.keys)} L:${
         node.leaf ? 'L' : 'N'
       }${node._left ?? '-'} R:${node.leaf ? 'L' : 'N'}${node._right ?? '-'} ${
         node.leaf ? JSON.stringify(node.pointers) : ''

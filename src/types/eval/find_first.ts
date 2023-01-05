@@ -13,10 +13,10 @@ export function find_first<T, K extends ValueType>(
   let node: Node<T, K>, index: number
   if (forward) {
     node = find_last_node(tree, key)
-    index = find_first_item(node.keys, key)
+    index = find_first_item(node.keys, key, tree.comparator)
   } else {
     node = find_last_node(tree, key)
-    index = find_first_item(node.keys, key)
+    index = find_first_item(node.keys, key, tree.comparator)
   }
   const value = node.pointers[index]
   return { node: node.id, pos: index, key, value, done: value === undefined }

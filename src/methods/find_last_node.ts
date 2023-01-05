@@ -11,7 +11,7 @@ export function find_last_node<T, K extends ValueType>(
   let cur = nodes.get(tree.root)
 
   while (cur.leaf != true) {
-    const i = find_last_key(cur.keys, key)
+    const i = find_last_key(cur.keys, key, tree.comparator)
     cur = nodes.get(cur.children[i])
   }
   return cur

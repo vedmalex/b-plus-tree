@@ -2,8 +2,8 @@ const fs = require('fs')
 var Benchmark = require('benchmark')
 var SBPlTree = require('sorted-btree').default
 var BPlusTree = require('../dist').BPlusTree
-var {find_first_key} = require('../dist/methods/find_first_key')
-var {find_last_key } = require('../dist/methods/find_last_key')
+var { find_first_key } = require('../dist/methods/find_first_key')
+var { find_last_key } = require('../dist/methods/find_last_key')
 var RBTree = require('bintrees').RBTree
 var linear = new Benchmark.Suite('Linear search by one element')
 
@@ -22,7 +22,7 @@ let obj = {},
   map = new Map(),
   bpt = new BPlusTree(T, false),
   sbpt = new SBPlTree()
-  rbTree = new RBTree(comparator)
+rbTree = new RBTree(comparator)
 for (let i = 0; i < N; i++) {
   obj[i] = itemsToGet[i]
   map.set(itemsToGet[i], i)
@@ -34,17 +34,17 @@ for (let i = 0; i < N; i++) {
 const findArr = [...arr]
 arr.sort((a, b) => a - b)
 
-let from = arr[find_first_key(arr, arr[arr.length - 1] / 15)]
+let from = arr[find_first_key(arr, arr[arr.length - 1] / 15, bpt.comparator)]
 from += Math.sqrt(from)
 
-let to = arr[find_first_key(arr, arr[arr.length - 1] / 14)]
+let to = arr[find_first_key(arr, arr[arr.length - 1] / 14, bpt.comparator)]
 to += Math.sqrt(to)
 
 console.log(from)
 console.log(to)
 
-nearestFrom = find_first_key(arr, from)
-nearestTo = find_first_key(arr, to)
+nearestFrom = find_first_key(arr, from, bpt.comparator)
+nearestTo = find_first_key(arr, to, bpt.comparator)
 
 console.log(arr[nearestFrom])
 console.log(arr[nearestTo])
@@ -96,13 +96,13 @@ linear
       findArr.find((i) => i == item)
     }
   })
-    .add('Array#findFirstIndex', function () {
+  .add('Array#findFirstIndex', function () {
     for (let i = N - SAMPLES; i < N; i++) {
       const item = itemsToGet[i]
       arr[find_first_key(findArr, item)]
     }
   })
-    .add('Array#findLastIndex', function () {
+  .add('Array#findLastIndex', function () {
     for (let i = N - SAMPLES; i < N; i++) {
       const item = itemsToGet[i]
       arr[find_last_key(findArr, item)]
@@ -123,7 +123,7 @@ linear
   .add('bplTree#find-reverse', function () {
     for (let i = N - SAMPLES; i < N; i++) {
       const item = itemsToGet[i]
-      bpt.find(item, {forward:false})
+      bpt.find(item, { forward: false })
     }
   })
   .add('bplTree#findOne', function () {

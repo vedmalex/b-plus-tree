@@ -15,16 +15,16 @@ export function find_first_remove<T, K extends ValueType>(
   if (forward) {
     node = find_last_node(tree, key)
     if (key != null) {
-      index = find_first_item_remove(node.keys, key)
+      index = find_first_item_remove(node.keys, key, tree.comparator)
     } else {
-      index = find_first_item(node.keys, key)
+      index = find_first_item(node.keys, key, tree.comparator)
     }
   } else {
     node = find_last_node(tree, key)
     if (key != null) {
-      index = find_first_item_remove(node.keys, key)
+      index = find_first_item_remove(node.keys, key, tree.comparator)
     } else {
-      index = find_first_item(node.keys, key)
+      index = find_first_item(node.keys, key, tree.comparator)
     }
   }
   const value = node.pointers[index]

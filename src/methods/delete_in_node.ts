@@ -13,7 +13,7 @@ export function delete_in_node<T, K extends ValueType>(
 ): Array<[K, T]> {
   const result: Array<[K, T]> = []
   if (all) {
-    while (find_first_item(node.keys, key) != -1) {
+    while (find_first_item(node.keys, key, tree.comparator) != -1) {
       result.push(node.remove(key))
     }
   } else {

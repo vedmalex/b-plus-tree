@@ -18,16 +18,16 @@ export function find_range_start<T, K extends ValueType>(
   if (forward) {
     node = find_first_node(tree, key)
     if (include) {
-      index = find_first_key(node.keys, key)
+      index = find_first_key(node.keys, key, tree.comparator)
     } else {
-      index = find_last_key(node.keys, key)
+      index = find_last_key(node.keys, key, tree.comparator)
     }
   } else {
     node = find_last_node(tree, key)
     if (include) {
-      index = find_last_key(node.keys, key) - 1
+      index = find_last_key(node.keys, key, tree.comparator) - 1
     } else {
-      index = find_first_key(node.keys, key) - 1
+      index = find_first_key(node.keys, key, tree.comparator) - 1
     }
   }
   return evaluate(tree, node.id, index)

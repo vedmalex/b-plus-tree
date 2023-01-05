@@ -24,6 +24,8 @@ import { sourceEqNulls } from './source/sourceEqNulls'
 import { find_first_item } from '../methods/find_first_item'
 import { find_last_item } from '../methods/find_last_item'
 import { PortableNode } from './Node/PortableNode'
+import { Comparator } from './types'
+import { compare_keys_primitive } from '../methods/utils/comparator_primitive'
 /**
  * tree
  * T - value to be stored
@@ -34,7 +36,10 @@ export class BPlusTree<T, K extends ValueType> {
   public root: number // указатель на корень дерева
   public unique: boolean
   public nodes = new Map<number, Node<T, K>>()
-  public comparator: (a: K, b: K) => number
+  public comparator: Comparator<K>
+  public defaultEmpty: K
+  public keySerializer: (keys: Array<K>) => any
+  public keyDeserializer: (keys: any) => Array<K>
   protected next_node_id = 0
   get_next_id(): number {
     return this.next_node_id++
@@ -88,11 +93,18 @@ export class BPlusTree<T, K extends ValueType> {
     t?: number,
     unique?: boolean,
     comparator?: (a: K, b: K) => number,
+    defaultEmpty?: K,
+    keySerializer?: (keys: Array<K>) => any,
+    keyDeserializer?: (keys: any) => Array<K>,
   ) {
     this.t = t ?? 32
     this.unique = unique ?? false
     this.root = Node.createLeaf(this).id
-    this.comparator = comparator
+    this.comparator = comparator ?? compare_keys_primitive
+    this.defaultEmpty =
+      defaultEmpty ?? (Number.NEGATIVE_INFINITY as unknown as K)
+    this.keySerializer = keySerializer ?? ((keys: Array<K>) => keys)
+    this.keyDeserializer = keyDeserializer ?? ((keys: any) => keys as Array<K>)
   }
 
   static serialize<T, K extends ValueType>(
@@ -159,19 +171,19 @@ export class BPlusTree<T, K extends ValueType> {
 
   findFirst(key: K): T {
     const node = find_first_node(this, key)
-    const index = find_first_item(node.keys, key)
+    const index = find_first_item(node.keys, key, this.comparator)
     return node.pointers[index]
   }
 
   findLast(key: K): T {
     const node = find_last_node(this, key)
-    const index = find_last_item(node.keys, key)
+    const index = find_last_item(node.keys, key, this.comparator)
     return node.pointers[index]
   }
 
   cursor(key: K): Cursor<T, K> {
     const node = find_last_node(this, key)
-    const index = find_first_key(node.keys, key)
+    const index = find_first_key(node.keys, key, this.comparator)
     const value = node.pointers[index]
     return { node: node.id, pos: index, key, value, done: value === undefined }
   }
@@ -199,7 +211,7 @@ export class BPlusTree<T, K extends ValueType> {
     return count(key, this.nodes.get(this.root))
   }
   insert(key: K, value: T): boolean {
-    if (key == null) key = Number.NEGATIVE_INFINITY as unknown as K
+    if (key == null) key = this.defaultEmpty
     return insert(this, key, value)
   }
 

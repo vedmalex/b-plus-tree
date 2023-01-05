@@ -1,4 +1,5 @@
 import { ValueType } from '../types/ValueType'
+import { Comparator } from '../types/types'
 /**
  * fast search in ordered array
  * @param a array
@@ -8,6 +9,7 @@ import { ValueType } from '../types/ValueType'
 export function find_first_item<K extends ValueType>(
   a: Array<K>,
   key: K,
+  comparator: Comparator<K>,
 ): number {
   // l, r — левая и правая границы
   let l = -1
@@ -16,11 +18,11 @@ export function find_first_item<K extends ValueType>(
   while (l < r - 1) {
     // Запускаем цикл
     const m = (l + r) >> 1 // !m — середина области поиска
-    if (key > a[m]) {
+    if (comparator(key, a[m]) > 0) {
       l = m // Сужение границ
     } else {
       r = m
     }
   }
-  return a[r] == key ? r : -1
+  return comparator(a[r], key) == 0 ? r : -1
 }

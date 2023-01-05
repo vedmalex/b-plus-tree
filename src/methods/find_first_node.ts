@@ -8,25 +8,28 @@ export function find_first_node<T, K extends ValueType>(
 ): Node<T, K> {
   const nodes = tree.nodes
   let cur = nodes.get(tree.root)
-
+  const comparator = tree.comparator
   while (cur.leaf != true) {
-    const i = find_first_key(cur.keys, key)
+    const i = find_first_key(cur.keys, key, comparator)
     cur = nodes.get(cur.children[i])
     // for non unique index
     if (!tree.unique) {
-      if (key <= cur.min && key <= cur.left?.max) {
-        while (key <= cur.left?.max) {
+      if (
+        comparator(key, cur.min) <= 0 &&
+        comparator(key, cur.left?.max) <= 0
+      ) {
+        while (comparator(key, cur.left?.max) <= 0) {
           if (cur.left) {
             cur = cur.left
           } else {
             break
           }
         }
-      } else if (cur.max < key) {
-        while (cur.max < key) {
+      } else if (comparator(cur.max, key) < 0) {
+        while (comparator(cur.max, key) < 0) {
           if (cur.right) cur = cur.right
           else break
-          if (key >= cur.right?.min) break
+          if (comparator(key, cur.right?.min) >= 0) break
         }
       }
     }

@@ -11,12 +11,12 @@ export function remove<T, K extends ValueType>(
 ): Array<[K, T]> {
   const result: Array<[K, T]> = []
   let leaf = find_first_node(tree, key)
-  if (find_first_item_remove(leaf.keys, key) > -1) {
+  if (find_first_item_remove(leaf.keys, key, tree.comparator) > -1) {
     if (all) {
       do {
         result.push(...delete_in_node(tree, leaf, key, all)) // Удалить ключ из вершины
         leaf = find_first_node(tree, key)
-      } while (find_first_item_remove(leaf.keys, key) != -1)
+      } while (find_first_item_remove(leaf.keys, key, tree.comparator) != -1)
     } else {
       result.push(...delete_in_node(tree, leaf, key, all)) // Удалить ключ из вершины
     }

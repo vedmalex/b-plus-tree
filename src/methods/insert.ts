@@ -10,7 +10,7 @@ export function insert<T, K extends ValueType>(
   value: T,
 ): boolean {
   const leaf = find_first_node(tree, key)
-  if (find_first_item(leaf.keys, key) > -1) {
+  if (find_first_item(leaf.keys, key, tree.comparator) > -1) {
     if (tree.unique) return false
   }
   leaf.insert([key, value])

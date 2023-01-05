@@ -1,9 +1,3 @@
-# b-pl-tree
-
-zero dependency B+tree with extra functionality
-is suitable for build in-process database
-
-```js
 import { BPlusTree } from '../types/BPlusTree'
 import { query } from '../types/types'
 import { map } from '../types/query/map'
@@ -103,5 +97,3 @@ async function print() {
 }
 
 print().then((_) => console.log('done'))
-
-```

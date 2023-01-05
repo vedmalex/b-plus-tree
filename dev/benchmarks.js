@@ -1,5 +1,5 @@
-const {BPlusTree} = require('../dist/types/BPlusTree')
-const {find} = require('../dist/types/find')
+const { BPlusTree } = require('../dist/types/BPlusTree')
+const { find } = require('../dist/types/eval/find')
 const BTree = require('sorted-btree').default
 const test_data = require('./test_data_bm')
 globalThis.DEBUG = false
@@ -53,8 +53,7 @@ console.log(
 )
 for (let size of [1000, 10000, 100000, 1000000, 1000000, 20000000]) {
   console.log()
-  var keys = /* test_data.slice(0, size) */
-  makeArray(size, true)
+  var keys = /* test_data.slice(0, size) */ makeArray(size, true)
   const len = keys.length
   const indexes = []
   for (let i = 0; i < 1000; i++) {
@@ -107,8 +106,7 @@ for (let size of [1000, 10000, 100000, 1000000, 1000000, 20000000]) {
   measure(
     (map) => `find ${map.size} items in find_next with BPlusTree`,
     () => {
-      for (let i of indexes)
-        find(bptree, keys[i], { skip: 1, forward: false })
+      for (let i of indexes) find(bptree, keys[i], { skip: 1, forward: false })
       return bptree
     },
   )

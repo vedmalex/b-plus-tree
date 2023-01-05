@@ -71,7 +71,7 @@ export class Node<T, K extends ValueType> {
       max,
       min,
       size,
-      keys,
+      keys: node.tree.keySerializer(keys),
       key_num,
       pointers,
       children,
@@ -92,7 +92,7 @@ export class Node<T, K extends ValueType> {
     node.max = stored.max
     node.min = stored.min
     node.size = stored.size
-    node.keys = stored.keys
+    node.keys = node.tree.keyDeserializer(stored.keys)
     node.key_num = stored.key_num
     node.pointers = stored.pointers
     node.children = stored.children
@@ -133,7 +133,7 @@ export class Node<T, K extends ValueType> {
 
   insert(item: [K, T]): void {
     const [key, value] = item
-    const pos = find_last_key(this.keys, item[0])
+    const pos = find_last_key(this.keys, key, this.tree.comparator)
     this.keys.splice(pos, 0, key)
     this.pointers.splice(pos, 0, value)
 
@@ -148,7 +148,7 @@ export class Node<T, K extends ValueType> {
   }
 
   remove(item: K): [K, T] {
-    const pos = find_first_item(this.keys, item)
+    const pos = find_first_item(this.keys, item, this.tree.comparator)
     const res: [K, T] = [item, this.pointers.splice(pos, 1)[0]]
     this.keys.splice(pos, 1)
     update_state(this)
@@ -185,9 +185,7 @@ export class Node<T, K extends ValueType> {
         children: [],
         id: this.id,
         leaf: this.leaf,
-        keys: [...this.keys].map((i) =>
-          typeof i == 'number' ? i : 'empty',
-        ) as Array<K>,
+        keys: this.tree.keySerializer(this.keys),
         key_num: this.key_num,
         min: this.min,
         max: this.max,
@@ -205,9 +203,7 @@ export class Node<T, K extends ValueType> {
         isEmpty: this.isEmpty,
         size: this.size,
         leaf: this.leaf,
-        keys: [...this.keys].map((i) =>
-          typeof i == 'number' ? i : 'empty',
-        ) as Array<K>,
+        keys: this.tree.keySerializer(this.keys),
         key_num: this.key_num,
         min: this.min,
         max: this.max,

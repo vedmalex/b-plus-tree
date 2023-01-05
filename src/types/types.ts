@@ -1,6 +1,8 @@
 import { Cursor } from './eval/Cursor'
 import { ValueType } from './ValueType'
 
+export type Comparator<K extends ValueType> = (a?: K, b?: K) => number
+
 export interface UnaryFunction<T, R> {
   (source: T): R
 }
@@ -109,7 +111,7 @@ export function queryFromArray<T, R>(
     fns.forEach((fn) => {
       res = fn(res as T)
     })
-    return (res as unknown) as R
+    return res as unknown as R
     // return fns.reduce(
     //   (prev: T, fn: UnaryFunction<T, R>) => fn(prev),
     //   input as any,
