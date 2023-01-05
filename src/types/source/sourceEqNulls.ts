@@ -1,6 +1,6 @@
 import { ValueType } from '../ValueType'
 import { eval_next } from '../eval/eval_next'
-import { find_first_remove } from '../eval/find_first'
+import { find_first_remove } from '../eval/find_first_remove'
 import { BPlusTree } from '../BPlusTree'
 import { Cursor } from '../eval/Cursor'
 

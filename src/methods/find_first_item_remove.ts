@@ -1,11 +1,6 @@
 import { ValueType } from '../types/ValueType'
-/**
- * fast search in ordered array
- * @param a array
- * @param key key to find
- * @returns
- */
-export function find_first_item<K extends ValueType>(
+
+export function find_first_item_remove<K extends ValueType>(
   a: Array<K>,
   key: K,
 ): number {
@@ -16,10 +11,10 @@ export function find_first_item<K extends ValueType>(
   while (l < r - 1) {
     // Запускаем цикл
     const m = (l + r) >> 1 // !m — середина области поиска
-    if (key > a[m]) {
-      l = m // Сужение границ
-    } else {
+    if (key <= a[m]) {
       r = m
+    } else {
+      l = m // Сужение границ
     }
   }
   return a[r] == key ? r : -1

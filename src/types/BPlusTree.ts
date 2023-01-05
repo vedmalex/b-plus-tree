@@ -1,7 +1,8 @@
 import { Node } from './Node'
 import { PortableBPlusTree } from './PortableBPlusTree'
 import { Cursor } from './eval/Cursor'
-import { remove, remove_specific } from '../methods/remove'
+import { remove } from '../methods/remove'
+import { remove_specific } from '../methods/remove_specific'
 import { insert } from '../methods/insert'
 import { count } from '../methods/count'
 import { size } from '../methods/size'
@@ -33,6 +34,7 @@ export class BPlusTree<T, K extends ValueType> {
   public root: number // указатель на корень дерева
   public unique: boolean
   public nodes = new Map<number, Node<T, K>>()
+  public comparator: (a: K, b: K) => number
   protected next_node_id = 0
   get_next_id(): number {
     return this.next_node_id++
@@ -82,10 +84,15 @@ export class BPlusTree<T, K extends ValueType> {
     return sourceLte<T, K>(key)
   }
 
-  constructor(t?: number, unique?: boolean) {
+  constructor(
+    t?: number,
+    unique?: boolean,
+    comparator?: (a: K, b: K) => number,
+  ) {
     this.t = t ?? 32
     this.unique = unique ?? false
     this.root = Node.createLeaf(this).id
+    this.comparator = comparator
   }
 
   static serialize<T, K extends ValueType>(
