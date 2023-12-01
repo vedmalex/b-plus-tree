@@ -138,8 +138,7 @@ export class BPlusTree<T, K extends ValueType> {
       tree.root = root
       tree.unique = unique
       nodes.forEach((n) => {
-        const node = Node.deserialize<T, K>(n)
-        node.tree = tree
+        const node = Node.deserialize<T, K>(n, tree)
         tree.nodes.set(n.id, node)
       })
     } else {

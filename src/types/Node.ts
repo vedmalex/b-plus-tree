@@ -79,8 +79,10 @@ export class Node<T, K extends ValueType> {
   }
   static deserialize<T, K extends ValueType>(
     stored: PortableNode<T, K>,
+    tree: BPlusTree<T, K>,
   ): Node<T, K> {
     const node = new Node<T, K>()
+    node.tree = tree
     node.id = stored.id
     node.leaf = stored.leaf
     // node.t = stored.t
@@ -92,7 +94,7 @@ export class Node<T, K extends ValueType> {
     node.max = stored.max
     node.min = stored.min
     node.size = stored.size
-    node.keys = node.tree.keyDeserializer(stored.keys)
+    node.keys = tree.keyDeserializer(stored.keys)
     node.key_num = stored.key_num
     node.pointers = stored.pointers
     node.children = stored.children
