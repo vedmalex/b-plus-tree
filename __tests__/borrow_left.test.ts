@@ -1,6 +1,11 @@
-import type { PortableBPlusTree } from '../Node'
-//@ts-ignore
-const stored: PortableBPlusTree<number, number> = {
+import 'jest'
+import { merge_with_left } from '../src/methods/borrow_left'
+import { BPlusTree } from '../src/BPlusTree'
+import { merge_with_right } from '../src/methods/borrow_right'
+import { PortableBPlusTree } from '../../types/PortableBPlusTree'
+import { ValueType } from '../../types/ValueType'
+
+const stored: PortableBPlusTree<number, ValueType> = {
   root: 10000,
   unique: false,
   t: 5,
@@ -229,51 +234,34 @@ const stored: PortableBPlusTree<number, number> = {
     },
   ],
 }
-
-// const tree = new BPlusTree<number>(2, false)
-// BPlusTree.deserialize(tree, stored)
-// let v1 = [...$eq(tree, 3)].length
-// console.log(v1)
-// let v2 = [...$gt(tree, 89)].length
-// let v3 = [...$gte(tree, 89)].length
-// let v4 = [...$lt(tree, 10)].length
-// let v5 = [...$lte(tree, 10)].length
-// let v6 = [...$in(tree, [9, 10, 11, 12, 13, 15])]
-
-// let v7 = [...$nin($iterator(tree), [9, 10, 11, 12, 13, 15])].map((c) => c.value)
-// console.log(v7)
-// const start = find_range_start(tree, 10, true)
-// const end = find_range_start(tree, 20, true, false)
-// // let v9 = [...$map(tree, ([, value]) => value * 2, start)]
-
-// // let v10 = [...$map(tree, ([, value]) => value * 2, start, end)]
-
-// let v8 = [...$range(tree, 15, 20)]
-// console.log(v8)
-// $forEach($iterator(tree), ([key, value]) => {
-//   console.log(key, value)
-// })
-
-// let op = new Operations(tree)
-// let odd = op
-//   // .eq(10)
-//   .range(1, 100, true, true)
-//   .filter(([, k]) => k % 2 > 0)
-// // .transform.map(([value]) => value)
-// const list = [...odd.iterator]
-// console.log(list)
-// const del_result = delete_by_cursor_list(tree, list)
-// console.log(del_result)
-// // [...iterator.forEach([9, 10, 11, 12, 13, 15])].length)
-// const print = print_node(tree)
-
-// const zero = [...op.eq(0).iterator][0]
-// const zero_item = delete_by_cursor(tree, zero)
-// console.log(print_node(tree))
-// console.log(zero_item)
-
-// const und = new BPlusTree(2, false)
-
-// und.insert(-1, null)
-
-// console.log(und.find(-1))
+describe('leaf', () => {
+  it('loads tree from stored', () => {
+    const tree = new BPlusTree<number, ValueType>(2, false)
+    BPlusTree.deserialize(tree, stored)
+    const size = tree.size
+    expect(size).toBe(100)
+    expect(tree.min).toBe(0)
+    expect(tree.max).toBe(100)
+  })
+  it('moved from one to another', () => {
+    const tree = new BPlusTree<number, ValueType>(2, false)
+    BPlusTree.deserialize(tree, stored)
+    const left = tree.nodes.get(1000)
+    const right = tree.nodes.get(2000)
+    merge_with_left(right, left, 2)
+    expect(right.errors.length).toBe(0)
+    expect(left.errors.length).toBe(0)
+    merge_with_left(right, left, 3)
+    expect(right.errors.length).toBe(0)
+    expect(left.errors.length).toBe(0)
+    merge_with_right(left, right, 2)
+    expect(right.errors.length).toBe(0)
+    expect(left.errors.length).toBe(0)
+    merge_with_right(left, right, 3)
+    expect(right.errors.length).toBe(0)
+    expect(left.errors.length).toBe(0)
+    merge_with_right(left, right, 5)
+    expect(right.errors.length).toBe(0)
+    expect(left.errors.length).toBe(0)
+  })
+})

@@ -1,11 +1,9 @@
-import { BPlusTree } from '../types/BPlusTree'
-import { query } from '../types/types'
-import { map } from '../types/query/map'
-import { reduce } from '../types/query/reduce'
-import { filter } from '../types/query/filter'
-import { remove } from '../types/actions/remove'
-import { print_node } from '../types/print_node'
+import { BPlusTree } from '../BPlusTree'
+import { query } from '../types'
+import { print_node } from '../print_node'
 import axios from 'axios'
+import { filter, map, reduce } from 'src/query'
+import { remove } from 'src/methods'
 
 type Person = {
   id?: number
@@ -81,7 +79,7 @@ addPerson({
 async function print() {
   const result = query(
     tree.includes([1, 3, 5]),
-    filter((v) => v[1].age > 20),
+    filter<Person, number>((v) => v[1].age > 20),
     map(async ([, person]) => ({
       age: person.age,
       name: person.name,
@@ -106,12 +104,12 @@ async function print() {
 
 //@ts-ignore
 async function print1() {
-  const result = await query(
+  const result = query(
     tree.includes([1, 3, 5]),
-    filter((v) => v[1].age > 20),
+    filter<Person, number>((v) => v[1].age > 20),
     // filter((v) => v[1].age > 20 && v[1].age < 30),
     // filter((v) => v[1].age < 30),
-    remove(tree),
+    // remove<Person, number>(tree, 1),
   )(tree)
 
   console.log(result)

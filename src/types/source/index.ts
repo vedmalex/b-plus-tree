@@ -1,8 +1,0 @@
-export { sourceIn } from './sourceIn'
-export { sourceEq } from './sourceEq'
-export { sourceRange } from './sourceRange'
-export { sourceEach } from './sourceEach'
-export { sourceGt } from './sourceGt'
-export { sourceGte } from './sourceGte'
-export { sourceLt } from './sourceLt'
-export { sourceLte } from './sourceLte'
