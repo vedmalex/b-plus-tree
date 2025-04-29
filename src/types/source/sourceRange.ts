@@ -1,14 +1,14 @@
-import { ValueType } from '../ValueType'
+import type { ValueType } from '../ValueType'
 import { eval_next } from '../eval/eval_next'
 import { find_range_start } from '../eval/find_range_start'
-import { BPlusTree } from '../BPlusTree'
-import { Cursor } from '../eval/Cursor'
+import type { BPlusTree } from '../BPlusTree'
+import type { Cursor } from '../eval/Cursor'
 
 export function sourceRange<T, K extends ValueType>(
   from: K,
   to: K,
-  fromIncl: boolean = true,
-  toIncl: boolean = true,
+  fromIncl = true,
+  toIncl = true,
 ) {
   return function* (
     tree: BPlusTree<T, K>,

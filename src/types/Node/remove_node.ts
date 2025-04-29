@@ -1,9 +1,9 @@
 import { insert_new_min } from './insert_new_min'
 import { insert_new_max } from './insert_new_max'
 import { update_state } from './update_state'
-import { Node } from '../Node'
+import type { Node } from '../Node'
 import { remove_sibling } from '../../methods/chainable/remove_sibling'
-import { ValueType } from '../ValueType'
+import type { ValueType } from '../ValueType'
 
 export function remove_node<T, K extends ValueType>(
   obj: Node<T, K>,

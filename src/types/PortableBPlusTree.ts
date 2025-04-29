@@ -1,5 +1,5 @@
-import { PortableNode } from './Node/PortableNode'
-import { ValueType } from './ValueType'
+import type { PortableNode } from './Node/PortableNode'
+import type { ValueType } from './ValueType'
 
 // можно использовать скип, относительное перемещение по страницам... зная их размер,можно просто пропускать сколько нужно
 // можно в курсорах указывать: отсюда и 10 элементов

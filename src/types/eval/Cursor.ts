@@ -1,4 +1,4 @@
-import { ValueType } from '../ValueType'
+import type { ValueType } from '../ValueType'
 
 export type Cursor<T, K extends ValueType, R = T> = {
   node: number

@@ -1,4 +1,4 @@
-import { ValueType } from '../types/ValueType'
+import type { ValueType } from '../types/ValueType'
 type PrintNode<T, K> = (node: T, branch: string) => string
 type GetChildren<T, K> = (node: T) => Array<T>
 
@@ -44,8 +44,8 @@ function printBranch<T, K extends ValueType>(
     baseBranch = branch.slice(0, -2) + (isChildOfLastBranch ? '  ' : '│ ')
   }
 
-  const nextBranch = baseBranch + '├─'
-  const lastBranch = baseBranch + '└─'
+  const nextBranch = `${baseBranch}├─`
+  const lastBranch = `${baseBranch}└─`
 
   children.forEach((child, index) => {
     printBranch(

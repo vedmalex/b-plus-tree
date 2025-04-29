@@ -1,5 +1,5 @@
-import { ValueType } from '../ValueType'
-import { Cursor } from '../eval/Cursor'
+import type { ValueType } from '../ValueType'
+import type { Cursor } from '../eval/Cursor'
 
 export function mapReduce<T, K extends ValueType, D, V, O = Map<K, V>>(
   map: (inp: [K, T]) => D | Promise<D>,

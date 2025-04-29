@@ -79,7 +79,7 @@ addPerson({
 // console.log(print_node(tree).join('\n'))
 
 async function print() {
-  const result = await query(
+  const result = query(
     tree.includes([1, 3, 5]),
     filter((v) => v[1].age > 20),
     map(async ([, person]) => ({
@@ -104,6 +104,7 @@ async function print() {
 
 // print().then((_) => console.log('done'))
 
+//@ts-ignore
 async function print1() {
   const result = await query(
     tree.includes([1, 3, 5]),

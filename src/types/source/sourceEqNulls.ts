@@ -1,8 +1,8 @@
-import { ValueType } from '../ValueType'
+import type { ValueType } from '../ValueType'
 import { eval_next } from '../eval/eval_next'
 import { find_first_remove } from '../eval/find_first_remove'
-import { BPlusTree } from '../BPlusTree'
-import { Cursor } from '../eval/Cursor'
+import type { BPlusTree } from '../BPlusTree'
+import type { Cursor } from '../eval/Cursor'
 
 export function sourceEqNulls<T, K extends ValueType>(key: K) {
   return function* (tree: BPlusTree<T, K>): Generator<Cursor<T, K>, void> {

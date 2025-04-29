@@ -1,7 +1,8 @@
-import 'jest'
 import { find_last_key } from '../find_last_key'
 import { find_first_key } from '../find_first_key'
-import { find_first_item, find_first_item_remove } from '../find_first_item'
+import { find_first_item } from '../find_first_item'
+import { find_first_item_remove } from '../find_first_item_remove'
+import { compare_keys_primitive } from '../utils/comparator_primitive'
 
 function find_key(
   a: Array<number>,
@@ -12,15 +13,15 @@ function find_key(
   let index: number
   if (forward) {
     if (include) {
-      index = find_first_key(a, key)
+      index = find_first_key(a, key, compare_keys_primitive)
     } else {
-      index = find_last_key(a, key)
+      index = find_last_key(a, key, compare_keys_primitive)
     }
   } else {
     if (include) {
-      index = find_last_key(a, key) - 1
+      index = find_last_key(a, key, compare_keys_primitive) - 1
     } else {
-      index = find_first_key(a, key) - 1
+      index = find_first_key(a, key, compare_keys_primitive) - 1
     }
   }
   return index
@@ -28,41 +29,44 @@ function find_key(
 
 describe('find keys ', () => {
   it('works as expected', () => {
-    expect(find_first_item([78, 89, 91, 98], 79)).toBe(-1)
+    expect(find_first_item([78, 89, 91, 98], 79, compare_keys_primitive)).toBe(-1)
     expect(
       find_first_item(
         [null, '1a', '1a', '1a', '1a', '3f', '5c', 'penthouse'],
         '1a',
+        compare_keys_primitive
       ),
-    ).not.toBe(1)
+    ).toBe(1)
     expect(
       find_first_item_remove(
         [null, '1a', '1a', '1a', '1a', '3f', '5c', 'penthouse'],
         '1a',
+        compare_keys_primitive
       ),
     ).toBe(1)
-    expect(find_first_item([78, 89, 91, 98], null)).toBe(-1)
-    expect(find_first_item([null, 78, 89, 91, 98], null)).toBe(0)
-    expect(find_first_item([null, '78', '89', '91', '98'], null)).toBe(0)
+    expect(find_first_item([78, 89, 91, 98], null, compare_keys_primitive)).toBe(-1)
+    expect(find_first_item([null, 78, 89, 91, 98], null, compare_keys_primitive)).toBe(0)
+    expect(find_first_item([null, '78', '89', '91', '98'], null, compare_keys_primitive)).toBe(0)
     expect(
       find_first_item(
         [null, '78', '78', '78', '89', '89', '89', '89', '91', '98'],
         '78',
+        compare_keys_primitive
       ),
     ).toBe(1)
-    expect(find_first_item(['78', '89', '91', '98'], null)).toBe(-1)
-    expect(find_last_key([95], 95)).toBe(1)
-    expect(find_last_key([95, 95, 97, 97], 96)).toBe(2)
-    expect(find_last_key([95, 95, 96, 97, 97], 96)).toBe(3)
-    expect(find_last_key([95, 95, 96, 97, 97], null)).toBe(0)
-    expect(find_last_key(['95', '95', '96', '97', '97'], null)).toBe(0)
+    expect(find_first_item(['78', '89', '91', '98'], null, compare_keys_primitive)).toBe(-1)
+    expect(find_last_key([95], 95, compare_keys_primitive)).toBe(1)
+    expect(find_last_key([95, 95, 97, 97], 96, compare_keys_primitive)).toBe(2)
+    expect(find_last_key([95, 95, 96, 97, 97], 96, compare_keys_primitive)).toBe(3)
+    expect(find_last_key([95, 95, 96, 97, 97], null, compare_keys_primitive)).toBe(0)
+    expect(find_last_key(['95', '95', '96', '97', '97'], null, compare_keys_primitive)).toBe(0)
 
-    expect(find_last_key([95, 95, 95, 95, 95, 100], 96)).toBe(5)
-    expect(find_first_key([55, 55, 95, 95, 95, 100], 95)).toBe(2)
+    expect(find_last_key([95, 95, 95, 95, 95, 100], 96, compare_keys_primitive)).toBe(5)
+    expect(find_first_key([55, 55, 95, 95, 95, 100], 95, compare_keys_primitive)).toBe(2)
 
-    expect(find_first_key([95, 95, 95, 95, 100], 95)).toBe(0)
-    expect(find_first_key([95, 95, 95, 95, 100], null)).toBe(0)
-    expect(find_first_key(['100', '95', '95', '95', '95'], null)).toBe(0)
+    expect(find_first_key([95, 95, 95, 95, 100], 95, compare_keys_primitive)).toBe(0)
+    expect(find_first_key([95, 95, 95, 95, 100], null, compare_keys_primitive)).toBe(0)
+    expect(find_first_key(['100', '95', '95', '95', '95'], null, compare_keys_primitive)).toBe(0)
   })
   it('find_range_start', () => {
     expect(
@@ -125,35 +129,35 @@ const orderedArray = [
 
 describe('findPosInsert search position', () => {
   it('looking for next position to insert item', () => {
-    expect(find_last_key(orderedArray, 0)).toBe(0)
-    expect(find_last_key(orderedArray, 100)).toBe(1)
-    expect(find_last_key(orderedArray, 8310102)).toBe(
+    expect(find_last_key(orderedArray, 0, compare_keys_primitive)).toBe(0)
+    expect(find_last_key(orderedArray, 100, compare_keys_primitive)).toBe(1)
+    expect(find_last_key(orderedArray, 8310102, compare_keys_primitive)).toBe(
       orderedArray.indexOf(8310101) + 1,
     )
   })
   it('insert position', () => {
-    expect(find_last_key([0], 1)).toBe(1)
-    expect(find_last_key([0, 2], 1)).toBe(1)
-    expect(find_last_key([0, 1], 1)).toBe(2)
-    expect(find_last_key([0, 6, 9, 13], 9)).toBe(3)
+    expect(find_last_key([0], 1, compare_keys_primitive)).toBe(1)
+    expect(find_last_key([0, 2], 1, compare_keys_primitive)).toBe(1)
+    expect(find_last_key([0, 1], 1, compare_keys_primitive)).toBe(2)
+    expect(find_last_key([0, 6, 9, 13], 9, compare_keys_primitive)).toBe(3)
   })
   it('insert position', () => {
-    expect(find_last_key([0, 0, 0, 0], 1)).toBe(4)
-    expect(find_last_key([0, 1, 1, 3], 1)).toBe(3)
-    expect(find_last_key([1, 1, 1, 1], 1)).toBe(4)
-    expect(find_last_key([1, 2, 2, 2], 1)).toBe(1)
-    expect(find_last_key([-1, 0, 0, 1], 1)).toBe(4)
-    expect(find_last_key([-1, 0, 0, 1, 1, 1, 1, 1, 1, 2], 1)).toBe(9)
+    expect(find_last_key([0, 0, 0, 0], 1, compare_keys_primitive)).toBe(4)
+    expect(find_last_key([0, 1, 1, 3], 1, compare_keys_primitive)).toBe(3)
+    expect(find_last_key([1, 1, 1, 1], 1, compare_keys_primitive)).toBe(4)
+    expect(find_last_key([1, 2, 2, 2], 1, compare_keys_primitive)).toBe(1)
+    expect(find_last_key([-1, 0, 0, 1], 1, compare_keys_primitive)).toBe(4)
+    expect(find_last_key([-1, 0, 0, 1, 1, 1, 1, 1, 1, 2], 1, compare_keys_primitive)).toBe(9)
   })
   it('insert position', () => {
-    expect(find_first_key([1, 3, 5, 7], 9)).toBe(4)
-    expect(find_first_key([8, 8, 9, 9], 9)).toBe(2)
-    expect(find_first_key([0, 0, 0, 0], 1)).toBe(4)
-    expect(find_first_key([0, 1, 1, 3], 1)).toBe(1)
-    expect(find_first_key([1, 1, 1, 1], 1)).toBe(0)
-    expect(find_first_key([1, 2, 2, 2], 1)).toBe(0)
-    expect(find_first_key([-1, 0, 0, 1], 1)).toBe(3)
-    expect(find_first_key([-1, 0, 0, 1, 1, 1, 1, 1, 1, 2], 1)).toBe(3)
-    expect(find_first_key([-1, 0, 0, 2, 2, 2, 2, 2, 2, 2], 1)).toBe(3)
+    expect(find_first_key([1, 3, 5, 7], 9, compare_keys_primitive)).toBe(4)
+    expect(find_first_key([8, 8, 9, 9], 9, compare_keys_primitive)).toBe(2)
+    expect(find_first_key([0, 0, 0, 0], 1, compare_keys_primitive)).toBe(4)
+    expect(find_first_key([0, 1, 1, 3], 1, compare_keys_primitive)).toBe(1)
+    expect(find_first_key([1, 1, 1, 1], 1, compare_keys_primitive)).toBe(0)
+    expect(find_first_key([1, 2, 2, 2], 1, compare_keys_primitive)).toBe(0)
+    expect(find_first_key([-1, 0, 0, 1], 1, compare_keys_primitive)).toBe(3)
+    expect(find_first_key([-1, 0, 0, 1, 1, 1, 1, 1, 1, 2], 1, compare_keys_primitive)).toBe(3)
+    expect(find_first_key([-1, 0, 0, 2, 2, 2, 2, 2, 2, 2], 1, compare_keys_primitive)).toBe(3)
   })
 })

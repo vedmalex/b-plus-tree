@@ -1,4 +1,4 @@
-import { ValueType } from '../ValueType'
+import type { ValueType } from '../ValueType'
 
 export type PortableNode<T, K extends ValueType> = {
   id: number

@@ -1,11 +1,8 @@
-import { Cursor } from './eval/Cursor'
-import { ValueType } from './ValueType'
+import type { ValueType } from './ValueType'
 
 export type Comparator<K extends ValueType> = (a?: K, b?: K) => number
 
-export interface UnaryFunction<T, R> {
-  (source: T): R
-}
+export type UnaryFunction<T, R> = (source: T) => R
 
 /* eslint:disable:max-line-length */
 export function query<T, K extends ValueType>(): UnaryFunction<T, T>
@@ -106,7 +103,7 @@ export function queryFromArray<T, R>(
     return fns[0]
   }
 
-  return function (input: T) {
+  return (input: T) => {
     let res: T | R = input
     fns.forEach((fn) => {
       res = fn(res as T)
@@ -119,8 +116,8 @@ export function queryFromArray<T, R>(
   }
 }
 
-export interface CursorFunction<T, K extends ValueType> {
-  (source: Generator<Cursor<T, K>> | AsyncGenerator<Cursor<T, K>>):
-    | Generator<Cursor<T, K>>
-    | AsyncGenerator<Cursor<T, K>>
-}
+// export interface CursorFunction<T, K extends ValueType> {
+//   (source: Generator<Cursor<T, K>> | AsyncGenerator<Cursor<T, K>>):
+//     | Generator<Cursor<T, K>>
+//     | AsyncGenerator<Cursor<T, K>>
+// }

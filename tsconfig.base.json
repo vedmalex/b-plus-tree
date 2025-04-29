@@ -1,0 +1,36 @@
+{
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "sourceMap": true,
+    "emitDeclarationOnly": true,
+    "noEmit": false,
+    "declaration": true,
+    "declarationMap": false,
+    "removeComments": true,
+    "noImplicitAny": false,
+    "noImplicitReturns": false,
+    "noImplicitOverride": true,
+    "noImplicitThis": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedParameters": false,
+    "noUnusedLocals": true,
+    "noErrorTruncation": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "target": "esnext",
+    "disableSolutionSearching": true,
+    "module": "Preserve",
+    "moduleResolution": "bundler",
+    "lib": [
+      "ESNext"
+    ],
+    "erasableSyntaxOnly": true,
+    "types": [
+      "@types/bun"
+    ]
+  },
+  "include": [],
+  "exclude": []
+}

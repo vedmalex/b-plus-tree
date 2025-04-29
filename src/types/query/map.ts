@@ -1,5 +1,5 @@
-import { ValueType } from '../ValueType'
-import { Cursor } from '../eval/Cursor'
+import type { ValueType } from '../ValueType'
+import type { Cursor } from '../eval/Cursor'
 
 export function map<T, K extends ValueType, R>(
   func: (value: [K, T]) => R | Promise<R>,

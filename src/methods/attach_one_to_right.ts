@@ -1,5 +1,5 @@
-import { ValueType } from '../types/ValueType'
-import { Node } from '../types/Node'
+import type { ValueType } from '../types/ValueType'
+import type { Node } from '../types/Node'
 import { update_state } from '../types/Node/update_state'
 import { update_min_max } from '../types/Node/update_min_max'
 

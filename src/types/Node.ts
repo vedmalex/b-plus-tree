@@ -1,8 +1,8 @@
-import { ValueType } from './ValueType'
+import type { ValueType } from './ValueType'
 import { find_last_key } from '../methods/find_last_key'
 import { add_initial_nodes } from '../methods/add_initial_nodes'
 import { find_first_item } from '../methods/find_first_item'
-import { BPlusTree } from './BPlusTree'
+import type { BPlusTree } from './BPlusTree'
 import { register_node } from './Node/register_node'
 import { unregister_node } from './Node/unregister_node'
 import { push_node_up } from './Node/push_node_up'
@@ -11,7 +11,7 @@ import { insert_new_max } from './Node/insert_new_max'
 import { update_state } from './Node/update_state'
 import { replace_min } from './Node/replace_min'
 import { replace_max } from './Node/replace_max'
-import { PortableNode } from './Node/PortableNode'
+import type { PortableNode } from './Node/PortableNode'
 
 // TODO: MAKE NODE SIMPLE OBJECT with static methods?????
 export class Node<T, K extends ValueType> {

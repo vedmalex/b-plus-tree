@@ -1,6 +1,6 @@
-import { Node } from '../Node'
-import { Cursor } from './Cursor'
-import { ValueType } from '../ValueType'
+import type { Node } from '../Node'
+import type { Cursor } from './Cursor'
+import type { ValueType } from '../ValueType'
 
 export function get_current<T, K extends ValueType>(
   cur: Node<T, K>,

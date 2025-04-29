@@ -1,9 +1,9 @@
-import { ValueType } from '../ValueType'
+import type { ValueType } from '../ValueType'
 import { evaluate } from './evaluate'
 import { find_first } from './find_first'
-import { BPlusTree } from '../BPlusTree'
-import { Cursor } from './Cursor'
-import { SearchOptions } from './SearchOptions'
+import type { BPlusTree } from '../BPlusTree'
+import type { Cursor } from './Cursor'
+import type { SearchOptions } from './SearchOptions'
 
 // можно сделать мемоизацию на операцию, кэш значений для поиска
 

@@ -1,4 +1,4 @@
-import { Chainable } from './Chainable'
+import type { Chainable } from './Chainable'
 
 export function remove_sibling(a: Chainable, order: 'right' | 'left'): void {
   const right = order

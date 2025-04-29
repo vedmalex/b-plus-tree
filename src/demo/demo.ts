@@ -3,8 +3,6 @@ import { query } from '../types/types'
 import { map } from '../types/query/map'
 import { reduce } from '../types/query/reduce'
 import { filter } from '../types/query/filter'
-import { remove } from '../types/actions/remove'
-import { print_node } from '../types/print_node'
 import axios from 'axios'
 
 type Person = {
@@ -77,7 +75,7 @@ addPerson({
 })
 
 async function print() {
-  const result = await query(
+  const result = query(
     tree.includes([1, 3, 5]),
     filter((v) => v[1].age > 20),
     map(async ([, person]) => ({

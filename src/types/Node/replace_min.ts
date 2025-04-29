@@ -1,5 +1,5 @@
-import { ValueType } from '../ValueType'
-import { Node } from '../Node'
+import type { ValueType } from '../ValueType'
+import type { Node } from '../Node'
 
 export function replace_min<T, K extends ValueType>(
   node: Node<T, K>,

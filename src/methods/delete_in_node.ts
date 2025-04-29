@@ -1,6 +1,6 @@
-import { BPlusTree } from '../types/BPlusTree'
-import { Node } from '../types/Node'
-import { ValueType } from '../types/ValueType'
+import type { BPlusTree } from '../types/BPlusTree'
+import type { Node } from '../types/Node'
+import type { ValueType } from '../types/ValueType'
 import { reflow } from './reflow'
 import { find_first_item } from './find_first_item'
 import { try_to_pull_up_tree } from './try_to_pull_up_tree'
@@ -9,7 +9,7 @@ export function delete_in_node<T, K extends ValueType>(
   tree: BPlusTree<T, K>,
   node: Node<T, K>,
   key: K,
-  all: boolean = false,
+  all = false,
 ): Array<[K, T]> {
   const result: Array<[K, T]> = []
   if (all) {

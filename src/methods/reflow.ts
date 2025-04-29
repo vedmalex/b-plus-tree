@@ -1,12 +1,12 @@
-import { BPlusTree } from '../types/BPlusTree'
-import { Node } from '../types/Node'
+import type { BPlusTree } from '../types/BPlusTree'
+import type { Node } from '../types/Node'
 import { remove_node } from '../types/Node/remove_node'
 import { merge_with_left } from './borrow_left'
 import { merge_with_right } from './borrow_right'
 import { can_borrow_left } from './can_borrow_left'
 import { can_borrow_right } from './can_borrow_right'
 import { remove_sibling } from './chainable/remove_sibling'
-import { ValueType } from '../types/ValueType'
+import type { ValueType } from '../types/ValueType'
 
 export function reflow<T, K extends ValueType>(
   tree: BPlusTree<T, K>,

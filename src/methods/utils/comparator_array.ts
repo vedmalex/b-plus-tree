@@ -1,4 +1,4 @@
-import { ValueType } from '../../types/ValueType'
+import type { ValueType } from '../../types/ValueType'
 export function compare_keys_array<K extends Array<ValueType>>(
   key1: K,
   key2: K,

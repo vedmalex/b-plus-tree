@@ -1,5 +1,5 @@
-import { ValueType } from '../ValueType'
-import { Cursor } from '../eval/Cursor'
+import type { ValueType } from '../ValueType'
+import type { Cursor } from '../eval/Cursor'
 
 export function forEach<T, K extends ValueType>(
   action: (value: [K, T]) => Promise<void> | void,

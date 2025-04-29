@@ -1,12 +1,12 @@
-import { Cursor } from '../eval/Cursor'
-import { ValueType } from '../ValueType'
+import type { Cursor } from '../eval/Cursor'
+import type { ValueType } from '../ValueType'
 import { filter } from './filter'
 
 export function range<T, K extends ValueType>(
   from: ValueType,
   to: ValueType,
-  fromIncl: boolean = true,
-  toIncl: boolean = true,
+  fromIncl = true,
+  toIncl = true,
 ): (
   source:
     | Generator<Cursor<T, K>, void, unknown>

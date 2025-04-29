@@ -1,33 +1,5 @@
-!eslint.js
+/node_modules
 /dist
 /types
-# compiled output
-*.log
-/tmp
-/out-tsc
-/logs
-
-
-# dependencies
-/node_modules
-
-
-# misc
-/.sass-cache
-/connect.lock
-/coverage
-/libpeerconnection.log
-npm-debug.log
-testem.log
-/typings
-
-# System Files
-.DS_Store
-Thumbs.db
-
-# config
-.env
-
-tsconfig.tsbuildinfo
-/src/__tests__/*.json
-*.txt
+/tsconfig.tsbuildinfo
+/output.md

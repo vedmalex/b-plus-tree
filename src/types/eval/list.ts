@@ -1,9 +1,9 @@
 import { evaluate } from './evaluate'
 import { find_first } from './find_first'
-import { BPlusTree } from '../BPlusTree'
-import { Cursor } from './Cursor'
-import { SearchOptions } from './SearchOptions'
-import { ValueType } from '../ValueType'
+import type { BPlusTree } from '../BPlusTree'
+import type { Cursor } from './Cursor'
+import type { SearchOptions } from './SearchOptions'
+import type { ValueType } from '../ValueType'
 
 export function list<T, K extends ValueType>(
   tree: BPlusTree<T, K>,

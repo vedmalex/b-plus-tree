@@ -1,6 +1,6 @@
-import { BPlusTree } from '../BPlusTree'
-import { Node } from '../Node'
-import { ValueType } from '../ValueType'
+import type { BPlusTree } from '../BPlusTree'
+import type { Node } from '../Node'
+import type { ValueType } from '../ValueType'
 
 export function unregister_node<T, K extends ValueType>(
   tree: BPlusTree<T, K>,

@@ -1,5 +1,5 @@
-import { BPlusTree } from '../types/BPlusTree'
-import { ValueType } from '../types/ValueType'
+import type { BPlusTree } from '../types/BPlusTree'
+import type { ValueType } from '../types/ValueType'
 import { find_last_key } from './find_last_key'
 import type { Node } from '../types/Node'
 

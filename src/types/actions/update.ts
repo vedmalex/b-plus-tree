@@ -1,7 +1,7 @@
 import { direct_update_value } from '../../methods/direct_update_value'
-import { Cursor } from '../eval/Cursor'
-import { BPlusTree } from '../BPlusTree'
-import { ValueType } from '../ValueType'
+import type { Cursor } from '../eval/Cursor'
+import type { BPlusTree } from '../BPlusTree'
+import type { ValueType } from '../ValueType'
 
 export function update<T, K extends ValueType>(
   tree: BPlusTree<T, K>,
@@ -16,6 +16,7 @@ export function update<T, K extends ValueType>(
       // что-то надо придумать, чтобы обновить значение правильно...
       // похоже Cursor должен быть со ссылкой на дерево
       direct_update_value(tree, cursor.node, cursor.pos, result)
+      yield
     }
   }
 }

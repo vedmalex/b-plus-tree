@@ -1,5 +1,5 @@
-import { Comparator } from '../types/types'
-import { ValueType } from '../types/ValueType'
+import type { Comparator } from '../types/types'
+import type { ValueType } from '../types/ValueType'
 /**
  * search index of first appearance of the item
  * @param a ordered array

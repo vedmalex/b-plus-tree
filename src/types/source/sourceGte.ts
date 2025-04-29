@@ -1,8 +1,8 @@
-import { ValueType } from '../ValueType'
-import { Cursor } from '../eval/Cursor'
+import type { ValueType } from '../ValueType'
+import type { Cursor } from '../eval/Cursor'
 import { eval_next } from '../eval/eval_next'
 import { find_range_start } from '../eval/find_range_start'
-import { BPlusTree } from '../BPlusTree'
+import type { BPlusTree } from '../BPlusTree'
 
 export function sourceGte<T, K extends ValueType>(key: K) {
   return function* (tree: BPlusTree<T, K>): Generator<Cursor<T, K>, void> {

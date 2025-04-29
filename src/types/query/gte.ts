@@ -1,5 +1,5 @@
-import { Cursor } from '../eval/Cursor'
-import { ValueType } from '../ValueType'
+import type { Cursor } from '../eval/Cursor'
+import type { ValueType } from '../ValueType'
 import { filter } from './filter'
 
 export function gte<T, K extends ValueType>(

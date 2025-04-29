@@ -1,6 +1,6 @@
-import { BPlusTree } from '../types/BPlusTree'
-import { ValueType } from '../types/ValueType'
-import { Cursor } from '../types/eval/Cursor'
+import type { BPlusTree } from '../types/BPlusTree'
+import type { ValueType } from '../types/ValueType'
+import type { Cursor } from '../types/eval/Cursor'
 import { delete_by_cursor_list } from './delete_by_cursor_list'
 
 export function remove_specific<T, K extends ValueType>(

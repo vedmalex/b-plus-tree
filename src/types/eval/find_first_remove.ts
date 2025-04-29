@@ -1,17 +1,18 @@
-import { Node } from '../Node'
-import { ValueType } from '../ValueType'
+import type { Node } from '../Node'
+import type { ValueType } from '../ValueType'
 import { find_last_node } from '../../methods/find_last_node'
 import { find_first_item } from '../../methods/find_first_item'
 import { find_first_item_remove } from '../../methods/find_first_item_remove'
-import { BPlusTree } from '../BPlusTree'
-import { Cursor } from './Cursor'
+import type { BPlusTree } from '../BPlusTree'
+import type { Cursor } from './Cursor'
 
 export function find_first_remove<T, K extends ValueType>(
   tree: BPlusTree<T, K>,
   key: K,
-  forward: boolean = true,
+  forward = true,
 ): Cursor<T, K> {
-  let node: Node<T, K>, index: number
+  let node: Node<T, K>
+  let index: number
   if (forward) {
     node = find_last_node(tree, key)
     if (key != null) {

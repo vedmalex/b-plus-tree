@@ -1,7 +1,7 @@
-import { BPlusTree } from '../BPlusTree'
-import { Cursor } from './Cursor'
+import type { BPlusTree } from '../BPlusTree'
+import type { Cursor } from './Cursor'
 import { get_current } from './get_current'
-import { ValueType } from '../ValueType'
+import type { ValueType } from '../ValueType'
 
 export function evaluate<T, K extends ValueType>(
   tree: BPlusTree<T, K>,

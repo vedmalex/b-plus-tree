@@ -1,6 +1,6 @@
 import { Node } from './Node'
-import { PortableBPlusTree } from './PortableBPlusTree'
-import { Cursor } from './eval/Cursor'
+import type { PortableBPlusTree } from './PortableBPlusTree'
+import type { Cursor } from './eval/Cursor'
 import { remove } from '../methods/remove'
 import { remove_specific } from '../methods/remove_specific'
 import { insert } from '../methods/insert'
@@ -19,12 +19,12 @@ import { sourceGt } from './source/sourceGt'
 import { sourceGte } from './source/sourceGte'
 import { sourceLt } from './source/sourceLt'
 import { sourceLte } from './source/sourceLte'
-import { ValueType } from './ValueType'
+import type { ValueType } from './ValueType'
 import { sourceEqNulls } from './source/sourceEqNulls'
 import { find_first_item } from '../methods/find_first_item'
 import { find_last_item } from '../methods/find_last_item'
-import { PortableNode } from './Node/PortableNode'
-import { Comparator } from './types'
+import type { PortableNode } from './Node/PortableNode'
+import type { Comparator } from './types'
 import { compare_keys_primitive } from '../methods/utils/comparator_primitive'
 /**
  * tree
@@ -64,14 +64,14 @@ export class BPlusTree<T, K extends ValueType> {
   range(
     from: K,
     to: K,
-    fromIncl: boolean = true,
-    toIncl: boolean = true,
+    fromIncl = true,
+    toIncl = true,
   ): (tree: BPlusTree<T, K>) => Generator<Cursor<T, K>, void> {
     return sourceRange<T, K>(from, to, fromIncl, toIncl)
   }
 
   each(
-    forward: boolean = true,
+    forward = true,
   ): (tree: BPlusTree<T, K>) => Generator<Cursor<T, K>, void> {
     return sourceEach<T, K>(forward)
   }

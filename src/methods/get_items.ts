@@ -1,5 +1,5 @@
-import { Node } from '../types/Node'
-import { ValueType } from '../types/ValueType'
+import type { Node } from '../types/Node'
+import type { ValueType } from '../types/ValueType'
 import { find_first_item } from './find_first_item'
 
 export function get_items<T, K extends ValueType>(

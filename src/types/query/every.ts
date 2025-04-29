@@ -1,5 +1,5 @@
-import { ValueType } from '../ValueType'
-import { Cursor } from '../eval/Cursor'
+import type { ValueType } from '../ValueType'
+import type { Cursor } from '../eval/Cursor'
 
 export function every<T, K extends ValueType>(
   func: (value: [K, T]) => boolean | Promise<boolean>,

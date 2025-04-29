@@ -1,5 +1,5 @@
-import { BPlusTree } from '../types/BPlusTree'
-import { ValueType } from '../types/ValueType'
+import type { BPlusTree } from '../types/BPlusTree'
+import type { ValueType } from '../types/ValueType'
 import { find_first_key } from './find_first_key'
 import type { Node } from '../types/Node'
 export function find_first_node<T, K extends ValueType>(

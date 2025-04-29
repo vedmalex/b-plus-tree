@@ -1,5 +1,5 @@
-import { Node } from '../types/Node'
-import { ValueType } from '../types/ValueType'
+import type { Node } from '../types/Node'
+import type { ValueType } from '../types/ValueType'
 import { find_first_key } from './find_first_key'
 
 export function count<T, K extends ValueType>(

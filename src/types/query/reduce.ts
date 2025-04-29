@@ -1,5 +1,5 @@
-import { Cursor } from '../eval/Cursor'
-import { ValueType } from '../ValueType'
+import type { Cursor } from '../eval/Cursor'
+import type { ValueType } from '../ValueType'
 
 export function reduce<T, K extends ValueType, D>(
   reducer: (res: D, cur: T) => Promise<D> | D,

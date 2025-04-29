@@ -1,5 +1,5 @@
-import { Node } from '../Node'
-import { ValueType } from '../ValueType'
+import type { Node } from '../Node'
+import type { ValueType } from '../ValueType'
 
 export function update_state<T, K extends ValueType>(node: Node<T, K>): void {
   if (node.leaf) {

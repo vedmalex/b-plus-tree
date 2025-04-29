@@ -1,8 +1,8 @@
-import { BPlusTree } from './BPlusTree'
+import type { BPlusTree } from './BPlusTree'
 import { printTree } from '../utils/print-tree'
-import { PortableNode } from './Node/PortableNode'
-import { Node } from './Node'
-import { ValueType } from './ValueType'
+import type { PortableNode } from './Node/PortableNode'
+import type { Node } from './Node'
+import type { ValueType } from './ValueType'
 
 export function print_node<T, K extends ValueType>(
   tree: BPlusTree<T, K>,
@@ -23,7 +23,7 @@ export function print_node<T, K extends ValueType>(
         node.leaf ? 'L' : 'N'
       }${node._left ?? '-'} R:${node.leaf ? 'L' : 'N'}${node._right ?? '-'} ${
         node.leaf ? JSON.stringify(node.pointers) : ''
-      } ${node.errors.length == 0 ? '' : '[error]: ' + node.errors.join(';')}`,
+      } ${node.errors.length == 0 ? '' : `[error]: ${node.errors.join(';')}`}`,
     (node: PortableNode<T, K>) =>
       node.children.map((c) => nodes.get(c).toJSON()),
   )

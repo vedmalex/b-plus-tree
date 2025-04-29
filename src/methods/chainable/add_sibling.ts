@@ -1,4 +1,4 @@
-import { Chainable } from './Chainable'
+import type { Chainable } from './Chainable'
 
 export function add_sibling(
   a: Chainable,

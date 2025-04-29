@@ -1,5 +1,5 @@
-import { BPlusTree } from '../types/BPlusTree'
-import { ValueType } from '../types/ValueType'
+import type { BPlusTree } from '../types/BPlusTree'
+import type { ValueType } from '../types/ValueType'
 import { delete_in_node } from './delete_in_node'
 import { find_first_node } from './find_first_node'
 import { find_first_item_remove } from './find_first_item_remove'
@@ -7,7 +7,7 @@ import { find_first_item_remove } from './find_first_item_remove'
 export function remove<T, K extends ValueType>(
   tree: BPlusTree<T, K>,
   key: K,
-  all: boolean = false,
+  all = false,
 ): Array<[K, T]> {
   const result: Array<[K, T]> = []
   let leaf = find_first_node(tree, key)

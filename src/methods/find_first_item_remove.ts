@@ -1,5 +1,5 @@
-import { ValueType } from '../types/ValueType'
-import { Comparator } from '../types/types'
+import type { ValueType } from '../types/ValueType'
+import type { Comparator } from '../types/types'
 
 export function find_first_item_remove<K extends ValueType>(
   a: Array<K>,

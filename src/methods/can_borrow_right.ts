@@ -1,5 +1,5 @@
-import { Node } from '../types/Node'
-import { ValueType } from '../types/ValueType'
+import type { Node } from '../types/Node'
+import type { ValueType } from '../types/ValueType'
 
 export function can_borrow_right<T, K extends ValueType>(
   node: Node<T, K>,
