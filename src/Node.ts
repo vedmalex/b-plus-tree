@@ -460,20 +460,12 @@ export function update_min_max<T, K extends ValueType>(node: Node<T, K>): void {
 }
 
 export function update_state<T, K extends ValueType>(node: Node<T, K>): void {
-  if (node.leaf) {
-    node.key_num = node.keys.length
-    node.size = node.keys.length
-    node.isFull = node.size > node.t << 1
-    node.isEmpty = node.size <= 0
-    // node.length = node.size
-  } else {
-    node.key_num = node.keys.length
-    node.size = node.children.length
-    node.isFull = node.size > node.t << 1
-    node.isEmpty = node.size <= 0
-    // const nodes = node.tree.nodes
-    // node.length = node.children.reduce((res, cur) => {
-    //   return res + nodes.get(cur).length
-    // }, 0)
-  }
+  // Use key_num for fullness check as it represents the number of keys
+  node.key_num = node.keys.length
+  node.size = node.leaf ? node.key_num : node.children.length
+
+  // Correct fullness check based on key_num and the maximum number of keys (2*t - 1)
+  node.isFull = node.key_num >= (2 * node.t - 1) // Node is full if key count reaches the max
+
+  node.isEmpty = node.key_num <= 0 // Node is empty if it has no keys
 }

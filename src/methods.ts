@@ -30,14 +30,14 @@ export function attach_one_to_right_after<T, K extends ValueType>(
 ): void {
   const pos = obj.children.indexOf(after.id)
   obj.children.splice(pos + 1, 0, right.id)
-  obj.keys.splice(pos, 0, right.min)
   right.parent = obj
 
-  // update node
+  // update node state (size, key_num)
+  // min/max update happens in split after key insertion
   update_state(obj)
 
-  // update and push all needed max and min
-  update_min_max(obj)
+  // update and push all needed max and min - Moved to split
+  // update_min_max(obj)
 }
 
 
@@ -632,7 +632,9 @@ export function find_last_item<K extends ValueType>(
       r = m
     } // Сужение границ
   }
-  return comparator(a[r], key) == 0 ? r : -1
+  // Check index `l` after the loop.
+  // If l is valid and a[l] matches the key, it's the last occurrence.
+  return l >= 0 && l < a.length && comparator(a[l], key) === 0 ? l : -1
 }
 
 /**
@@ -756,12 +758,25 @@ export function insert<T, K extends ValueType>(
   value: T,
 ): boolean {
   const leaf = find_first_node(tree, key)
-  if (find_first_item(leaf.keys, key, tree.comparator) > -1) {
-    if (tree.unique) return false
+  // console.log(`[insert] Found leaf node ${leaf.id} for key ${key}. Leaf size before insert: ${leaf.size}, t=${tree.t}, isFull threshold=${2 * tree.t - 1}`);
+  // Check for uniqueness before insertion
+  if (tree.unique) {
+      const existingIndex = find_first_item(leaf.keys, key, tree.comparator);
+      if (existingIndex !== -1 && leaf.keys[existingIndex] !== undefined && tree.comparator(leaf.keys[existingIndex], key) === 0) {
+          // console.log(`[insert] Unique constraint violation for key ${key}. Insert failed.`);
+          return false;
+      }
   }
+
   leaf.insert([key, value])
+  // console.log(`[insert] Inserted [${key}, ${JSON.stringify(value)}] into leaf ${leaf.id}. Leaf size after insert: ${leaf.size}`);
+
+  // Check if the leaf node is full after insertion
   if (leaf.isFull) {
+    // console.log(`[insert] Leaf node ${leaf.id} is full (size=${leaf.size}). Calling split...`);
     split(tree, leaf) // Разбиваем узел
+  // } else {
+     // console.log(`[insert] Leaf node ${leaf.id} is not full (size=${leaf.size}). No split needed.`);
   }
   return true
 }
@@ -939,24 +954,89 @@ export function split<T, K extends ValueType>(
   tree: BPlusTree<T, K>,
   node: Node<T, K>,
 ): void {
-  //Создаем новый узел
+  // console.log(`[split] Splitting node ${node.id} (leaf=${node.leaf}, size=${node.size}, key_num=${node.key_num})`); // Log start of split
+
+  // Create the new sibling node
   const new_node = node.leaf ? Node.createLeaf(tree) : Node.createNode(tree)
-  // Перенаправляем right и left указатели
+  // console.log(`[split] Created new node ${new_node.id}`);
+
+  // Link siblings
   add_sibling(node, new_node, 'right')
+  // console.log(`[split] Linked siblings: node ${node.id} <-> node ${new_node.id}`);
 
-  const bl = can_borrow_left(new_node)
-  merge_with_left(new_node, node, bl)
+  // Calculate split point (middle key)
+  const splitIndex = Math.floor(node.key_num / 2); // Index of the key to move up (for internal nodes)
+  const middleKey = node.keys[splitIndex]; // Key that might move up
 
+  // Move the second half of keys and pointers/children to the new node
+  if (node.leaf) {
+    // For leaf nodes, move keys and pointers from splitIndex onwards
+    // The key at splitIndex *stays* in the left node briefly, then moves up indirectly
+    // Or rather, for leaves, we split keys and pointers
+    const splitKeyIndex = Math.ceil(node.key_num / 2); // Start moving from here
+    new_node.keys = node.keys.splice(splitKeyIndex);
+    new_node.pointers = node.pointers.splice(splitKeyIndex);
+  } else {
+    // For internal nodes, move keys *after* splitIndex and children from splitIndex+1
+    new_node.keys = node.keys.splice(splitIndex + 1);
+    new_node.children = node.children.splice(splitIndex + 1);
+    // Re-assign parent for moved children
+    new_node.children.forEach(childId => {
+        const childNode = tree.nodes.get(childId);
+        if (childNode) childNode.parent = new_node;
+    });
+  }
+
+  // Key at splitIndex is removed from original node only for internal nodes,
+  // as it moves up to the parent.
+  if (!node.leaf) {
+      node.keys.splice(splitIndex); // Remove the key that moved up and keys after it
+  }
+
+  // console.log(`[split] Moved items. Node ${node.id} keys: ${JSON.stringify(node.keys)}, Node ${new_node.id} keys: ${JSON.stringify(new_node.keys)}`);
+
+  // Update state for both nodes
+  update_state(node);
+  update_state(new_node);
+  // console.log(`[split] Updated states. Node ${node.id} size=${node.size}, Node ${new_node.id} size=${new_node.size}`);
+
+  // Update min/max for both nodes (crucial!)
+  update_min_max(node);
+  update_min_max(new_node);
+  // console.log(`[split] Updated min/max. Node ${node.id} min=${node.min},max=${node.max}. Node ${new_node.id} min=${new_node.min},max=${new_node.max}`);
+
+
+  // Insert the middle key into the parent or create a new root
   if (node.id == tree.root) {
-    tree.root = Node.createRootFrom(tree, node, new_node).id
+    // console.log(`[split] Node ${node.id} is root. Creating new root.`);
+    const newRoot = Node.createRootFrom(tree, node, new_node)
+    tree.root = newRoot.id;
+    // console.log(`[split] New root is ${newRoot.id}`);
   } else {
     const parent = node.parent
-    attach_one_to_right_after(parent, new_node, node)
+    // For leaves, the key to insert is the first key of the new right node
+    // For internal nodes, it's the middleKey that was removed from the original node
+    const keyToInsert = node.leaf ? new_node.keys[0] : middleKey;
+    // console.log(`[split] Inserting key ${keyToInsert} into parent ${parent.id}`);
+    attach_one_to_right_after(parent, new_node, node); // This function needs the key to insert
+    // Let's modify attach_one_to_right_after or insert into parent here
+
+    // Modification: Insert key into parent directly here instead of relying on attach_one...
+    const parentInsertPos = find_last_key(parent.keys, node.max, tree.comparator); // Find position relative to original node's max
+    parent.keys.splice(parentInsertPos, 0, keyToInsert);
+    // We already added the child pointer via add_sibling and attach_one...
+    // Need to ensure attach_one_to_right_after ONLY adds the child pointer and links siblings
+    update_state(parent); // Update parent state
+    update_min_max(parent); // Update parent min/max
+
+    // console.log(`[split] Updated parent ${parent.id}. Parent keys: ${JSON.stringify(parent.keys)}`);
+
+    // Check if parent is now full and needs splitting
     if (parent.isFull) {
+      // console.log(`[split] Parent node ${parent.id} is now full. Splitting parent.`);
       split(tree, parent)
     }
   }
-  new_node.commit()
 }
 
 export function try_to_pull_up_tree<T, K extends ValueType>(

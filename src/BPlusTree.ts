@@ -1,31 +1,9 @@
-import { Node } from './Node'
-import type { PortableBPlusTree } from './PortableBPlusTree'
-import type { Cursor } from './eval/Cursor'
-import { remove } from './methods/remove'
-import { remove_specific } from './methods/remove_specific'
-import { insert } from './methods/insert'
-import { count } from './methods/count'
-import { size } from './methods/size'
-import { find_last_node } from './methods/find_last_node'
-import { find_first_key } from './methods/find_first_key'
-import { find_first_node } from './methods/find_first_node'
-import { find } from './eval/find'
-import { list } from './eval/list'
-import { sourceIn } from './source/sourceIn'
-import { sourceEq } from './source/sourceEq'
-import { sourceRange } from './source/sourceRange'
-import { sourceEach } from './source/sourceEach'
-import { sourceGt } from './source/sourceGt'
-import { sourceGte } from './source/sourceGte'
-import { sourceLt } from './source/sourceLt'
-import { sourceLte } from './source/sourceLte'
-import type { ValueType } from './ValueType'
-import { sourceEqNulls } from './source/sourceEqNulls'
-import { find_first_item } from './methods/find_first_item'
-import { find_last_item } from './methods/find_last_item'
-import type { PortableNode } from './Node/PortableNode'
-import type { Comparator } from './types'
-import { compare_keys_primitive } from '../methods/utils/comparator_primitive'
+import { Cursor, find, list } from './eval'
+import { compare_keys_primitive, find_first_node, find_first_item, find_last_node, find_last_item, find_first_key, size, insert, remove_specific, remove, count } from './methods'
+import { Node, PortableBPlusTree, PortableNode, ValueType } from './Node'
+import { sourceIn, sourceEq, sourceEqNulls, sourceRange, sourceEach, sourceGt, sourceGte, sourceLt, sourceLte } from './source'
+import { Comparator } from './types'
+import { evaluate } from './eval'
 /**
  * tree
  * T - value to be stored
@@ -176,15 +154,47 @@ export class BPlusTree<T, K extends ValueType> {
 
   findLast(key: K): T {
     const node = find_last_node(this, key)
+    if (!node) {
+        return undefined;
+    }
     const index = find_last_item(node.keys, key, this.comparator)
-    return node.pointers[index]
+    if (index === -1 || index >= node.pointers.length) {
+        return undefined;
+    }
+    const value = node.pointers[index]
+    return value;
   }
 
   cursor(key: K): Cursor<T, K> {
-    const node = find_last_node(this, key)
+    // Use find_first_node to find the leaf node containing the first key >= input key
+    const node = find_first_node(this, key)
+    // find_first_key finds the index of the first key >= input key within that node
     const index = find_first_key(node.keys, key, this.comparator)
-    const value = node.pointers[index]
-    return { node: node.id, pos: index, key, value, done: value === undefined }
+
+    // Adjust index and node if the index is out of bounds for the found node
+    // This means the key is greater than all keys in this leaf, so we need the next leaf.
+    // However, evaluate handles this boundary crossing.
+
+    // Use evaluate to get the correct cursor, handling node boundaries
+    const cursorResult = evaluate(this, node.id, index);
+
+    // Ensure the returned cursor isn't marked done incorrectly if evaluate returns a valid position
+    // but the value happens to be undefined (shouldn't happen with B+ tree pointers usually)
+    if (cursorResult.node !== undefined && cursorResult.pos !== undefined) {
+        return {
+            ...cursorResult,
+            done: false // Assume if evaluate returns a node/pos, it's not 'done'
+        };
+    }
+
+    // If evaluate couldn't find a valid position (e.g., past end of tree)
+    return {
+        node: undefined,
+        pos: undefined,
+        key: undefined,
+        value: undefined,
+        done: true,
+    };
   }
 
   reset(): void {

@@ -3,9 +3,7 @@ import type { BPlusTree } from './BPlusTree'
 import type { ValueType } from './Node'
 import { replace_max, update_state } from './Node'
 import { replace_min } from './Node'
-import { reflow } from './methods/reflow'
-import { try_to_pull_up_tree } from './methods/try_to_pull_up_tree'
-import { direct_update_value } from './methods/direct_update_value'
+import { direct_update_value, reflow, try_to_pull_up_tree } from './methods'
 
 export function remove<T, K extends ValueType>(tree: BPlusTree<T, K>) {
   return async function* (
