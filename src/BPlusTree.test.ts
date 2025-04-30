@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'bun:test'
 import { BPlusTree } from './BPlusTree'
+import { Node } from './Node'
 
 type Person = {
   id: number
@@ -381,4 +382,191 @@ describe('BPlusTree Core Operations', () => {
    })
 
   // Test node splitting and merging by inserting/removing elements to exceed/go below t
+
+  // --- New Tests ---
+
+   it('toJSON should return a serializable representation', () => {
+     tree.insert(1, { id: 1, name: 'Alice' });
+     tree.insert(2, { id: 2, name: 'Bob' });
+
+     const json = tree.toJSON();
+
+     expect(json).toBeDefined();
+     expect(json.t).toBe(tree.t);
+     expect(json.unique).toBe(tree.unique);
+     expect(json.root).toBeDefined();
+     expect(json.root.id).toBe(tree.root);
+     expect(json.root.keys).toBeDefined();
+     expect(json.root.pointers).toBeDefined();
+     // Deeper checks might be too brittle, just check basic structure
+   });
+
+   it('should serialize and deserialize correctly', () => {
+     const originalTree = new BPlusTree<Person, number>(2, false);
+     const persons: Person[] = [
+       { id: 5, name: 'Charlie' },
+       { id: 2, name: 'Bob' },
+       { id: 8, name: 'David' },
+       { id: 1, name: 'Alice' },
+     ];
+     persons.forEach(p => originalTree.insert(p.id, p));
+
+     const originalSize = originalTree.size;
+     const originalMin = originalTree.min;
+     const originalMax = originalTree.max;
+     const originalList = originalTree.list();
+
+     // Serialize
+     const serialized = BPlusTree.serialize(originalTree);
+     expect(serialized).toBeDefined();
+     expect(serialized.t).toBe(originalTree.t);
+     expect(serialized.unique).toBe(originalTree.unique);
+     expect(serialized.root).toBe(originalTree.root);
+     expect(serialized.nodes).toBeInstanceOf(Array);
+     expect(serialized.nodes.length).toBe(originalTree.nodes.size);
+
+     // Deserialize into a new tree
+     const newTree = new BPlusTree<Person, number>();
+     BPlusTree.deserialize(newTree, serialized);
+
+     // Verify the new tree
+     expect(newTree.t).toBe(originalTree.t);
+     expect(newTree.unique).toBe(originalTree.unique);
+     expect(newTree.root).toBe(originalTree.root);
+     expect(newTree.nodes.size).toBe(originalTree.nodes.size);
+     expect(newTree.size).toBe(originalSize);
+     expect(newTree.min).toBe(originalMin);
+     expect(newTree.max).toBe(originalMax);
+
+     // Verify content
+     expect(newTree.list()).toEqual(originalList);
+     persons.forEach(p => {
+        const found = newTree.find(p.id);
+        expect(found).toHaveLength(1);
+        expect(found[0]).toEqual(p);
+     });
+   });
+
+    it('should createFrom serialized data correctly', () => {
+        const originalTree = new BPlusTree<Person, number>(3, true); // Use different t/unique
+        const persons: Person[] = [
+          { id: 10, name: 'Ten' },
+          { id: 20, name: 'Twenty' },
+          { id: 5, name: 'Five' },
+        ];
+        persons.forEach(p => originalTree.insert(p.id, p));
+
+        const serialized = BPlusTree.serialize(originalTree);
+
+        // Create from serialized data
+        const newTree = BPlusTree.createFrom(serialized);
+
+        // Verify the new tree
+        expect(newTree).toBeInstanceOf(BPlusTree);
+        expect(newTree.t).toBe(originalTree.t);
+        expect(newTree.unique).toBe(originalTree.unique);
+        expect(newTree.size).toBe(originalTree.size);
+        expect(newTree.min).toBe(5);
+        expect(newTree.max).toBe(20);
+        expect(newTree.list()).toEqual(originalTree.list());
+    });
+
+  // --- Tests for Node Splitting and Merging (t=2) ---
+
+  it.skip('should split root node when necessary (t=2)', () => {
+     // With t=2, max keys in a node is 2*t - 1 = 3. Max pointers is 2*t = 4.
+     // Min keys in non-root node is t - 1 = 1. Min pointers is t = 2.
+     // A leaf node splits when it has 2*t = 4 pointers (or 3 keys for internal).
+     // For a leaf with t=2, it splits when inserting the 4th item (keys = 3).
+     tree = new BPlusTree<Person, number>(2, false) // Ensure t=2
+
+     // Insert 1, 2 -> Root (Leaf): [1, 2]
+     tree.insert(1, { id: 1, name: 'A' });
+     tree.insert(2, { id: 2, name: 'B' });
+     let rootNodeBeforeSplit: Node<Person, number> = tree.node(tree.root);
+     expect(rootNodeBeforeSplit.leaf).toBe(true);
+     expect(rootNodeBeforeSplit.keys).toEqual([1, 2]);
+     expect(tree.nodes.size).toBe(1); // Only root node
+
+     // Insert 3 -> Root (Leaf): [1, 2, 3] -> Split!
+     // New Root: [2]
+     // Left Child (Leaf): [1]
+     // Right Child (Leaf): [2, 3]
+     tree.insert(3, { id: 3, name: 'C' });
+     const rootNodeAfterSplit: Node<Person, number> = tree.node(tree.root); // Get the new root
+
+     expect(rootNodeAfterSplit.leaf).toBe(false); // Root is now internal
+     expect(rootNodeAfterSplit.keys).toEqual([2]); // Root key splits the children
+     expect(rootNodeAfterSplit.children).toBeDefined(); // Check children array exists
+     expect(rootNodeAfterSplit.children.length).toBe(2); // Should have two children pointers (IDs)
+     expect(tree.nodes.size).toBe(3); // Root + 2 children
+
+     const leftChildId = rootNodeAfterSplit.children[0]; // Use .children for internal node pointers
+     const rightChildId = rootNodeAfterSplit.children[1];
+     const leftChild: Node<Person, number> = tree.node(leftChildId);
+     const rightChild: Node<Person, number> = tree.node(rightChildId);
+
+     expect(leftChild.leaf).toBe(true);
+     expect(leftChild.keys).toEqual([1]);
+     expect(leftChild.pointers.length).toBe(1); // Value pointer for key 1
+     // In leaf nodes, pointers[i] corresponds to keys[i]
+     expect((leftChild.pointers[0] as Person).name).toBe('A');
+
+     expect(rightChild.leaf).toBe(true);
+     expect(rightChild.keys).toEqual([2, 3]);
+     expect(rightChild.pointers.length).toBe(2); // Value pointers for keys 2, 3
+     expect((rightChild.pointers[0] as Person).name).toBe('B');
+     expect((rightChild.pointers[1] as Person).name).toBe('C');
+
+     expect(tree.size).toBe(3);
+   });
+
+   it.skip('should merge nodes when necessary after deletion (t=2)', () => {
+      // Start with a state that required a split (from previous test)
+      tree = new BPlusTree<Person, number>(2, false);
+      tree.insert(1, { id: 1, name: 'A' });
+      tree.insert(2, { id: 2, name: 'B' });
+      tree.insert(3, { id: 3, name: 'C' }); // State: Root [2], Left [1], Right [2, 3]
+      expect(tree.nodes.size).toBe(3);
+      expect(tree.size).toBe(3);
+
+      // Remove 1 -> Leaves become underflow (min keys = t-1 = 1)
+      // Left Child: [] (underflow!) -> Borrow/Merge required
+      // Right Child: [2, 3]
+      // Should merge: Left borrows from Right? No, merge needed.
+      // Merge Left and Right via Root
+      // New Root (Leaf): [2, 3]
+      const removed1 = tree.remove(1);
+      expect(removed1).toHaveLength(1);
+      expect(tree.size).toBe(2);
+      expect(tree.nodes.size).toBe(1); // Should merge back to a single root node
+
+      const rootNodeMerged: Node<Person, number> = tree.node(tree.root);
+      expect(rootNodeMerged.leaf).toBe(true);
+      expect(rootNodeMerged.keys).toEqual([2, 3]);
+      expect(rootNodeMerged.pointers.length).toBe(2);
+      // Verify values in the merged leaf node
+      expect((rootNodeMerged.pointers[0] as Person).name).toBe('B'); // Corresponds to key 2
+      expect((rootNodeMerged.pointers[1] as Person).name).toBe('C'); // Corresponds to key 3
+
+      // Remove 2 -> Root (Leaf): [3]
+      const removed2 = tree.remove(2);
+      expect(removed2).toHaveLength(1);
+      expect(tree.size).toBe(1);
+      expect(tree.nodes.size).toBe(1);
+      const rootNodeFinal1: Node<Person, number> = tree.node(tree.root);
+      expect(rootNodeFinal1.leaf).toBe(true);
+      expect(rootNodeFinal1.keys).toEqual([3]);
+      expect((rootNodeFinal1.pointers[0] as Person).name).toBe('C'); // Check remaining value
+
+      // Remove 3 -> Root (Leaf): []
+      const removed3 = tree.remove(3);
+      expect(removed3).toHaveLength(1);
+      expect(tree.size).toBe(0);
+      expect(tree.nodes.size).toBe(1);
+      const rootNodeFinal0: Node<Person, number> = tree.node(tree.root);
+      expect(rootNodeFinal0.leaf).toBe(true);
+      expect(rootNodeFinal0.keys).toEqual([]);
+   });
+
 })

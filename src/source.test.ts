@@ -9,6 +9,7 @@ import {
   sourceLt,
   sourceLte,
   sourceRange,
+  sourceEqNulls,
   // sourceEqNulls - assuming it behaves like sourceEq for non-null keys for now
 } from './source'
 import type { Cursor } from './eval' // Assuming Cursor type is exported from eval
@@ -96,6 +97,23 @@ describe('BPlusTree Source Functions', () => {
   })
 
   // Add test for sourceEqNulls if null handling is distinct
+  // Assuming for now it behaves like sourceEq for non-null keys.
+  // A specific test with actual null/undefined insertion might be needed
+  // if BPlusTree handles them specially beyond mapping to defaultEmpty.
+  it('sourceEqNulls should yield items matching the key (like sourceEq)', () => {
+    const generator = sourceEqNulls<Data, number>(6)(tree)
+    const results = collect(generator)
+    expect(results).toHaveLength(2) // Should find both 'F' and 'F2'
+    expect(results.map((r) => r.key)).toEqual([6, 6])
+    expect(results.map((r) => (r.value as Data).value)).toContain('F')
+    expect(results.map((r) => (r.value as Data).value)).toContain('F2')
+  })
+
+  it('sourceEqNulls should yield nothing for non-existent key', () => {
+    const generator = sourceEqNulls<Data, number>(99)(tree)
+    const results = collect(generator)
+    expect(results).toHaveLength(0)
+  })
 
   it('sourceGt should yield items with keys strictly greater', () => {
     const generator = sourceGt<Data, number>(5)(tree) // Should be > 5 -> 6, 6, 8
