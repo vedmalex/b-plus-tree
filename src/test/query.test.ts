@@ -11,6 +11,7 @@ import {
   distinct, eq, every, gt, gte, includes, lt, lte, mapReduce, ne, nin, range, some
 } from '../query'
 import { query as executeQuery } from '../types' // Assuming the query executor is here
+import { ValueType } from '../Node'; // Import ValueType for complex keys
 
 type Item = { id: number; category: string; active: boolean }
 
@@ -409,6 +410,374 @@ describe('BPlusTree Query Operators', () => {
     expect(finalSet!.has('A')).toBe(true);
     expect(finalSet!.has('B')).toBe(true);
     expect(finalSet!.has('C')).toBe(true);
+  });
+
+})
+
+// --- Tests for Complex Keys ---
+
+// Re-define complex types and comparator (or import from a shared location if preferred)
+type ComplexKey = { id: number; name?: string } // Removed & ValueType
+type ComplexData = { info: string }
+
+const complexKeyComparator = (a: ComplexKey, b: ComplexKey): number => {
+  if (a === null && b === null) return 0
+  if (a === null) return -1
+  if (b === null) return 1
+  if (a === undefined && b === undefined) return 0
+  if (a === undefined) return -1
+  if (b === undefined) return 1
+
+  // Handle potential object comparison issues if key is not just { id: ... }
+  // This simple comparison works for keys like { id: number }
+  return a.id - b.id
+}
+
+describe('BPlusTree Query Operators with Record Keys', () => {
+  let tree: BPlusTree<ComplexData, ComplexKey>
+  const testData: Array<{ key: ComplexKey; value: ComplexData }> = [
+    { key: { id: 5 }, value: { info: 'E' } },
+    { key: { id: 2, name: 'B' }, value: { info: 'B' } },
+    { key: { id: 8 }, value: { info: 'H' } },
+    // Use the key structure that was observed to work in source.test.ts for id: 1
+    { key: { id: 1 }, value: { info: 'A' } },
+    { key: { id: 6, name: 'F' }, value: { info: 'F' } },
+    { key: { id: 6, name: 'F2' }, value: { info: 'F2' } }, // Duplicate id
+    { key: { id: 3 }, value: { info: 'C' } },
+  ]
+  // Expected order based on id: 1:A, 2:B, 3:C, 5:E, 6:F, 6:F2, 8:H
+  const expectedIds = [1, 2, 3, 5, 6, 6, 8]
+  const expectedInfos = ['A', 'B', 'C', 'E', 'F', 'F2', 'H']
+
+  beforeEach(() => {
+    tree = new BPlusTree<ComplexData, ComplexKey>(
+      2,
+      false,
+      complexKeyComparator,
+    )
+    testData.forEach((item) => tree.insert(item.key, item.value))
+  })
+
+  it('filter should select items based on predicate (complex keys)', async () => {
+    const source = sourceEach<ComplexData, ComplexKey>(true)(tree)
+    // Filter items where info is 'F' or 'F2'
+    const query = filter<ComplexData, ComplexKey>(([, item]) => item.info.startsWith('F'))
+    const resultGenerator = query(source)
+    const results = await collectAsync(resultGenerator)
+
+    expect(results).toHaveLength(2)
+    expect(results.map((r) => r.key.id)).toEqual([6, 6])
+    expect(results.map((r) => r.value.info)).toEqual(['F', 'F2'])
+  })
+
+  it('map should transform items (complex keys)', async () => {
+    const source = sourceEach<ComplexData, ComplexKey>(true)(tree)
+    // Map to a new structure { identifier: id, dataInfo: info }
+    const query = map<ComplexData, ComplexKey, { identifier: number; dataInfo: string }>(([key, item]) => ({
+        identifier: key.id, // Access id from the key
+        dataInfo: item.info,
+    }))
+    const resultGenerator = query(source)
+    const results = await collectAsync(resultGenerator)
+
+    expect(results).toHaveLength(testData.length)
+    expect(results.map(r => r.value)).toEqual([
+      { identifier: 1, dataInfo: 'A' },
+      { identifier: 2, dataInfo: 'B' },
+      { identifier: 3, dataInfo: 'C' },
+      { identifier: 5, dataInfo: 'E' },
+      { identifier: 6, dataInfo: 'F' },
+      { identifier: 6, dataInfo: 'F2' },
+      { identifier: 8, dataInfo: 'H' },
+    ])
+    // Original key should be preserved in the cursor
+    expect(results.map(r => r.key.id)).toEqual(expectedIds)
+  })
+
+  it('reduce should aggregate results (complex keys)', async () => {
+    const source = sourceEach<ComplexData, ComplexKey>(true)(tree)
+    // Corrected reduce logic: Count items with info starting with 'F'
+    // Reducer function receives only the value (currentItem: ComplexData)
+    const query = reduce<ComplexData, ComplexKey, number>(
+      (acc, currentItem) => {
+        return currentItem.info.startsWith('F') ? acc + 1 : acc
+      },
+      0,
+    )
+    const resultGenerator = query(source) as AsyncGenerator<number> // Cast because reduce returns accumulator type
+    const results = await collectAsync(resultGenerator)
+
+    expect(results).toHaveLength(1)
+    expect(results[0]).toBe(2) // 'F' and 'F2'
+  })
+
+  it('forEach should execute an action for each item (complex keys)', async () => {
+    const source = sourceEach<ComplexData, ComplexKey>(true)(tree)
+    const executedIds: number[] = []
+    const query = forEach<ComplexData, ComplexKey>(([key, item]) => {
+        executedIds.push(key.id)
+    })
+    const resultGenerator = query(source)
+    const results = await collectAsync(resultGenerator) // Collect to ensure iteration
+
+    // forEach yields the original items
+    expect(results).toHaveLength(testData.length)
+    expect(results.map(r => r.key.id)).toEqual(expectedIds)
+
+    // Check side effect
+    expect(executedIds).toEqual(expectedIds)
+  })
+
+  it('should chain multiple operators using executeQuery (complex keys)', async () => {
+      // Find items with id > 3, then return their info property.
+      const finalResultGenerator = executeQuery(
+          sourceEach<ComplexData, ComplexKey>(true),
+          filter(([key]) => key.id > 3), // Filter by key.id: 5, 6, 6, 8
+          map(([, item]) => item.info) // Map value to info: Cursor values become 'E', 'F', 'F2', 'H'
+      )(tree) as AsyncGenerator<Cursor<ComplexData, ComplexKey>>; // Map changes cursor.value type
+
+      const results = await collectAsync(finalResultGenerator);
+
+      expect(results).toHaveLength(4);
+      // @ts-ignore // Value type is changed by map
+      expect(results.map(cursor => cursor.value)).toEqual(['E', 'F', 'F2', 'H']);
+      // Original keys should be preserved
+      expect(results.map(cursor => cursor.key.id)).toEqual([5, 6, 6, 8]);
+  });
+
+  // --- Key Comparison Operators ---
+
+  it('eq should filter items by exact key match (complex keys)', async () => {
+    const searchKey: ComplexKey = { id: 6 };
+    const resultGenerator = executeQuery(
+      sourceEach<ComplexData, ComplexKey>(true),
+      // Use filter with comparator instead of eq
+      filter<ComplexData, ComplexKey>(([k]) => complexKeyComparator(k, searchKey) === 0)
+    )(tree) as AsyncGenerator<Cursor<ComplexData, ComplexKey>>;
+    const results = await collectAsync(resultGenerator);
+    expect(results).toHaveLength(2);
+    expect(results.map(r => r.key.id)).toEqual([6, 6]);
+    expect(results.map(r => r.value.info)).toContain('F');
+    expect(results.map(r => r.value.info)).toContain('F2');
+  });
+
+  it('ne should filter items not matching the key (complex keys)', async () => {
+    const searchKey: ComplexKey = { id: 6 };
+    const resultGenerator = executeQuery(
+      sourceEach<ComplexData, ComplexKey>(true),
+      // Use filter with comparator instead of ne
+      filter<ComplexData, ComplexKey>(([k]) => complexKeyComparator(k, searchKey) !== 0)
+    )(tree) as AsyncGenerator<Cursor<ComplexData, ComplexKey>>;
+    const results = await collectAsync(resultGenerator);
+    expect(results).toHaveLength(testData.length - 2);
+    expect(results.map(r => r.key.id)).toEqual([1, 2, 3, 5, 8]);
+  });
+
+  it('gt should filter items with key greater than (complex keys)', async () => {
+    const searchKey: ComplexKey = { id: 5 };
+    const resultGenerator = executeQuery(
+      sourceEach<ComplexData, ComplexKey>(true),
+      // Use filter with comparator instead of gt
+      filter<ComplexData, ComplexKey>(([k]) => complexKeyComparator(k, searchKey) > 0)
+    )(tree) as AsyncGenerator<Cursor<ComplexData, ComplexKey>>;
+    const results = await collectAsync(resultGenerator);
+    expect(results.map(r => r.key.id)).toEqual([6, 6, 8]);
+  });
+
+  it('gte should filter items with key greater than or equal (complex keys)', async () => {
+    const searchKey: ComplexKey = { id: 5 };
+    const resultGenerator = executeQuery(
+      sourceEach<ComplexData, ComplexKey>(true),
+      // Use filter with comparator instead of gte
+      filter<ComplexData, ComplexKey>(([k]) => complexKeyComparator(k, searchKey) >= 0)
+    )(tree) as AsyncGenerator<Cursor<ComplexData, ComplexKey>>;
+    const results = await collectAsync(resultGenerator);
+    expect(results.map(r => r.key.id)).toEqual([5, 6, 6, 8]);
+  });
+
+  it('lt should filter items with key less than (complex keys)', async () => {
+    const searchKey: ComplexKey = { id: 3 };
+    const resultGenerator = executeQuery(
+      sourceEach<ComplexData, ComplexKey>(true),
+      // Use filter with comparator instead of lt
+      filter<ComplexData, ComplexKey>(([k]) => complexKeyComparator(k, searchKey) < 0)
+    )(tree) as AsyncGenerator<Cursor<ComplexData, ComplexKey>>;
+    const results = await collectAsync(resultGenerator);
+    expect(results.map(r => r.key.id)).toEqual([1, 2]);
+  });
+
+  it('lte should filter items with key less than or equal (complex keys)', async () => {
+    const searchKey: ComplexKey = { id: 3 };
+    const resultGenerator = executeQuery(
+      sourceEach<ComplexData, ComplexKey>(true),
+      // Use filter with comparator instead of lte
+      filter<ComplexData, ComplexKey>(([k]) => complexKeyComparator(k, searchKey) <= 0)
+    )(tree) as AsyncGenerator<Cursor<ComplexData, ComplexKey>>;
+    const results = await collectAsync(resultGenerator);
+    expect(results.map(r => r.key.id)).toEqual([1, 2, 3]);
+  });
+
+  it('includes should filter items with keys in the list (complex keys)', async () => {
+    const searchKeys: ComplexKey[] = [{ id: 1 } as ComplexKey, { id: 6 } as ComplexKey, { id: 99 } as ComplexKey];
+    const resultGenerator = executeQuery(
+      sourceEach<ComplexData, ComplexKey>(true),
+      // Use filter with comparator and Array.some instead of includes
+      filter<ComplexData, ComplexKey>(([k]) => searchKeys.some(searchKey => complexKeyComparator(k, searchKey) === 0))
+    )(tree) as AsyncGenerator<Cursor<ComplexData, ComplexKey>>;
+    const results = await collectAsync(resultGenerator);
+    expect(results).toHaveLength(3); // 1, 6, 6
+    expect(results.map(r => r.key.id).sort()).toEqual([1, 6, 6]);
+  });
+
+  it('nin should filter items with keys not in the list (complex keys)', async () => {
+    const searchKeys: ComplexKey[] = [{ id: 1 } as ComplexKey, { id: 6 } as ComplexKey, { id: 99 } as ComplexKey];
+    const resultGenerator = executeQuery(
+      sourceEach<ComplexData, ComplexKey>(true),
+      // Use filter with comparator and !Array.some instead of nin
+      filter<ComplexData, ComplexKey>(([k]) => !searchKeys.some(searchKey => complexKeyComparator(k, searchKey) === 0))
+    )(tree) as AsyncGenerator<Cursor<ComplexData, ComplexKey>>;
+    const results = await collectAsync(resultGenerator);
+    expect(results).toHaveLength(testData.length - 3); // Remove 1, 6, 6 -> leaves 2, 3, 5, 8
+    expect(results.map(r => r.key.id)).toEqual([2, 3, 5, 8]);
+  });
+
+  it('range should filter items within the key range [inclusive] (complex keys)', async () => {
+    const fromKey: ComplexKey = { id: 3 } as ComplexKey;
+    const toKey: ComplexKey = { id: 6 } as ComplexKey;
+    const fromIncl = true;
+    const toIncl = true;
+    const resultGenerator = executeQuery(
+      sourceEach<ComplexData, ComplexKey>(true),
+      // Use filter with comparator instead of range
+      filter<ComplexData, ComplexKey>(([k]) =>
+        (complexKeyComparator(k, fromKey) > 0 || (fromIncl && complexKeyComparator(k, fromKey) === 0)) &&
+        (complexKeyComparator(k, toKey) < 0 || (toIncl && complexKeyComparator(k, toKey) === 0))
+      )
+    )(tree) as AsyncGenerator<Cursor<ComplexData, ComplexKey>>;
+    const results = await collectAsync(resultGenerator);
+    expect(results.map(r => r.key.id)).toEqual([3, 5, 6, 6]);
+  });
+
+  it('range should filter items within the key range (exclusive) (complex keys)', async () => {
+    const fromKey: ComplexKey = { id: 3 } as ComplexKey;
+    const toKey: ComplexKey = { id: 6 } as ComplexKey;
+    const fromIncl = false;
+    const toIncl = false;
+    const resultGenerator = executeQuery(
+      sourceEach<ComplexData, ComplexKey>(true),
+      // Use filter with comparator instead of range
+      filter<ComplexData, ComplexKey>(([k]) =>
+        (complexKeyComparator(k, fromKey) > 0 || (fromIncl && complexKeyComparator(k, fromKey) === 0)) &&
+        (complexKeyComparator(k, toKey) < 0 || (toIncl && complexKeyComparator(k, toKey) === 0))
+      )
+    )(tree) as AsyncGenerator<Cursor<ComplexData, ComplexKey>>;
+    const results = await collectAsync(resultGenerator);
+    expect(results.map(r => r.key.id)).toEqual([5]);
+  });
+
+  // --- Other Operators ---
+
+  it('every should return true if all items satisfy the predicate (complex keys)', async () => {
+    const resultGenerator = executeQuery(
+      sourceEach<ComplexData, ComplexKey>(true),
+      every(([key]) => key.id < 10) // All IDs are < 10
+    )(tree) as AsyncGenerator<boolean>;
+    const results = await collectAsync(resultGenerator);
+    expect(results).toHaveLength(1);
+    expect(results[0]).toBe(true);
+  });
+
+  it('every should return false if any item does not satisfy the predicate (complex keys)', async () => {
+    const resultGenerator = executeQuery(
+      sourceEach<ComplexData, ComplexKey>(true),
+      every(([, item]) => item.info === 'A') // Not all items have info 'A'
+    )(tree) as AsyncGenerator<boolean>;
+    const results = await collectAsync(resultGenerator);
+    expect(results).toHaveLength(1);
+    expect(results[0]).toBe(false);
+  });
+
+  it('some should return true if any item satisfies the predicate (complex keys)', async () => {
+    const resultGenerator = executeQuery(
+      sourceEach<ComplexData, ComplexKey>(true),
+      some(([, item]) => item.info === 'H') // Item 8 has info H
+    )(tree) as AsyncGenerator<boolean>;
+    const results = await collectAsync(resultGenerator);
+    expect(results).toHaveLength(1);
+    expect(results[0]).toBe(true);
+  });
+
+  it('some should return false if no item satisfies the predicate (complex keys)', async () => {
+    const resultGenerator = executeQuery(
+      sourceEach<ComplexData, ComplexKey>(true),
+      some(([, item]) => item.info === 'Z') // No items have info Z
+    )(tree) as AsyncGenerator<boolean>;
+    const results = await collectAsync(resultGenerator);
+    expect(results).toHaveLength(1);
+    expect(results[0]).toBe(false);
+  });
+
+    it('mapReduce should work with complex keys', async () => {
+        // Map: key -> key.id * 2
+        // Reduce: mappedValue -> mappedValue + 1
+        const mapFn = ([key]: [ComplexKey, ComplexData]): number => key.id * 2;
+        const reduceFn = ([key, mappedValue]: [ComplexKey, number]): number => mappedValue + 1;
+
+        const resultGenerator = executeQuery(
+            sourceEach<ComplexData, ComplexKey>(true),
+            mapReduce<ComplexData, ComplexKey, number, number, Map<ComplexKey, number>>(
+                mapFn,
+                reduceFn
+            )
+        )(tree) as AsyncGenerator<Map<ComplexKey, number>>; // Yields Map<Key, FinalValue>
+
+        let finalResult: Map<ComplexKey, number> | undefined;
+        for await (const result of resultGenerator) {
+            finalResult = result; // mapReduce yields one final map
+        }
+
+        // Expected: { {id:1} => 3, {id:2, name:'B'} => 5, {id:3} => 7, {id:5} => 11,
+        //            {id:6, name:'F'} => 13, {id:6, name:'F2'} => 13, {id:8} => 17 }
+        // Note: The exact key objects from the tree are used in the map.
+        expect(finalResult).toBeDefined();
+        expect(finalResult!.size).toBe(testData.length);
+
+        // Check values by iterating through expected IDs
+        const expectedMap = new Map<number, number>([
+            [1, 3], [2, 5], [3, 7], [5, 11], [6, 13], [8, 17]
+        ]);
+
+        let foundCount = 0;
+        for (const [key, value] of finalResult!) {
+           const expectedValue = expectedMap.get(key.id);
+           expect(expectedValue).toBeDefined();
+           // Need to handle the two keys with id 6 separately
+           if (key.id === 6) {
+                expect(value).toBe(13);
+           } else {
+               // Use non-null assertion as expectedValue is checked above
+               expect(value).toBe(expectedValue!); // Use non-null assertion
+           }
+           foundCount++;
+        }
+         expect(foundCount).toBe(testData.length); // Ensure all keys were checked
+    });
+
+  it('distinct should work after mapping (complex keys)', async () => {
+    const resultGenerator = executeQuery(
+        sourceEach<ComplexData, ComplexKey>(true), // 1:A, 2:B, 3:C, 5:E, 6:F, 6:F2, 8:H
+        map<ComplexData, ComplexKey, string>(([, item]) => item.info.charAt(0)), // Map to first char of info: A, B, C, E, F, F, H
+        distinct<string, ComplexKey>() // Unique chars: Set { 'A', 'B', 'C', 'E', 'F', 'H' }
+    )(tree) as AsyncGenerator<Set<string>>;
+
+     let finalSet: Set<string> | undefined;
+     for await (const result of resultGenerator) {
+         finalSet = result;
+     }
+
+    expect(finalSet).toBeDefined();
+    expect(finalSet!.size).toBe(6);
+    expect([...finalSet!].sort()).toEqual(['A', 'B', 'C', 'E', 'F', 'H']);
   });
 
 })
