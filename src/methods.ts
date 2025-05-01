@@ -1,6 +1,6 @@
 import { BPlusTree } from './BPlusTree'
 import { Cursor } from './eval'
-import { sourceEq } from './source'
+// import { sourceEq } from './source'
 import {
   Node,
   remove_node,
@@ -11,7 +11,7 @@ import {
   ValueType,
   merge_with_left,
   merge_with_right,
-  unregister_node
+  // unregister_node
 } from './Node'
 import { Comparator } from './types'
 
@@ -524,12 +524,12 @@ export function delete_in_node<T, K extends ValueType>(
     // Удаляем только ПЕРВЫЙ найденный
     const pos = find_first_item(node.keys, key, tree.comparator); // Ищем ПЕРВЫЙ
     if (pos > -1) {
-        console.log(`[delete_in_node] Node ${node.id} BEFORE delete: keys=${JSON.stringify(node.keys)}, key_num=${node.key_num}`);
+        // console.log(`[delete_in_node] Node ${node.id} BEFORE delete: keys=${JSON.stringify(node.keys)}, key_num=${node.key_num}`);
         const removedValue = node.pointers.splice(pos, 1)[0];
         const removedKey = node.keys.splice(pos, 1)[0];
         result.push([removedKey, removedValue]);
         update_state(node); // Обновляем состояние узла
-        console.log(`[delete_in_node] Node ${node.id} AFTER delete+update_state: keys=${JSON.stringify(node.keys)}, key_num=${node.key_num}`);
+        // console.log(`[delete_in_node] Node ${node.id} AFTER delete+update_state: keys=${JSON.stringify(node.keys)}, key_num=${node.key_num}`);
         update_min_max(node); // Обновляем min/max узла
         // Call reflow AFTER state updates if changes were made
         reflow(tree, node);
@@ -538,7 +538,7 @@ export function delete_in_node<T, K extends ValueType>(
       const rightSibling = node.right;
       if (rightSibling && tree.comparator(key, rightSibling.min) >= 0) {
           // Try deleting from the right sibling instead
-          console.log(`[REMOVE SINGLE] Key ${key} not found in node ${node.id}, trying right sibling ${rightSibling.id} because key >= sibling.min`);
+          // console.log(`[REMOVE SINGLE] Key ${key} not found in node ${node.id}, trying right sibling ${rightSibling.id} because key >= sibling.min`);
           // Call delete_in_node on the sibling, still with all=false
           return delete_in_node(tree, rightSibling, key, false);
       }
@@ -1091,7 +1091,7 @@ export function remove<T, K extends ValueType>(
   const searchKey = (key === undefined ? null : key) as K;
   const finalKey = searchKey;
 
-  console.log(`[remove entry] Removing key: ${JSON.stringify(finalKey)}, all=${all}`);
+  // console.log(`[remove entry] Removing key: ${JSON.stringify(finalKey)}, all=${all}`);
 
   if (all) {
     // --- CORRECTED LOGIC for all=true ---
@@ -1118,14 +1118,14 @@ export function remove<T, K extends ValueType>(
   } else {
     // --- Логика для удаления ОДНОГО элемента ---
     const leaf = find_first_node(tree, finalKey);
-    console.log(`[remove single] Found leaf node ${leaf?.id} for key ${JSON.stringify(finalKey)}`);
+    // console.log(`[remove single] Found leaf node ${leaf?.id} for key ${JSON.stringify(finalKey)}`);
     if (!leaf) {
         return [];
     }
     // Directly call delete_in_node. It will handle finding the item
     // and checking the right sibling if necessary.
     const deletedItems = delete_in_node(tree, leaf, finalKey, false);
-    console.log(`[remove single] delete_in_node returned ${deletedItems.length} items. Target leaf ${leaf.id} state: key_num=${leaf.key_num}, keys=${JSON.stringify(leaf.keys)}`);
+    // console.log(`[remove single] delete_in_node returned ${deletedItems.length} items. Target leaf ${leaf.id} state: key_num=${leaf.key_num}, keys=${JSON.stringify(leaf.keys)}`);
     return deletedItems;
   }
 }

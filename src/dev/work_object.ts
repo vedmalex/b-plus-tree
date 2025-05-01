@@ -4,9 +4,9 @@ import { BPlusTree } from '../BPlusTree'
 import { compare_keys_object } from '../methods'
 
 const N = 15
-const MAX_RAND = 10000000
-const SAMPLES = 100
-const T = 1
+// const MAX_RAND = 10000000
+// const SAMPLES = 100
+// const T = 1
 
 const itemsToGet = JSON.parse(fs.readFileSync('../../dev/test_data.json').toString())
 

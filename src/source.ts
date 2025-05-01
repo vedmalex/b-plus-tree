@@ -180,7 +180,7 @@ export function sourceRange<T, K extends ValueType>(
   ): Generator<Cursor<T, K>, void, void> {
     let startCursor: Cursor<T, K> = find_range_start(tree, from, fromIncl, true) // Get start point
     // For the end condition, we need the first item *past* the range end.
-    let endMarkerKey = to
+    // let endMarkerKey = to
     let endMarker = find_range_start(tree, to, !toIncl, true) // Find first element >= end (if toIncl=false) or > end (if toIncl=true)
 
     // Handle edge case where tree might be empty or start is already past end

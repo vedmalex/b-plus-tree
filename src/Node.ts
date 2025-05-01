@@ -448,15 +448,16 @@ export function remove_node<T, K extends ValueType>(
   }
 
   obj.children.splice(pos, 1)
-  let removedKey = null; // Variable to store the removed key for logging
+  //
+  // let removedKey = null; // Variable to store the removed key for logging
   if (pos == 0) {
     // If removing the first child, remove the key *after* it (which is the first key)
     if (obj.keys.length > 0) { // Check if there are keys to remove
-       removedKey = obj.keys.shift();
+       /* removedKey =  */obj.keys.shift();
     }
   } else {
     // If removing non-first child, remove the key *before* it
-    removedKey = obj.keys.splice(pos - 1, 1)[0]; // Get the removed key
+    /* removedKey =  */obj.keys.splice(pos - 1, 1)[0]; // Get the removed key
   }
   item.parent = undefined
 
@@ -525,7 +526,7 @@ export function replace_min<T, K extends ValueType>(
     // For now, let's focus on propagating the change indication.
     // If the node is empty, what key should replace the parent separator?
     // This seems problematic. Let's stick to propagating the provided key (even if undefined).
-    const effectiveKey = key; // Use the key passed in (might be undefined)
+    // const effectiveKey = key; // Use the key passed in (might be undefined)
 
     if (pos > 0) { // If current node is not the first child
       // Update the separator key in the parent to the left of this child
@@ -670,10 +671,10 @@ export function merge_with_right<T, K extends ValueType>(
   right_sibling: Node<T, K>,
   separatorKey: K
 ): void {
-  const parentId = node.parent?.id; // Get parent ID before potential changes
+  // const parentId = node.parent?.id; // Get parent ID before potential changes
   if (node.leaf) {
-    const originalNodeKeys = [...node.keys];
-    const originalSiblingKeys = [...right_sibling.keys];
+    // const originalNodeKeys = [...node.keys];
+    // const originalSiblingKeys = [...right_sibling.keys];
 
     const siblingKeys = right_sibling.keys.splice(0);
     const siblingPointers = right_sibling.pointers.splice(0);
@@ -685,7 +686,7 @@ export function merge_with_right<T, K extends ValueType>(
     update_min_max(node);
   } else { // Internal node case
     const originalNodeKeys = [...node.keys];
-    const originalNodeChildren = [...node.children];
+    // const originalNodeChildren = [...node.children];
 
     const siblingKeys = right_sibling.keys.splice(0);
     const siblingChildren = right_sibling.children.splice(0);

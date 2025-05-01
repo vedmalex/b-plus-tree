@@ -235,7 +235,7 @@ export function list<T, K extends ValueType>(
   let { take = -1 } = options ?? {}
   const { skip = 0, forward = true } = options ?? {}
   const result: Array<T> = []
-  const key = forward ? tree.min : tree.max // Start key
+  // const key = forward ? tree.min : tree.max // Start key
   // Use the appropriate source function based on direction
   const source = forward ? sourceEach<T,K>(true) : sourceEach<T,K>(false);
   let count = 0;

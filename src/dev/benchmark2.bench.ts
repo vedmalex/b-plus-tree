@@ -163,7 +163,7 @@ describe('Linear search by one element', () => {
   bench('Hash#prop', function () { // Hash property access is usually very fast
     for (let i = N - SAMPLES; i < N; i++) {
       const item = itemsToGet[i]
-      const found = obj[item]
+      /* const found = */ obj[item]
     }
   })
 })
@@ -197,36 +197,48 @@ describe('Range search', () => { // Renamed suite title
   })
 
   bench('bpltree#range', () => { // Renamed for clarity
-    const startNode = find_first_node(bpt, from)
-    const endNode = find_first_node(bpt, to) // This might not be strictly needed depending on traversal logic
-
-    let cur = startNode
-    const result: number[] = []
-
-    while (cur) {
-        // Efficiently find the starting index within the current node
-        const startIndex = find_first_key(cur.keys, from, bpt.comparator)
-
-        // Iterate through keys from the starting index
-        for (let kIdx = startIndex; kIdx < cur.keys.length; kIdx++) {
-            const k = cur.keys[kIdx];
-            if (k <= to) {
-                result.push(k);
-            } else {
-                // Since keys are sorted, if k > to, no further keys in this or subsequent nodes will match
-                cur = null; // Set cur to null to break the outer loop
-                break;
-            }
+    const rangeSource = bpt.range(from, to); // Get the generator source
+    const result = [];
+    // Iterate through the generator returned by rangeSource(bpt)
+    for (const cursor of rangeSource(bpt)) {
+        // Assuming we want the keys, like in the original benchmark logic
+        // The cursor contains { node, pos, key, value, done }
+        // The sourceRange implementation handles the actual traversal and filtering
+        if (cursor.key !== undefined) { // Check if a key was yielded
+             result.push(cursor.key);
         }
-
-        if (cur && cur._right) {
-          // Move to the right sibling node only if we haven't broken the loop
-           cur = bpt.nodes.get(cur._right)
-        } else {
-             // No right sibling or loop broken
-             break;
-        }
+        // The generator itself handles the range bounds (from <= key <= to)
     }
-    // The result array holds the keys in the range
+    // The result array now holds the keys in the range
+    // We don't need to do anything further with 'result' in the benchmark itself,
+    // just measure the time taken for the iteration.
+  })
+
+  bench('bpltree#range2', () => { // Benchmark for the array-returning range method
+      bpt.range2(from, to); // Call the range2 method
+  })
+
+  bench('sbpltree#iterator-range', () => { // Benchmark for sorted-btree iterator range
+      try {
+          // const iterator = sbpt.entries(from, to); // This caused TypeError
+          const iterator = sbpt.entries(); // Get iterator for ALL entries
+          const resultKeys = [];
+          // Iterate through ALL [key, value] pairs and filter manually
+          for (const [key, _value] of iterator) {
+              // Manual filtering based on comparator
+              if (bpt.comparator(key, from) >= 0 && bpt.comparator(key, to) <= 0) { // key >= from && key <= to
+                   resultKeys.push(key); // Collect only the keys within the range
+              }
+              // Optimization: if key > to, we can stop iterating since entries are sorted
+              if (bpt.comparator(key, to) > 0) {
+                  break;
+              }
+          }
+          // The resultKeys array now holds the keys in the range
+      } catch (error) {
+          console.error('Error in sbpltree#iterator-range benchmark:', error);
+          // Re-throw the error so vitest knows the benchmark failed
+          throw error;
+      }
   })
 })

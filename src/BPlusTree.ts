@@ -1,6 +1,6 @@
 import { Cursor, find, list } from './eval'
 import { compare_keys_primitive, find_first_node, find_first_item, find_last_node, find_last_item, find_first_key, size, insert, remove_specific, remove, count } from './methods'
-import { Node, PortableBPlusTree, PortableNode, ValueType } from './Node'
+import { Node, PortableNode, ValueType } from './Node'
 import { sourceIn, sourceEq, sourceEqNulls, sourceRange, sourceEach, sourceGt, sourceGte, sourceLt, sourceLte } from './source'
 import { Comparator } from './types'
 import { evaluate } from './eval'
@@ -47,6 +47,54 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
     toIncl = true,
   ): (tree: BPlusTree<T, K>) => Generator<Cursor<T, K>, void> {
     return sourceRange<T, K>(from, to, fromIncl, toIncl)
+  }
+
+  range2(from: K, to: K): Array<K> {
+    const startNode = find_first_node(this, from)
+    if (!startNode) {
+        return []; // If no node could possibly contain 'from', the range is empty
+    }
+
+    let cur = startNode
+    const result: K[] = [] // Specify type K for the result array
+
+    while (cur) {
+        // Efficiently find the starting index within the current node
+        // We need the index of the first key >= 'from'
+        const startIndex = find_first_key(cur.keys, from, this.comparator)
+
+        // Iterate through keys from the starting index in the current node
+        for (let kIdx = startIndex; kIdx < cur.keys.length; kIdx++) {
+            const k = cur.keys[kIdx];
+            // Check if the key is within the desired range [from, to]
+            if (this.comparator(k, to) <= 0) { // k <= to
+                // Only add if k >= from (implicit from find_first_node and startIndex logic)
+                if (this.comparator(k, from) >= 0) { // k >= from
+                   result.push(k);
+                }
+            } else {
+                // Since keys are sorted, if k > to, no further keys in this node
+                // or subsequent nodes will be in the range. Stop the search.
+                cur = null; // Set cur to null to break the outer while loop
+                break; // Exit the inner for loop
+            }
+        }
+
+        // If the outer loop wasn't broken and there's a right sibling, move to it
+        if (cur && cur._right) {
+           const nextNode = this.nodes.get(cur._right);
+           if (nextNode) {
+               cur = nextNode;
+           } else {
+               // Should not happen in a consistent tree, but handle defensively
+               break;
+           }
+        } else {
+             // No right sibling or the loop was intentionally broken (k > to)
+             break;
+        }
+    }
+    return result; // Return the collected keys
   }
 
   each(

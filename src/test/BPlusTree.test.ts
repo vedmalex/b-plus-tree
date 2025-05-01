@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'bun:test'
-import { BPlusTree } from './BPlusTree'
-import { Node } from './Node'
-import { serializeTree, deserializeTree, createTreeFrom } from './BPlusTreeUtils'
+import { BPlusTree } from '../BPlusTree'
+import { Node } from '../Node'
+import { serializeTree, deserializeTree, createTreeFrom } from '../BPlusTreeUtils'
 
 type Person = {
   id: number

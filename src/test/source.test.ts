@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'bun:test'
-import { BPlusTree } from './BPlusTree'
+import { BPlusTree } from '../BPlusTree'
 import {
   sourceEach,
   sourceEq,
@@ -11,9 +11,9 @@ import {
   sourceRange,
   sourceEqNulls,
   // sourceEqNulls - assuming it behaves like sourceEq for non-null keys for now
-} from './source'
-import type { Cursor } from './eval' // Assuming Cursor type is exported from eval
-import { ValueType } from './Node' // Import ValueType
+} from '../source'
+import type { Cursor } from '../eval' // Assuming Cursor type is exported from eval
+import { ValueType } from '../Node' // Import ValueType
 
 type Data = { value: string }
 

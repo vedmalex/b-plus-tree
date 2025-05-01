@@ -181,7 +181,7 @@ describe('BPlusTree Rebalancing Operations (t=2)', () => {
         expect(removed).toHaveLength(1); // Right node is now [2], key_num=1 (ok)
         // --- DEBUG LOG ---
         const problematicNode = tree.node(initialRightChildId);
-        console.log(`[TEST LOG] Node ${problematicNode?.id} state before key_num check: keys=${JSON.stringify(problematicNode?.keys)}, key_num=${problematicNode?.key_num}`);
+        // console.log(`[TEST LOG] Node ${problematicNode?.id} state before key_num check: keys=${JSON.stringify(problematicNode?.keys)}, key_num=${problematicNode?.key_num}`);
         // --- END DEBUG LOG ---
         expect(tree.node(initialRightChildId).key_num).toBe(1);
 

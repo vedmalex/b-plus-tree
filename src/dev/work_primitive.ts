@@ -3,9 +3,9 @@ import { print_node } from '../print_node'
 import { BPlusTree } from '../BPlusTree'
 
 const N = 15
-const MAX_RAND = 10000000
-const SAMPLES = 100
-const T = 1
+// const MAX_RAND = 10000000
+// const SAMPLES = 100
+// const T = 1
 
 const itemsToGet = JSON.parse(fs.readFileSync('../../dev/test_data.json').toString())
 

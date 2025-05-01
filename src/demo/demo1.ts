@@ -3,7 +3,7 @@ import { query } from '../types'
 import { print_node } from '../print_node'
 import axios from 'axios'
 import { filter, map, reduce } from 'src/query'
-import { remove } from 'src/methods'
+// import { remove } from 'src/methods'
 
 type Person = {
   id?: number

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'bun:test'
-import { BPlusTree } from './BPlusTree'
-import { sourceEach } from './source' // Use a basic source for testing queries
-import { Cursor } from './eval' // Import Cursor type
+import { BPlusTree } from '../BPlusTree'
+import { sourceEach } from '../source' // Use a basic source for testing queries
+import { Cursor } from '../eval' // Import Cursor type
 import {
   filter,
   map,
@@ -9,8 +9,8 @@ import {
   forEach,
   // Import other query operators as needed:
   distinct, eq, every, gt, gte, includes, lt, lte, mapReduce, ne, nin, range, some
-} from './query'
-import { query as executeQuery } from './types' // Assuming the query executor is here
+} from '../query'
+import { query as executeQuery } from '../types' // Assuming the query executor is here
 
 type Item = { id: number; category: string; active: boolean }
 

@@ -1,7 +1,7 @@
 import { BPlusTree } from './BPlusTree';
 import { Node, PortableBPlusTree, ValueType, PortableNode } from './Node';
 import { Comparator } from './types'; // Assuming Comparator might be needed for createFrom options eventually
-import { IBPlusTree } from './IBPlusTree'; // Import the interface
+// import { IBPlusTree } from './IBPlusTree'; // Import the interface
 
 /**
  * Serializes a BPlusTree instance into a portable format.
