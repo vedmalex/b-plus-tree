@@ -47,7 +47,7 @@ export function sourceEq<T, K extends ValueType>(key: K) {
   return function* (tree: BPlusTree<T, K>): Generator<Cursor<T, K>, void> {
     let cursor = find_first(tree, key, true)
     while (!cursor.done) {
-      if (cursor.key == key) {
+      if (tree.comparator(cursor.key, key) === 0) {
         yield cursor
       } else {
         break
@@ -61,7 +61,7 @@ export function sourceEqNulls<T, K extends ValueType>(key: K) {
   return function* (tree: BPlusTree<T, K>): Generator<Cursor<T, K>, void> {
     let cursor = find_first_remove(tree, key, true)
     while (!cursor.done) {
-      if (cursor.key == key) {
+      if (tree.comparator(cursor.key, key) === 0) {
         yield cursor
       } else {
         break
@@ -74,6 +74,10 @@ export function sourceEqNulls<T, K extends ValueType>(key: K) {
 export function sourceGt<T, K extends ValueType>(key: K) {
   return function* (tree: BPlusTree<T, K>): Generator<Cursor<T, K>, void> {
     let cursor: Cursor<T, K> = find_range_start(tree, key, false, true)
+    // Explicitly skip if the first found cursor matches the key exactly
+    if (!cursor.done && tree.comparator(cursor.key, key) === 0) {
+        cursor = eval_next(tree, cursor.node, cursor.pos);
+    }
     while (!cursor.done) {
       yield cursor
       cursor = eval_next(tree, cursor.node, cursor.pos)
@@ -196,15 +200,17 @@ export function sourceRange<T, K extends ValueType>(
 
     let cursor = startCursor
     while (!cursor.done) {
-       // Check if cursor has reached or passed the end marker
-       if (!endMarker.done) {
-           const cmp = tree.comparator(cursor.key, endMarker.key)
-           if (cmp > 0 || (cmp === 0 /* && cursor.node === endMarker.node && cursor.pos === endMarker.pos */)) {
-               // Reached the end marker
-               return;
+       // Check end condition more carefully using the original 'to' boundary
+       if (to !== undefined && to !== null) { // Only check if 'to' is a valid boundary
+           const cmpToHigh = tree.comparator(cursor.key, to);
+           if (cmpToHigh > 0) { // Cursor key is strictly greater than 'to' boundary
+               return; // Exceeded upper bound
+           }
+           if (cmpToHigh === 0 && !toIncl) { // Cursor key equals 'to' boundary, but upper bound is exclusive
+               return; // Reached exclusive upper bound
            }
        }
-       // Otherwise, yield and continue
+       // If we haven't returned, the cursor is within the desired range
       yield cursor
       cursor = eval_next(tree, cursor.node, cursor.pos)
     }

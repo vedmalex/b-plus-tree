@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'bun:test'
 import { BPlusTree } from './BPlusTree'
 import { Node } from './Node'
+import { serializeTree, deserializeTree, createTreeFrom } from './BPlusTreeUtils'
 
 type Person = {
   id: number
@@ -417,7 +418,7 @@ describe('BPlusTree Core Operations', () => {
      const originalList = originalTree.list();
 
      // Serialize
-     const serialized = BPlusTree.serialize(originalTree);
+     const serialized = serializeTree(originalTree);
      expect(serialized).toBeDefined();
      expect(serialized.t).toBe(originalTree.t);
      expect(serialized.unique).toBe(originalTree.unique);
@@ -427,7 +428,7 @@ describe('BPlusTree Core Operations', () => {
 
      // Deserialize into a new tree
      const newTree = new BPlusTree<Person, number>();
-     BPlusTree.deserialize(newTree, serialized);
+     deserializeTree(newTree, serialized);
 
      // Verify the new tree
      expect(newTree.t).toBe(originalTree.t);
@@ -456,10 +457,13 @@ describe('BPlusTree Core Operations', () => {
         ];
         persons.forEach(p => originalTree.insert(p.id, p));
 
-        const serialized = BPlusTree.serialize(originalTree);
+        const serialized = serializeTree(originalTree);
 
         // Create from serialized data
-        const newTree = BPlusTree.createFrom(serialized);
+        const newTree = createTreeFrom(serialized, {
+            t: originalTree.t,
+            unique: originalTree.unique
+        });
 
         // Verify the new tree
         expect(newTree).toBeInstanceOf(BPlusTree);
@@ -473,7 +477,7 @@ describe('BPlusTree Core Operations', () => {
 
   // --- Tests for Node Splitting and Merging (t=2) ---
 
-  it.skip('should split root node when necessary (t=2)', () => {
+  it('should split root node when necessary (t=2)', () => {
      // With t=2, max keys in a node is 2*t - 1 = 3. Max pointers is 2*t = 4.
      // Min keys in non-root node is t - 1 = 1. Min pointers is t = 2.
      // A leaf node splits when it has 2*t = 4 pointers (or 3 keys for internal).
@@ -521,43 +525,69 @@ describe('BPlusTree Core Operations', () => {
      expect(tree.size).toBe(3);
    });
 
-   it.skip('should merge nodes when necessary after deletion (t=2)', () => {
-      // Start with a state that required a split (from previous test)
+   it('should handle borrowing correctly after deletion (t=2)', () => {
+      // Start with a state that required a split
       tree = new BPlusTree<Person, number>(2, false);
       tree.insert(1, { id: 1, name: 'A' });
       tree.insert(2, { id: 2, name: 'B' });
-      tree.insert(3, { id: 3, name: 'C' }); // State: Root [2], Left [1], Right [2, 3]
+      tree.insert(3, { id: 3, name: 'C' });
+      // State: Root [2], Left [1], Right [2, 3]
       expect(tree.nodes.size).toBe(3);
       expect(tree.size).toBe(3);
+      const rootBeforeRemove = tree.node(tree.root);
+      const leftChildBeforeRemoveId = rootBeforeRemove.children[0];
+      const rightChildBeforeRemoveId = rootBeforeRemove.children[1];
 
-      // Remove 1 -> Leaves become underflow (min keys = t-1 = 1)
-      // Left Child: [] (underflow!) -> Borrow/Merge required
-      // Right Child: [2, 3]
-      // Should merge: Left borrows from Right? No, merge needed.
-      // Merge Left and Right via Root
-      // New Root (Leaf): [2, 3]
+      // Remove 1 -> Left leaf [1] becomes [], Right leaf [2, 3] has > t-1 keys.
+      // Borrowing should occur from the right sibling.
+      // 1. Key 2 from parent moves to Left leaf -> Left becomes [2]
+      // 2. Key 2 (first key) from Right leaf moves to parent -> Parent becomes [3]
+      // 3. Right leaf loses key 2 -> Right becomes [3]
+      // Final state: Root [3], Left [2], Right [3]
       const removed1 = tree.remove(1);
       expect(removed1).toHaveLength(1);
       expect(tree.size).toBe(2);
+      expect(tree.nodes.size).toBe(3); // Should still have 3 nodes after borrowing
+
+      const rootNodeBorrowed = tree.node(tree.root);
+      expect(rootNodeBorrowed.leaf).toBe(false);
+      expect(rootNodeBorrowed.keys).toEqual([3]); // Corrected: Parent key becomes the new min of the right sibling (which is 3)
+      expect(rootNodeBorrowed.children).toHaveLength(2);
+
+      const leftChildBorrowedId = rootNodeBorrowed.children[0];
+      const rightChildBorrowedId = rootNodeBorrowed.children[1];
+      const leftChildBorrowed = tree.node(leftChildBorrowedId);
+      const rightChildBorrowed = tree.node(rightChildBorrowedId);
+
+      // Verify left child received the borrowed key
+      expect(leftChildBorrowed.leaf).toBe(true);
+      expect(leftChildBorrowed.keys).toEqual([2]);
+      expect((leftChildBorrowed.pointers[0] as Person).name).toBe('B'); // Value for key 2
+      // Verify original left child node ID might have been reused or is different
+      // expect(leftChildBorrowedId).toBe(leftChildBeforeRemoveId); // Might not be true if nodes are recreated
+
+      // Verify right child gave up its first key
+      expect(rightChildBorrowed.leaf).toBe(true);
+      expect(rightChildBorrowed.keys).toEqual([3]);
+      expect((rightChildBorrowed.pointers[0] as Person).name).toBe('C'); // Value for key 3
+      // Verify original right child node ID might have been reused or is different
+      // expect(rightChildBorrowedId).toBe(rightChildBeforeRemoveId); // Might not be true
+
+      // Now, let's test merging: remove key 2
+      // State: Root [3], Left [2], Right [3]
+      // Remove 2 -> Left becomes [] (underflow). Right sibling [3] has only t-1 keys.
+      // Borrowing is not possible. Merge should occur.
+      // Merge Left [], Right [3] and separator 3 from parent.
+      // New Root (Leaf): [3] <--- Corrected expected merge result
+      const removed2 = tree.remove(2);
+      expect(removed2).toHaveLength(1);
+      expect(tree.size).toBe(1); // Only one value (key 3) should remain
       expect(tree.nodes.size).toBe(1); // Should merge back to a single root node
 
       const rootNodeMerged: Node<Person, number> = tree.node(tree.root);
       expect(rootNodeMerged.leaf).toBe(true);
-      expect(rootNodeMerged.keys).toEqual([2, 3]);
-      expect(rootNodeMerged.pointers.length).toBe(2);
-      // Verify values in the merged leaf node
-      expect((rootNodeMerged.pointers[0] as Person).name).toBe('B'); // Corresponds to key 2
-      expect((rootNodeMerged.pointers[1] as Person).name).toBe('C'); // Corresponds to key 3
-
-      // Remove 2 -> Root (Leaf): [3]
-      const removed2 = tree.remove(2);
-      expect(removed2).toHaveLength(1);
-      expect(tree.size).toBe(1);
-      expect(tree.nodes.size).toBe(1);
-      const rootNodeFinal1: Node<Person, number> = tree.node(tree.root);
-      expect(rootNodeFinal1.leaf).toBe(true);
-      expect(rootNodeFinal1.keys).toEqual([3]);
-      expect((rootNodeFinal1.pointers[0] as Person).name).toBe('C'); // Check remaining value
+      expect(rootNodeMerged.keys).toEqual([3]); // Corrected: Merged node should contain key 3 (value C)
+      expect((rootNodeMerged.pointers[0] as Person).name).toBe('C'); // Check remaining value (for key 3)
 
       // Remove 3 -> Root (Leaf): []
       const removed3 = tree.remove(3);

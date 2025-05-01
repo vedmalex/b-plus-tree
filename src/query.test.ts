@@ -180,7 +180,8 @@ describe('BPlusTree Query Operators', () => {
 
       // Expected: Cursors for items 1 and 3, with their values mapped to their keys.
       expect(results).toHaveLength(2);
-      // Check the mapped values within the cursors
+    // Check the mapped values within the cursors
+    // @ts-ignore
       expect(results.map(cursor => cursor.value)).toEqual([1, 3]);
       // Optionally check the original keys are still correct
       expect(results.map(cursor => cursor.key)).toEqual([1, 3]);

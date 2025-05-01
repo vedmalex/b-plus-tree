@@ -4,22 +4,23 @@ import { Node, PortableBPlusTree, PortableNode, ValueType } from './Node'
 import { sourceIn, sourceEq, sourceEqNulls, sourceRange, sourceEach, sourceGt, sourceGte, sourceLt, sourceLte } from './source'
 import { Comparator } from './types'
 import { evaluate } from './eval'
+import { IBPlusTree } from './IBPlusTree'
 /**
  * tree
  * T - value to be stored
  * K - key
  */
-export class BPlusTree<T, K extends ValueType> {
+export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
   public t: number // минимальная степень дерева
   public root: number // указатель на корень дерева
   public unique: boolean
   public nodes = new Map<number, Node<T, K>>()
-  public comparator: Comparator<K>
-  public defaultEmpty: K
-  public keySerializer: (keys: Array<K>) => any
-  public keyDeserializer: (keys: any) => Array<K>
-  protected next_node_id = 0
-  get_next_id(): number {
+  public readonly comparator: Comparator<K>
+  protected readonly defaultEmpty: K
+  public readonly keySerializer: (keys: Array<K>) => any
+  public readonly keyDeserializer: (keys: any) => Array<K>
+  public next_node_id = 0 // Made public for serialization utils
+  public get_next_id(): number { // Keep internal getter protected
     return this.next_node_id++
   }
 
@@ -85,48 +86,6 @@ export class BPlusTree<T, K extends ValueType> {
     this.keyDeserializer = keyDeserializer ?? ((keys: any) => keys as Array<K>)
   }
 
-  static serialize<T, K extends ValueType>(
-    tree: BPlusTree<T, K>,
-  ): PortableBPlusTree<T, K> {
-    const { t, root, unique, nodes, next_node_id } = tree
-    return {
-      t,
-      next_node_id,
-      root,
-      unique,
-      nodes: [...nodes.values()].map((n) => Node.serialize(n)),
-    }
-  }
-  static createFrom<T, K extends ValueType>(
-    stored: PortableBPlusTree<T, K>,
-  ): BPlusTree<T, K> {
-    const res = new BPlusTree<T, K>()
-    BPlusTree.deserialize(res, stored)
-    return res
-  }
-  static deserialize<T, K extends ValueType>(
-    tree: BPlusTree<T, K>,
-    stored: PortableBPlusTree<T, K>,
-  ): void {
-    const { t, next_node_id, root, unique, nodes } = stored
-    if (t) {
-      tree.nodes.clear()
-      tree.t = t
-      tree.next_node_id = next_node_id
-      tree.root = root
-      tree.unique = unique
-      nodes.forEach((n) => {
-        const node = Node.deserialize<T, K>(n, tree)
-        tree.nodes.set(n.id, node)
-      })
-    } else {
-      // key pair serialiation
-      for (const [key, value] of Object.entries(stored)) {
-        tree.insert(key as K, value as unknown as T)
-      }
-    }
-  }
-
   find(
     key?: K,
     {
@@ -147,9 +106,20 @@ export class BPlusTree<T, K extends ValueType> {
   }
 
   findFirst(key: K): T {
+    // console.log(`[findFirst] Searching for key: ${key}`);
     const node = find_first_node(this, key)
+    // console.log(`[findFirst] Found node: ${node?.id}, leaf: ${node?.leaf}`);
     const index = find_first_item(node.keys, key, this.comparator)
-    return node.pointers[index]
+    // console.log(`[findFirst] Found index in node ${node?.id}: ${index} for key ${key}. Node keys: [${node?.keys}]`);
+    // Check if a valid index was found before accessing pointers
+    if (index !== -1 && index < node.pointers.length) {
+        const value = node.pointers[index];
+        // console.log(`[findFirst] Returning value: ${value}`);
+        return value;
+    }
+    // Return undefined if the key wasn't found in the expected node
+    // console.log(`[findFirst] Returning undefined (invalid index)`);
+    return undefined;
   }
 
   findLast(key: K): T {
@@ -212,12 +182,16 @@ export class BPlusTree<T, K extends ValueType> {
   get size(): number {
     return size(this.nodes.get(this.root))
   }
-  node(id: number): Node<T, K> {
+  public node(id: number): Node<T, K> {
     return this.nodes.get(id)
   }
   count(key: K): number {
-    if (key == undefined) key = null
-    return count(key, this.nodes.get(this.root))
+    const searchKey = (key === undefined ? null : key) as K;
+    if (searchKey === null && this.defaultEmpty !== undefined) {
+        return count(this.defaultEmpty, this.nodes.get(this.root), this.comparator);
+    } else {
+        return count(searchKey, this.nodes.get(this.root), this.comparator);
+    }
   }
   insert(key: K, value: T): boolean {
     if (key == null) key = this.defaultEmpty

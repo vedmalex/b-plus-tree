@@ -289,7 +289,7 @@ export function count<T, K extends ValueType>(
   comparator: Comparator<K>
 ): number {
   if (!node) return 0;
-  // console.log(`[COUNT] Checking node ${node.id} (leaf=${node.leaf}) for key ${JSON.stringify(key)}`);
+  console.log(`[COUNT] Checking node ${node.id} (leaf=${node.leaf}) for key ${JSON.stringify(key)}`);
 
   // Use the key directly. Null/undefined check should happen in the BPlusTree wrapper.
   const searchKey = key;
@@ -306,17 +306,17 @@ export function count<T, K extends ValueType>(
         break;
       }
     }
-    // console.log(`[COUNT] Found ${totalCount} matches in leaf node ${node.id}`);
+    console.log(`[COUNT] Found ${totalCount} matches in leaf node ${node.id}`);
     return totalCount;
   } else {
     // Internal node: Sum counts from relevant children
     let totalCount = 0;
-    // console.log(`[COUNT] Internal node ${node.id}. Checking children: ${JSON.stringify(node.children)}`);
+    console.log(`[COUNT] Internal node ${node.id}. Checking children: ${JSON.stringify(node.children)}`);
     for (let i = 0; i < node.children.length; i++) {
       const childNodeId = node.children[i];
       const childNode = node.tree.nodes.get(childNodeId);
       if (!childNode) continue;
-      // console.log(`[COUNT] Checking child ${childNode.id} (min=${JSON.stringify(childNode.min)}, max=${JSON.stringify(childNode.max)})`);
+      console.log(`[COUNT] Checking child ${childNode.id} (min=${JSON.stringify(childNode.min)}, max=${JSON.stringify(childNode.max)})`);
 
       // --- REVISED LOGIC for checking child range ---
       const childMin = childNode.min;
@@ -324,25 +324,25 @@ export function count<T, K extends ValueType>(
 
       // Skip if the node is completely empty (both min and max are undefined)
       if (childMin === undefined && childMax === undefined) {
-          // console.log(`[COUNT] Skipping empty child ${childNode.id}`);
+          console.log(`[COUNT] Skipping empty child ${childNode.id}`);
           continue;
       }
 
       // Skip if the search key is strictly less than the child's minimum (if defined)
       if (childMin !== undefined && comparator(searchKey, childMin) < 0) {
-          // console.log(`[COUNT] Skipping child ${childNode.id} because key < min`);
+          console.log(`[COUNT] Skipping child ${childNode.id} because key < min`);
           continue;
       }
 
       // Skip if the search key is strictly greater than the child's maximum (if defined)
       if (childMax !== undefined && comparator(searchKey, childMax) > 0) {
-          // console.log(`[COUNT] Skipping child ${childNode.id} because key > max`);
+          console.log(`[COUNT] Skipping child ${childNode.id} because key > max`);
           continue;
       }
 
       // In all other cases (key is within defined [min, max], or min/max is undefined),
       // we must descend into the child node as the key might be present.
-      // console.log(`[COUNT] Descending into child ${childNode.id}`);
+      console.log(`[COUNT] Descending into child ${childNode.id}`);
       totalCount += count(searchKey, childNode, comparator);
 
       /* // OLD LOGIC REMOVED
@@ -357,7 +357,7 @@ export function count<T, K extends ValueType>(
       */
       // --- END REVISED LOGIC ---
     }
-    // console.log(`[COUNT] Total ${totalCount} matches found under internal node ${node.id}`);
+    console.log(`[COUNT] Total ${totalCount} matches found under internal node ${node.id}`);
     return totalCount;
   }
 }
@@ -452,84 +452,46 @@ export function delete_in_node<T, K extends ValueType>(
 ): Array<[K, T]> {
   const result: Array<[K, T]> = []
   if (all) {
-    // Удаляем все в цикле в текущем узле
+    // Удаляем все в цикле
     let changed = false;
-    let current_node = node; // Start with the initial node
-
-    // Iterate through the current node and potentially its right siblings
-    while (current_node) {
-        let node_changed_in_loop = false;
-        // Delete all occurrences in the current node
-        while (true) {
-          // Use find_first_item_remove for potential optimization? No, find_first_item is fine.
-          const pos = find_first_item(current_node.keys, key, tree.comparator);
-          if (pos > -1) {
-              result.push([current_node.keys[pos], current_node.pointers.splice(pos, 1)[0]]);
-              current_node.keys.splice(pos, 1);
-              changed = true; // Mark overall change
-              node_changed_in_loop = true; // Mark change in this specific node
-          } else {
-              break; // Key not found in this node, exit inner loop
-          }
-        }
-
-        // Update state and min/max only if the node changed in this loop iteration
-        if (node_changed_in_loop) {
-            update_state(current_node);
-            update_min_max(current_node);
-        }
-
-        // --- CORRECTED SIBLING TRAVERSAL ---
-        // Check if we should move to the right sibling
-        const rightSibling = current_node.right;
-        if (rightSibling && tree.comparator(key, rightSibling.min) === 0) {
-            // If the key matches the minimum of the right sibling,
-            // it *might* exist there. Continue to the right sibling.
-            current_node = rightSibling;
-        } else {
-            // If no right sibling, or the key is definitely smaller than
-            // the right sibling's minimum, stop traversing rightwards.
-            current_node = undefined; // End the outer loop
-        }
-        // --- END CORRECTION ---
-    } // End of while (current_node) loop
-
-
-    // --- REFLOW LOGIC ---
-    // Reflow needs to be called on all nodes that were modified.
-    // We need to track which nodes were changed.
-    // The simplest (though potentially less efficient) way is to reflow
-    // the *initial* node passed to the function, as reflow propagates upwards.
-    // If the initial node was potentially merged away, we need a more robust way,
-    // perhaps reflowing the parent of the initial node if it exists.
-    if (changed) {
-        // Attempt to reflow the original starting node.
-        // Need to check if 'node' still exists in the tree map after potential merges.
-        const initialNodeStillExists = tree.nodes.has(node.id);
-        if (initialNodeStillExists) {
-             reflow(tree, node);
-        } else {
-            // If the original node was merged/deleted, try reflowing its original parent.
-            // This is complex as the parent link might be broken or the parent itself merged.
-            // A safer alternative might be to not reflow here and let higher-level calls handle it,
-            // but that breaks encapsulation.
-            // For now, let's stick to reflowing the initial node if it exists.
-            // If it doesn't exist, the merge operation that removed it should have already triggered reflow upwards.
-             console.warn(`[delete_in_node all=true] Initial node ${node.id} no longer exists after deletion loop. Reflow might have already occurred.`);
-        }
+    while (true) {
+      const pos = find_first_item(node.keys, key, tree.comparator);
+      if (pos > -1) {
+          result.push([node.keys[pos], node.pointers.splice(pos, 1)[0]]);
+          node.keys.splice(pos, 1);
+          changed = true; // Отмечаем, что узел изменился
+          // update_state(node); // Не нужно обновлять состояние в цикле
+      } else {
+          break; // Выходим, если ключ больше не найден
+      }
     }
-    // --- END REFLOW LOGIC ---
+    if (changed) {
+        update_state(node); // Обновляем состояние ОДИН раз после цикла
+        update_min_max(node); // Обновляем min/max ОДИН раз после цикла
+    }
+
+    // Check the right sibling for more duplicates
+    const rightSibling = node.right; // Get sibling before potential reflow changes structure
+    // CORRECTED SIBLING CHECK: Check if key >= sibling.min
+    if (rightSibling && tree.comparator(key, rightSibling.min) >= 0) {
+      // Recursively delete from the right sibling and append results
+      const siblingResults = delete_in_node(tree, rightSibling, key, true);
+      result.push(...siblingResults);
+    }
+
+    // Call reflow AFTER checking/deleting from siblings, only if the original node changed.
+    if (changed) {
+        reflow(tree, node);
+    }
 
   } else {
     // Удаляем только ПЕРВЫЙ найденный
     const pos = find_first_item(node.keys, key, tree.comparator); // Ищем ПЕРВЫЙ
     if (pos > -1) {
-        console.log(`[delete_in_node] Node ${node.id} BEFORE delete: keys=${JSON.stringify(node.keys)}, key_num=${node.key_num}`);
         const removedValue = node.pointers.splice(pos, 1)[0];
         const removedKey = node.keys.splice(pos, 1)[0];
         result.push([removedKey, removedValue]);
         update_state(node); // Обновляем состояние узла
-        console.log(`[delete_in_node] Node ${node.id} AFTER delete+update_state: keys=${JSON.stringify(node.keys)}, key_num=${node.key_num}`);
         update_min_max(node); // Обновляем min/max узла
         // Call reflow AFTER state updates if changes were made
         reflow(tree, node);
@@ -550,7 +512,7 @@ export function delete_in_node<T, K extends ValueType>(
   // try_to_pull_up_tree вызывается в конце reflow, если нужно
 
   // Validate the node after potential changes and reflow
-  // runValidation(node, 'delete_in_node'); // Temporarily disable validation here if needed
+  runValidation(node, 'delete_in_node');
 
   return result
 }
@@ -893,7 +855,7 @@ export function runValidation<T, K extends ValueType>(node: Node<T, K>, operatio
     if (!node) return; // Skip if node is undefined
     const errors = node.errors; // Use the getter which calls validate_node
     if (errors.length > 0) {
-        // console.error(`[VALIDATION FAIL] ${operationName} on Node ${node.id}:`, errors);
+        console.error(`[VALIDATION FAIL] ${operationName} on Node ${node.id}:`, errors);
     }
 }
 
@@ -924,136 +886,138 @@ export function reflow<T, K extends ValueType>(
       // console.warn('[REFLOW] Called with undefined node.');
       return;
   }
-  // console.log(`[REFLOW START] Node ID: ${node.id}, Leaf: ${node.leaf}, Keys: ${node.key_num}, MinKeys: ${node.t - 1}, Parent: ${node._parent}`);
+  // console.log(`[REFLOW START] Node ID: ${node.id}, Leaf: ${node.leaf}, Keys: ${node.key_num}, MinKeys: ${node.t}, Parent: ${node._parent}`);
 
   // Check if the node has fallen below the minimum number of keys
-  // Root node has special handling (can have < t-1 keys)
-  if (node.id !== tree.root && node.key_num < node.t - 1) {
-    // console.log(`[REFLOW UNDERFLOW] Node ${node.id} has underflow (${node.key_num} < ${node.t - 1}). Attempting rebalancing.`);
+  // Root node has special handling (can have < t keys)
+  if (node.id !== tree.root && node.key_num < node.t) {
+    // console.log(`[REFLOW UNDERFLOW] Node ${node.id} has underflow (${node.key_num} < ${node.t}). Attempting rebalancing.`);
     const parent = node.parent;
     if (!parent) {
         // console.warn(`[REFLOW] Node ${node.id} has underflow but no parent (and is not root). This should not happen.`);
+        // If it's not the root and has no parent, something is wrong.
+        // But we can't reflow further up. Commit node state as is?
         node.commit();
         return;
     }
 
-    // --- Find ACTUAL siblings via parent ---
-    const nodeIndex = parent.children.indexOf(node.id);
-    let actual_left_sibling: Node<T, K> | undefined = undefined;
-    let actual_right_sibling: Node<T, K> | undefined = undefined;
+    const left_sibling = node.left;
+    const right_sibling = node.right;
 
-    if (nodeIndex > 0) {
-      const leftSiblingId = parent.children[nodeIndex - 1];
-      actual_left_sibling = tree.nodes.get(leftSiblingId);
-    }
-    if (nodeIndex < parent.children.length - 1) {
-      const rightSiblingId = parent.children[nodeIndex + 1];
-      actual_right_sibling = tree.nodes.get(rightSiblingId);
-    }
-    // console.log(`[REFLOW SIBLINGS CHECK] Node ${node.id} (index ${nodeIndex}): Actual Left=${actual_left_sibling?.id}, Actual Right=${actual_right_sibling?.id}`);
-    // --- End Find ACTUAL siblings ---
+    // console.log(`[REFLOW SIBLINGS] Node ${node.id}: Left=${left_sibling?.id}, Right=${right_sibling?.id}`);
 
     // Prioritize borrowing over merging
-    // Try borrowing from ACTUAL left sibling
-    if (actual_left_sibling && actual_left_sibling.key_num > actual_left_sibling.t - 1) {
-      // console.log(`[REFLOW BORROW LEFT] Attempting to borrow from actual left sibling ${actual_left_sibling.id} (keys: ${actual_left_sibling.key_num})`);
-      borrow_from_left(node, actual_left_sibling);
+    // Try borrowing from left sibling
+    if (left_sibling && left_sibling.key_num > left_sibling.t - 1) {
+      // console.log(`[REFLOW BORROW LEFT] Attempting to borrow from left sibling ${left_sibling.id} (keys: ${left_sibling.key_num})`);
+      borrow_from_left(node, left_sibling);
       // console.log(`[REFLOW BORROW LEFT DONE] Node ${node.id} keys after borrow: ${node.key_num}`);
-      node.commit();
-      actual_left_sibling.commit();
-      parent.commit();
+      // Update parent separator key? borrow_from_left should handle this.
+      // update_min_max(parent); // Parent's structure didn't change, but separator might. Borrow handles this.
+      node.commit(); // Node is balanced now
+      left_sibling.commit(); // Sibling state changed
+      parent.commit(); // Parent separator changed
       return; // Node is balanced
     }
 
-    // Try borrowing from ACTUAL right sibling
-    if (actual_right_sibling && actual_right_sibling.key_num > actual_right_sibling.t - 1) {
-      // console.log(`[REFLOW BORROW RIGHT] Attempting to borrow from actual right sibling ${actual_right_sibling.id} (keys: ${actual_right_sibling.key_num})`);
-      borrow_from_right(node, actual_right_sibling);
+    // Try borrowing from right sibling
+    if (right_sibling && right_sibling.key_num > right_sibling.t - 1) {
+      // console.log(`[REFLOW BORROW RIGHT] Attempting to borrow from right sibling ${right_sibling.id} (keys: ${right_sibling.key_num})`);
+      borrow_from_right(node, right_sibling);
       // console.log(`[REFLOW BORROW RIGHT DONE] Node ${node.id} keys after borrow: ${node.key_num}`);
-      node.commit();
-      actual_right_sibling.commit();
-      parent.commit();
+      // Update parent separator key? borrow_from_right should handle this.
+      // update_min_max(parent);
+      node.commit(); // Node is balanced now
+      right_sibling.commit(); // Sibling state changed
+      parent.commit(); // Parent separator changed
       return; // Node is balanced
     }
 
     // If borrowing failed, try merging
     // console.log(`[REFLOW MERGE] Borrowing failed for node ${node.id}. Attempting merge.`);
 
-    // Try merging with ACTUAL left sibling
-    if (actual_left_sibling) {
-        // Ensure nodeIndex > 0 is still implicitly true because actual_left_sibling exists
-        const separatorIndex = nodeIndex - 1;
-        if (separatorIndex >= 0 && separatorIndex < parent.keys.length) {
-            const separatorKey = parent.keys[separatorIndex];
-            // console.log(`[REFLOW MERGE LEFT] Merging node ${node.id} with actual left sibling ${actual_left_sibling.id}. Separator: ${JSON.stringify(separatorKey)}`);
+    // Try merging with left sibling
+    if (left_sibling) {
+      const nodeIndex = parent.children.indexOf(node.id);
+      if (nodeIndex > 0) { // Ensure there is a separator key to the left in the parent
+        const separatorKey = parent.keys[nodeIndex - 1];
+        // console.log(`[REFLOW MERGE LEFT] Merging node ${node.id} with left sibling ${left_sibling.id}. Separator: ${JSON.stringify(separatorKey)}`);
+        // console.log(`  Node ${node.id} keys BEFORE merge: ${JSON.stringify(node.keys)}`);
+        // console.log(`  Left sibling ${left_sibling.id} keys BEFORE merge: ${JSON.stringify(left_sibling.keys)}`);
 
-            merge_with_left(node, actual_left_sibling, separatorKey); // node absorbs actual_left_sibling
+        merge_with_left(node, left_sibling, separatorKey); // node absorbs left_sibling
 
-            // Explicitly remove actual_left_sibling and correct separator key
-            const leftSiblingIndex = parent.children.indexOf(actual_left_sibling.id);
-            if (leftSiblingIndex !== -1) {
-                parent.children.splice(leftSiblingIndex, 1);
-            } else {
-                 console.error(`[REFLOW MERGE LEFT] CRITICAL Error: Actual Left sibling ${actual_left_sibling.id} not found in parent ${parent.id} children during merge!`);
-            }
-            if (separatorIndex < parent.keys.length) {
-                 parent.keys.splice(separatorIndex, 1);
-            } else {
-                 console.error(`[REFLOW MERGE LEFT] CRITICAL Error: Invalid separator index ${separatorIndex} for parent ${parent.id} keys (length ${parent.keys.length})`);
-            }
-            // Sibling links are updated by merge_with_left or should be handled here/in delete?
-            // Let's rely on Node.delete to update neighbors of the deleted sibling
+        // Лог после правильного слияния
+        // console.log(`  Node ${node.id} keys AFTER merge: ${JSON.stringify(node.keys)}`); // Обновленный лог
 
-            update_state(parent);
-            update_min_max(parent);
+        // Удаляем left_sibling из родителя
+        remove_node(parent, left_sibling);
+        // console.log(`[REFLOW MERGE LEFT] Removed node ${left_sibling.id} from parent ${parent.id}. Parent children: ${parent.children.length}`);
 
-            actual_left_sibling.delete(tree); // Delete the merged sibling
+        // Обновляем min/max объединенного узла (node)
+        update_min_max(node);
 
-            node.commit();
-            reflow(tree, parent);
-            return;
-        } else {
-             console.error(`[REFLOW MERGE LEFT] Error: Could not find separator key at index ${separatorIndex} for parent ${parent.id}.`);
-             node.commit();
-        }
+        // Удаляем left_sibling из карты узлов
+        left_sibling.delete(tree); // This already calls unregister_node
+        // console.log(`[REFLOW MERGE LEFT] Deleted node ${left_sibling.id} from tree map.`);
+
+        // Коммитим объединенный узел (node)
+        node.commit(); // Commit the merged node (node)
+        // Parent structure changed, need to reflow parent
+        // console.log(`[REFLOW MERGE LEFT] Triggering reflow for parent ${parent.id}`);
+        reflow(tree, parent);
+        return; // Reflow continues up the tree
+      } else {
+        // console.warn(`[REFLOW MERGE LEFT] Cannot merge node ${node.id} with left sibling: node is the first child.`);
+        node.commit(); // Commit as is if merge wasn't possible
+      }
     }
-    // Try merging with ACTUAL right sibling
-    else if (actual_right_sibling) {
-        const separatorIndex = nodeIndex; // Key is at the same index as the node itself
-        if (separatorIndex >= 0 && separatorIndex < parent.keys.length) {
-            const separatorKey = parent.keys[separatorIndex];
-            // console.log(`[REFLOW MERGE RIGHT] Merging node ${node.id} with actual right sibling ${actual_right_sibling.id}. Separator: ${JSON.stringify(separatorKey)}`);
+    // Try merging with right sibling
+    else if (right_sibling) {
+      const nodeIndex = parent.children.indexOf(node.id);
+      if (nodeIndex < parent.keys.length) { // Ensure there is a separator key to the right in the parent
+        const separatorKey = parent.keys[nodeIndex];
+        // console.log(`[REFLOW MERGE RIGHT] Merging node ${node.id} with right sibling ${right_sibling.id}. Separator: ${JSON.stringify(separatorKey)}`);
+        // console.log(`  Node ${node.id} keys BEFORE merge: ${JSON.stringify(node.keys)}`);
+        // console.log(`  Right sibling ${right_sibling.id} keys BEFORE merge: ${JSON.stringify(right_sibling.keys)}`);
 
-            merge_with_right(node, actual_right_sibling, separatorKey); // node absorbs actual_right_sibling
+        // Merge `right_sibling` INTO `node`
+        merge_with_right(node, right_sibling, separatorKey);
+        // console.log(`  Node ${node.id} keys AFTER merge: ${JSON.stringify(node.keys)}`); // <-- УДАЛЯЕМ ЭТОТ ЛОГ
 
-            // Remove actual_right_sibling from parent
-            // remove_node handles keys/children correctly here if passed the correct sibling
-            remove_node(parent, actual_right_sibling);
+        remove_node(parent, right_sibling); // Remove right sibling from parent
+        // console.log(`[REFLOW MERGE RIGHT] Removed node ${right_sibling.id} from parent ${parent.id}. Parent children: ${parent.children.length}`);
 
-            // update_min_max(node); // merge_with_right should update node min/max
-            // Parent was updated by remove_node
+        // Sibling pointers updated by merge_with_right and remove_node
+        update_min_max(node); // Update merged node's min/max
 
-            actual_right_sibling.delete(tree); // Delete the merged sibling
+        // Node 'right_sibling' is now gone conceptually, delete it from the tree's node map
+        right_sibling.delete(tree); // This already calls unregister_node
+        // console.log(`[REFLOW MERGE RIGHT] Deleted node ${right_sibling.id} from tree map.`);
 
-            node.commit();
-            reflow(tree, parent);
-            return;
-        } else {
-            console.error(`[REFLOW MERGE RIGHT] Error: Could not find separator key at index ${separatorIndex} for parent ${parent.id}.`);
-            node.commit();
-        }
+        node.commit(); // Commit the merged node
+        // Parent structure changed, need to reflow parent
+        // console.log(`[REFLOW MERGE RIGHT] Triggering reflow for parent ${parent.id}`);
+        reflow(tree, parent);
+        return; // Reflow continues up the tree
+      } else {
+        // console.warn(`[REFLOW MERGE RIGHT] Cannot merge node ${node.id} with right sibling: node is the last child or keys index issue.`);
+        node.commit(); // Commit as is if merge wasn't possible
+      }
     }
-    // Special case: Node is empty, has no *actual* siblings it could merge with.
+    // Special case: If node is empty, it has no siblings it could merge with,
+    // and it's not the root, it might be the last child of its parent after other merges.
+    // The parent reflow should handle removing the parent if needed.
     else if (node.isEmpty && parent && parent.children.length === 1 && parent.children[0] === node.id) {
-        // console.log(`[REFLOW EMPTY LAST CHILD] Node ${node.id} is empty and the last child of parent ${parent.id}. Removing node and reflowing parent.`);
-        remove_node(parent, node); // Remove the empty node from parent
-        node.delete(tree); // Delete the node itself
-        // console.log(`[REFLOW EMPTY LAST CHILD] Triggering reflow for parent ${parent.id}`);
-        reflow(tree, parent); // Reflow the parent, which might become empty or need merging
-        return;
+         // console.log(`[REFLOW EMPTY LAST CHILD] Node ${node.id} is empty and the last child of parent ${parent.id}. Removing node and reflowing parent.`);
+         remove_node(parent, node); // Remove the empty node from parent
+         node.delete(tree); // Delete the node itself
+         // console.log(`[REFLOW EMPTY LAST CHILD] Triggering reflow for parent ${parent.id}`);
+         reflow(tree, parent); // Reflow the parent, which might become empty or need merging
+         return;
     } else {
       // Should not happen if node has underflow but siblings exist or it's root
-       // console.warn(`[REFLOW] Unhandled merge/borrow scenario for node ${node.id}. Node state: keys=${node.key_num}, parent=${parent?.id}, left=${actual_left_sibling?.id}, right=${actual_right_sibling?.id}`);
+       // console.warn(`[REFLOW] Unhandled merge/borrow scenario for node ${node.id}. Node state: keys=${node.key_num}, parent=${parent?.id}, left=${left_sibling?.id}, right=${right_sibling?.id}`);
        node.commit();
     }
   } else {
@@ -1089,9 +1053,16 @@ export function remove<T, K extends ValueType>(
 ): Array<[K, T]> {
   // Обработка undefined ключа
   const searchKey = (key === undefined ? null : key) as K;
-  const finalKey = searchKey;
 
-  console.log(`[remove entry] Removing key: ${JSON.stringify(finalKey)}, all=${all}`);
+  // Опционально: обработка null -> defaultEmpty (если нужно для компаратора)
+  const finalKey = searchKey; // Пока используем searchKey
+
+  // Add specific log for the problematic test case keys
+  /* // Remove log
+  if (typeof finalKey === 'number' && (finalKey === 1 || finalKey === 2)) {
+      console.log(`[REMOVE TEST] Removing key: ${finalKey}, all=${all}`);
+  }
+  */
 
   if (all) {
     // --- CORRECTED LOGIC for all=true ---
@@ -1118,15 +1089,29 @@ export function remove<T, K extends ValueType>(
   } else {
     // --- Логика для удаления ОДНОГО элемента ---
     const leaf = find_first_node(tree, finalKey);
-    console.log(`[remove single] Found leaf node ${leaf?.id} for key ${JSON.stringify(finalKey)}`);
     if (!leaf) {
+        // console.log(`[remove single] Leaf not found or empty.`); // Remove log
         return [];
     }
+    // --- SIMPLIFIED LOGIC ---
     // Directly call delete_in_node. It will handle finding the item
     // and checking the right sibling if necessary.
-    const deletedItems = delete_in_node(tree, leaf, finalKey, false);
-    console.log(`[remove single] delete_in_node returned ${deletedItems.length} items. Target leaf ${leaf.id} state: key_num=${leaf.key_num}, keys=${JSON.stringify(leaf.keys)}`);
-    return deletedItems;
+    return delete_in_node(tree, leaf, finalKey, false);
+
+    /* // REMOVED REDUNDANT LOGIC
+    const remove_pos = find_first_item(leaf.keys, finalKey, tree.comparator);
+    if (remove_pos > -1) {
+        console.log(`[REMOVE SINGLE] Attempting deletion in node ${leaf.id} at pos ${remove_pos} for key ${JSON.stringify(finalKey)}`);
+        return delete_in_node(tree, leaf, finalKey, false);
+    } else {
+      const rightSibling = leaf.right;
+      if (rightSibling && tree.comparator(finalKey, rightSibling.min) === 0) {
+          console.log(`[REMOVE SINGLE] Key ${finalKey} not found in node ${leaf.id}, trying right sibling ${rightSibling.id}`);
+          return delete_in_node(tree, rightSibling, finalKey, false);
+      }
+      return [];
+    }
+    */
   }
 }
 
@@ -1162,36 +1147,36 @@ export function split<T, K extends ValueType>(
   add_sibling(node, new_node, 'right')
   // console.log(`[split] Linked siblings: node ${node.id} <-> node ${new_node.id}`);
 
-  // Calculate split point
-  const splitIndex = Math.floor(node.key_num / 2);
-  let keyToInsertInParent: K;
+  // Calculate split point (middle key)
+  const splitIndex = Math.floor(node.key_num / 2); // Index of the key to move up (for internal nodes) or copy up (for leaf nodes)
+  let middleKey: K; // Key that moves up (internal) or is copied up (leaf)
 
   // Move the second half of keys and pointers/children to the new node
   if (node.leaf) {
-    // Leaf node split:
-    // Key at splitIndex is COPIED up (it remains in the new_node)
-    keyToInsertInParent = node.keys[splitIndex]; // Key to copy up
-    const splitKeyIndex = splitIndex; // Start moving keys/pointers from this index
+    // For leaf nodes, the key at the split index is COPIED up.
+    // Keys/pointers from splitIndex onwards are moved to the new node.
+    middleKey = node.keys[splitIndex]; // This key is copied up (value doesn't matter here)
+    const splitKeyIndex = splitIndex; // Start moving from this index
     new_node.keys = node.keys.splice(splitKeyIndex);
     new_node.pointers = node.pointers.splice(splitKeyIndex);
+    // Note: middleKey remains in new_node.keys[0]
   } else {
-    // Internal node split:
-    // Key at splitIndex MOVES up
-    keyToInsertInParent = node.keys[splitIndex]; // Key to move up
-
-    // Move keys AFTER splitIndex to new_node
+    // For internal nodes, the key at splitIndex MOVES up.
+    // Keys *after* splitIndex and children from splitIndex+1 are moved.
+    middleKey = node.keys[splitIndex]; // This key MOVES up
     new_node.keys = node.keys.splice(splitIndex + 1);
-    // Move children AFTER splitIndex pointer to new_node
     new_node.children = node.children.splice(splitIndex + 1);
-
-    // Remove the key that moved up (at splitIndex) from the original node
-    node.keys.splice(splitIndex);
-
     // Re-assign parent for moved children
     new_node.children.forEach(childId => {
         const childNode = tree.nodes.get(childId);
         if (childNode) childNode.parent = new_node;
     });
+  }
+
+  // Key at splitIndex is removed from original node only for internal nodes,
+  // as it moves up to the parent.
+  if (!node.leaf) {
+      node.keys.splice(splitIndex); // Remove the key that moved up and keys after it
   }
 
   // console.log(`[split] Moved items. Node ${node.id} keys: ${JSON.stringify(node.keys)}, Node ${new_node.id} keys: ${JSON.stringify(new_node.keys)}`);
@@ -1207,35 +1192,44 @@ export function split<T, K extends ValueType>(
   // console.log(`[split] Updated min/max. Node ${node.id} min=${node.min},max=${node.max}. Node ${new_node.id} min=${new_node.min},max=${new_node.max}`);
 
 
-  // Insert the key into the parent or create a new root
+  // Insert the middle key into the parent or create a new root
   if (node.id == tree.root) {
     // console.log(`[split] Node ${node.id} is root. Creating new root.`);
-    // Create a new root with the keyToInsertInParent
-    const newRoot = Node.createNode(tree); // New root is always an internal node
-    newRoot.keys = [keyToInsertInParent];
-    newRoot.children = [node.id, new_node.id];
-    node.parent = newRoot;
-    new_node.parent = newRoot;
+    // For the new root, the key *must* be the minimum of the right child (new_node)
+    const newRoot = Node.createRootFrom(tree, node, new_node);
+    // Ensure the key in the new root is correct
+    newRoot.keys = [new_node.min]; // Set root key to min of the right child
     update_state(newRoot);
     update_min_max(newRoot);
+
     tree.root = newRoot.id;
-    // console.log(`[split] New root is ${newRoot.id}`);
+    // console.log(`[split] New root is ${newRoot.id} with key ${newRoot.keys[0]}`);
   } else {
-    const parent = node.parent
-    // console.log(`[split] Inserting key ${keyToInsertInParent} into parent ${parent.id}`);
+    const parent = node.parent;
+    // --- CORRECTED: Use new_node.min as the key to insert into the parent ---
+    const keyToInsert = new_node.min;
+    // const keyToInsert = middleKey; // Use the stored middleKey for both cases now <-- INCORRECT
+    // console.log(`[split] Inserting key ${keyToInsert} (new_node.min) into parent ${parent.id}`);
+    // attach_one_to_right_after(parent, new_node, node); // This function needs the key to insert
+    // Let's modify attach_one_to_right_after or insert into parent here
 
-    // Insert the key into the parent at the correct position
-    const keyInsertPos = find_first_key(parent.keys, keyToInsertInParent, tree.comparator);
-    parent.keys.splice(keyInsertPos, 0, keyToInsertInParent);
+    // --- CORRECTED LOGIC for inserting into parent ---
+    // Find the correct position to insert the keyToInsert (new_node.min)
+    const keyInsertPos = find_first_key(parent.keys, keyToInsert, tree.comparator);
+    parent.keys.splice(keyInsertPos, 0, keyToInsert);
 
-    // Insert child pointer - this always happens
+    // Find the index of the original node (node) in the parent's children array
     const nodeIndexInParent = parent.children.indexOf(node.id);
     if (nodeIndexInParent !== -1) {
         // Insert the new_node's ID into the parent's children array immediately after the original node
         parent.children.splice(nodeIndexInParent + 1, 0, new_node.id);
     } else {
+        // This should ideally not happen if the tree structure is consistent
         console.error(`[split] FATAL Error: Node ${node.id} not found in parent ${parent.id}'s children during split.`);
+        // Handle error appropriately, maybe throw or try to recover
+        // For now, log the error and proceed cautiously
     }
+    // --- END CORRECTED LOGIC ---
 
     new_node.parent = parent; // Ensure new node's parent is set
 
@@ -1250,13 +1244,11 @@ export function split<T, K extends ValueType>(
         runValidation(parent, 'split_parent_updated');
     }
   }
-  // Validate nodes involved in the split
+  // Validate nodes involved in the split (original, new, potentially new root)
   runValidation(node, 'split_node_final');
   runValidation(new_node, 'split_new_node_final');
-  // If parent exists, validate it too, as it was modified
-  if(node.parent && node.id !== tree.root) {
-      runValidation(node.parent, 'split_parent_final');
-  }
+  // If a new root was created, it doesn't need explicit validation here,
+  // as it was created from validated children.
 }
 
 export function try_to_pull_up_tree<T, K extends ValueType>(
@@ -1297,12 +1289,11 @@ export function borrow_from_left<T, K extends ValueType>(
     node.keys.unshift(borrowedKey);
     node.pointers.unshift(borrowedPointer);
 
-    // Update parent separator key to the new minimum of the current node
+    // Update parent separator key
     parent.keys[separatorIndex] = node.keys[0];
 
   } else {
-    // Internal node case
-    // Move separator key from parent down to the beginning of node keys
+    // Move separator key from parent to the beginning of node keys
     const parentSeparator = parent.keys[separatorIndex];
     node.keys.unshift(parentSeparator);
 
@@ -1312,23 +1303,33 @@ export function borrow_from_left<T, K extends ValueType>(
     const borrowedChildNode = node.tree.nodes.get(borrowedChildId);
     if (borrowedChildNode) borrowedChildNode.parent = node;
 
-    // Remove the corresponding key from left_sibling (the one before the moved child)
-    // This key effectively becomes the new separator in the parent
-    const newParentSeparator = left_sibling.keys.pop(); // Key to move up
-    parent.keys[separatorIndex] = newParentSeparator;
+    // --- CORRECTED: Update parent separator key AFTER node is updated ---
+    // First update the node that received the borrowed child
+    update_state(node);
+    update_min_max(node); // node.min should now be correct
+
+    // Now update the parent's separator key to the new minimum of the node
+    parent.keys[separatorIndex] = node.min;
+    // parent.keys[separatorIndex] = left_sibling.keys.pop(); // <-- INCORRECT LOGIC
+
+    // Update the sibling node AFTER popping its key/child implicitly via update_min_max later
+    // update_state(left_sibling);
+    // update_min_max(left_sibling);
+
+    // Remove the corresponding key from left_sibling *before* updating its state
+    // Note: The key to remove is the *new* last key after pop() if the state wasn't updated yet.
+    // This seems overly complex. Let's recalculate left_sibling state completely.
+    left_sibling.keys.pop(); // Remove the key corresponding to the moved child
 
   }
 
-  // Update states and min/max for node and sibling
-  update_state(node);
-  update_min_max(node);
-  update_state(left_sibling);
-  update_min_max(left_sibling);
-
-  // Parent's keys changed, min/max might need update
-  update_min_max(parent);
-
-  // Commit changes
+  // Update states
+  // update_state(node); // Already updated for internal node case
+  // update_min_max(node);
+  update_state(left_sibling); // Update sibling state now
+  update_min_max(left_sibling); // Update sibling min/max now
+  // Parent's keys changed, min/max might need update if borrowed key was min/max
+  update_min_max(parent); // Simpler to just update parent's min/max
   node.commit() // Mark node as processed for reflow
   left_sibling.commit()
   parent.commit()
@@ -1344,6 +1345,7 @@ export function borrow_from_right<T, K extends ValueType>(
   right_sibling: Node<T, K>,
 ): void {
     const parent = node.parent;
+    // console.log(`[BORROW RIGHT] Entering: Node ${node.id} (keys=${JSON.stringify(node.keys)}) borrows from Right ${right_sibling.id} (keys=${JSON.stringify(right_sibling.keys)}). Parent: ${parent?.id}`); // Remove log
     if (!parent) return;
 
     const childIndex = parent.children.indexOf(node.id);
@@ -1356,20 +1358,33 @@ export function borrow_from_right<T, K extends ValueType>(
         node.keys.push(borrowedKey);
         node.pointers.push(borrowedPointer);
 
+        // console.log(`[BORROW RIGHT LEAF] Node ${node.id} received key ${borrowedKey}. Right sib keys now: ${JSON.stringify(right_sibling.keys)}`); // Remove log
         // Update parent separator key to the new first key of the right sibling
+        // Ensure right_sibling is not empty before accessing keys[0]
         if (right_sibling.key_num > 0) {
-            parent.keys[separatorIndex] = right_sibling.keys[0];
+            parent.keys[separatorIndex] = right_sibling.keys[0]; // <-- CORRECT LOGIC
         } else {
+            // This case might happen if right_sibling had exactly t keys and gave one.
+            // The parent separator should effectively be removed or updated by reflow/merge later.
+            // For now, maybe set it based on the new max of the node that borrowed?
+            // Let's stick to the most likely correct logic: use right_sibling's new min.
+             // If right sibling became empty, the separator logic is complex and might need
+             // adjustment in the calling reflow function based on whether a merge happens next.
+             // Let's assume for now right_sibling won't become completely empty just from borrowing one.
+             // A safer approach might be needed if tests fail here.
              if (right_sibling.keys.length > 0) { // Double check for safety
                 parent.keys[separatorIndex] = right_sibling.keys[0];
              } else {
-                // Edge case: right sibling became empty. Reflow/merge will handle parent key.
+                // TODO: Handle the edge case where right sibling becomes empty after borrow.
+                // This likely requires reflow to handle the merge immediately after.
+                // For now, we might leave the parent key as is, anticipating a merge.
              }
         }
+        // const oldParentKey = parent.keys[separatorIndex]; // Keep for potential debugging
+        // console.log(`[BORROW RIGHT LEAF] Parent ${parent.id} key at index ${separatorIndex} changed from ${oldParentKey} to ${parent.keys[separatorIndex]}`); // Remove log
 
     } else {
-        // Internal node case
-        // Move separator key from parent down to the end of node keys
+        // Move separator key from parent to the end of node keys
         const parentSeparator = parent.keys[separatorIndex];
         node.keys.push(parentSeparator);
 
@@ -1379,22 +1394,32 @@ export function borrow_from_right<T, K extends ValueType>(
         const borrowedChildNode = node.tree.nodes.get(borrowedChildId);
         if (borrowedChildNode) borrowedChildNode.parent = node;
 
-        // Remove the corresponding key from the right sibling (the one after the moved child)
-        // This key becomes the new separator in the parent.
-        const newParentSeparator = right_sibling.keys.shift(); // Key to move up
-        parent.keys[separatorIndex] = newParentSeparator;
+        // Move first key from right sibling up to parent as new separator
+        // parent.keys[separatorIndex] = right_sibling.keys.shift(); // <-- INCORRECT LOGIC
+        // --- CORRECTED: Update parent separator key AFTER sibling is updated ---
+        // First, remove the key from the sibling (corresponding to the moved child)
+        right_sibling.keys.shift();
+
+        // Update the node that received the data
+        update_state(node);
+        update_min_max(node);
+
+        // Update the sibling that gave the data
+        update_state(right_sibling);
+        update_min_max(right_sibling); // right_sibling.min is now correct
+
+        // Now update the parent separator key
+        parent.keys[separatorIndex] = right_sibling.min;
+
     }
 
-    // Update states and min/max
-    update_state(node);
-    update_min_max(node);
-    update_state(right_sibling);
-    update_min_max(right_sibling);
-
+    // Update states
+    // update_state(node); // Already updated
+    // update_min_max(node); // Already updated
+    // update_state(right_sibling); // Already updated
+    // update_min_max(right_sibling); // Already updated
     // Parent's keys changed, min/max might need update
     update_min_max(parent);
-
-    // Commit changes
     node.commit()
     right_sibling.commit()
     parent.commit()

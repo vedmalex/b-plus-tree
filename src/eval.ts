@@ -128,9 +128,25 @@ export function find_range_start<T, K extends ValueType>(
   if (forward) {
     node = find_first_node(tree, key)
     if (include) {
-      index = find_first_key(node.keys, key, tree.comparator)
+      // Find the first key >= specified key
+      index = find_first_key(node.keys, key, tree.comparator) // Binary search for first >= key
+      if (index === -1) { // Handle case where find_first_key returns -1 (e.g., key > all keys in node)
+          index = node.keys.length; // Start search from next node
+      }
     } else {
-      index = find_last_key(node.keys, key, tree.comparator)
+      // Find the first key > specified key
+      let firstGTE = find_first_key(node.keys, key, tree.comparator); // Find first >= key
+       if (firstGTE !== -1 && firstGTE < node.keys.length && tree.comparator(node.keys[firstGTE], key) === 0) {
+           // Found the key exactly, start at the next position
+           index = firstGTE + 1;
+       } else if (firstGTE !== -1 && firstGTE < node.keys.length) {
+            // Found a key greater than the searched key, start there
+            index = firstGTE;
+       } else {
+            // All keys in node are smaller, or node is empty. Start search from next node.
+            // Assuming find_first_key returns -1 or node.keys.length in this case.
+            index = node.keys.length; // This triggers evaluate to move to the next node
+       }
     }
   } else {
     node = find_last_node(tree, key)
@@ -150,34 +166,51 @@ export function find<T, K extends ValueType>(
   options?: Partial<SearchOptions>,
 ): Array<T> {
   const { skip = 0, forward = true, take: initial_take = -1 } = options ?? {}
-  let { take = -1 } = options ?? {}
+  let take = initial_take === -1 ? Infinity : initial_take; // Use Infinity for "take all"
   const result: Array<T> = []
-  const cursor = find_first<T, K>(tree, key, forward)
-  if (cursor.pos >= 0) {
-    let cur: Cursor<T, K>
-    if (skip == 0) {
-      cur = cursor
-    } else {
-      cur = evaluate(tree, cursor.node, cursor.pos + (forward ? skip : -skip))
-    }
-    if (!cur.done) {
-      if (cur.key == key) {
-        if (take == -1 && initial_take != -1) {
-          result.push(cur.value)
-        } else {
-          while (cur || take == 0) {
-            if (cur.key == key && cur.pos >= 0) {
-              result.push(cur.value)
-              take -= 1
-              cur = evaluate(tree, cur.node, cur.pos + (forward ? 1 : -1))
-            } else {
-              break
-            }
-          }
-        }
+
+  // Find the first potential match
+  const startCursor = find_first<T, K>(tree, key, forward)
+
+  if (!startCursor.done && startCursor.pos >= 0) {
+      let currentCursor: Cursor<T, K>
+      let skippedCount = 0;
+
+      // Iterate to skip elements if necessary
+      currentCursor = startCursor;
+      while (!currentCursor.done && skippedCount < skip) {
+         // Check if the key still matches before skipping
+         if (tree.comparator(currentCursor.key, key) !== 0) {
+             // If the key changes while skipping, the target key range has ended
+             currentCursor = EmptyCursor; // Mark as done
+             break;
+         }
+         // Move to the next/previous item
+         currentCursor = forward
+             ? evaluate(tree, currentCursor.node, currentCursor.pos + 1)
+             : evaluate(tree, currentCursor.node, currentCursor.pos - 1);
+         skippedCount++;
       }
-    }
+
+
+      // Now collect elements according to 'take' limit
+      while (!currentCursor.done && take > 0) {
+          // Check if the key still matches
+          if (tree.comparator(currentCursor.key, key) === 0) {
+              result.push(currentCursor.value);
+              take--;
+          } else {
+              // Key no longer matches, stop collecting
+              break;
+          }
+
+          // Move to the next/previous item
+          currentCursor = forward
+              ? evaluate(tree, currentCursor.node, currentCursor.pos + 1)
+              : evaluate(tree, currentCursor.node, currentCursor.pos - 1);
+      }
   }
+
   return result
 }
 

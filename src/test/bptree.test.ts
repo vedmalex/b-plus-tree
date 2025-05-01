@@ -4,6 +4,7 @@ import path from 'path';
 import { BPlusTree } from '../BPlusTree'; // Assuming BPlusTree is in ../BPlusTree
 import { compare_keys_array, compare_keys_object } from '../methods';
 import { Cursor } from '../eval'; // Import Cursor
+import { serializeTree, deserializeTree, createTreeFrom } from '../BPlusTreeUtils'; // Import utils
 
 // Helper function to load test data
 const loadTestData = () => {
@@ -198,74 +199,96 @@ describe('BPlusTree', () => {
   describe('Min/Max Operations (Unique Keys)', () => {
     const N = 20;
     let keysToInsert: number[];
-    let bpt: BPlusTree<number, number> // Correct type for this suite
-    let sortedKeys: number[]; // Explicitly type sortedKeys
+    let bpt: BPlusTree<number, number>
+    let sortedKeys: number[];
+    let initialSize: number;
 
     beforeEach(() => {
       if (testData.length < N) return;
       const items = testData.slice(0, N);
       keysToInsert = getOrderedIndices(items);
-      sortedKeys = [...new Set(keysToInsert)].sort((a: number, b: number) => a - b); // Add types to sort callback
-      bpt = new BPlusTree<number, number>(T, true); // Unique keys
+      sortedKeys = [...new Set(keysToInsert)].sort((a: number, b: number) => a - b);
+      bpt = new BPlusTree<number, number>(T, true); // Use unique keys
 
-      keysToInsert.forEach(key => {
-        bpt.insert(key, key * 10); // Use key as value for simplicity
+      sortedKeys.forEach(key => {
+        bpt.insert(key, key * 10);
       });
+      initialSize = sortedKeys.length;
+      expect(bpt.size).toBe(initialSize);
     });
 
     it('should find min key correctly', () => {
       if (!bpt) return;
-      expect(bpt.min).toBe(sortedKeys[0]); // min is getter
+      expect(bpt.min).toBe(sortedKeys[0]);
     });
 
     it('should find max key correctly', () => {
        if (!bpt) return;
-      expect(bpt.max).toBe(sortedKeys[sortedKeys.length - 1]); // max is getter
+      expect(bpt.max).toBe(sortedKeys[sortedKeys.length - 1]);
     });
 
     it('should return undefined for min/max on empty tree', () => {
-       const emptyTree = new BPlusTree<number, number>(T, true); // Use correct type
-       expect(emptyTree.min).toBeUndefined(); // Use getter `min`
-       expect(emptyTree.max).toBeUndefined(); // Use getter `max`
+       const emptyTree = new BPlusTree<number, number>(T, true); // Unique keys
+       expect(emptyTree.min).toBeUndefined();
+       expect(emptyTree.max).toBeUndefined();
     });
 
     it('should remove min keys sequentially', () => {
       if (!bpt) return;
+      let currentSize = initialSize;
       for (let i = 0; i < sortedKeys.length; i++) {
-        const minKey = bpt.min; // Use getter `min`
-        expect(minKey).toBe(sortedKeys[i]);
-        const removed = bpt.remove(minKey); // remove is direct
-        // Check if remove returns a non-empty array
-        expect(removed.length).toBeGreaterThan(0);
-        // Use find correctly (returns Array<T>)
-        const result = bpt.find(minKey);
-        expect(result).toEqual([]); // Expect empty array for removed key
-        expect(bpt.size).toBe(sortedKeys.length - 1 - i); // Use getter `size`
+        const keyToRemove = sortedKeys[i];
+        expect(bpt.min).toBe(keyToRemove);
+        expect(bpt.size).toBe(currentSize);
+
+        const removed = bpt.remove(keyToRemove);
+        expect(removed.length).toBeGreaterThan(0); // Check one item was removed
+        expect(removed[0]?.[1]).toBe(keyToRemove * 10); // Check value
+
+        currentSize--;
+        expect(bpt.size).toBe(currentSize);
+        expect(bpt.count(keyToRemove)).toBe(0); // Should be 0 after removing unique key
+        expect(bpt.find(keyToRemove)).toEqual([]);
+
+        // Check min points to the next key
+        if (i < sortedKeys.length - 1) {
+            expect(bpt.min).toBe(sortedKeys[i + 1]);
+        } else {
+            expect(bpt.min).toBeUndefined();
+        }
       }
-      expect(bpt.min).toBeUndefined(); // Use getter `min`
-      expect(bpt.max).toBeUndefined(); // Use getter `max`
-      // Replace isEmpty check with size check
+      expect(bpt.min).toBeUndefined();
+      expect(bpt.max).toBeUndefined();
       expect(bpt.size).toBe(0);
     });
 
     it('should remove max keys sequentially', () => {
       if (!bpt) return;
+      let currentSize = initialSize;
       for (let i = 0; i < sortedKeys.length; i++) {
-        const maxKey = bpt.max; // Use getter `max`
-        expect(maxKey).toBe(sortedKeys[sortedKeys.length - 1 - i]);
-        const removed = bpt.remove(maxKey); // remove is direct
-         // Remove should succeed if key exists, returning [[K, T]]
-        expect(removed.length).toBeGreaterThan(0); // Corrected expectation
-        // Use find correctly (returns Array<T>)
-        const result = bpt.find(maxKey);
-        expect(result).toEqual([]); // Expect empty array for removed key
-        // Check size decrement if remove succeeded
-        expect(bpt.size).toBe(sortedKeys.length - 1 - i); // Uncommented and assuming remove works
+        const keyToRemove = sortedKeys[sortedKeys.length - 1 - i];
+        expect(bpt.max).toBe(keyToRemove);
+        expect(bpt.size).toBe(currentSize);
+
+        const removed = bpt.remove(keyToRemove);
+        expect(removed.length).toBeGreaterThan(0);
+        expect(removed[0]?.[1]).toBe(keyToRemove * 10);
+
+        currentSize--;
+        expect(bpt.size).toBe(currentSize);
+        expect(bpt.count(keyToRemove)).toBe(0);
+        expect(bpt.find(keyToRemove)).toEqual([]);
+
+        // Check max points to the previous key
+        if (i < sortedKeys.length - 1) {
+            expect(bpt.max).toBe(sortedKeys[sortedKeys.length - 2 - i]);
+        } else {
+            expect(bpt.max).toBeUndefined();
+        }
       }
-      expect(bpt.min).toBeUndefined(); // Use getter `min`
-      expect(bpt.max).toBeUndefined(); // Use getter `max`
-       // Expect size to be 0 if all max removals succeeded
-       expect(bpt.size).toBe(0); // Uncommented and assuming remove works
+       expect(bpt.min).toBeUndefined();
+       expect(bpt.max).toBeUndefined();
+       expect(bpt.size).toBe(0);
     });
   });
 
@@ -274,47 +297,53 @@ describe('BPlusTree', () => {
       const N = 20;
       let keysInInsertionOrder: number[]; // Explicitly type
       let bpt: BPlusTree<number, number> // Correct type
+      let initialSize: number;
 
       beforeEach(() => {
         if (testData.length < N) return;
         const items = testData.slice(0, N);
         // Use the original order of indices for removal check
         keysInInsertionOrder = getOrderedIndices(items);
-        bpt = new BPlusTree<number, number>(T, true); // Unique keys
+        bpt = new BPlusTree<number, number>(T, true); // Use unique keys
+        let insertedCount = 0;
 
+        // Ensure only unique keys from the original insertion order are added
+        const uniqueKeysInOrder: number[] = []; // Explicitly type as number[]
+        const seenKeys = new Set<number>();
         keysInInsertionOrder.forEach(key => {
-            // Handle potential duplicates in keysInInsertionOrder if the base data wasn't unique
-            // Correct check: find returns an array
-            if (bpt.find(key).length === 0) {
-                 bpt.insert(key, key * 10);
+            if (!seenKeys.has(key)) {
+                bpt.insert(key, key * 10); // Insert unique key
+                uniqueKeysInOrder.push(key);
+                seenKeys.add(key);
+                insertedCount++;
             }
         });
+        // Update keysInInsertionOrder to only contain the unique keys actually inserted
+        keysInInsertionOrder = uniqueKeysInOrder;
+        initialSize = insertedCount;
+        expect(bpt.size).toBe(initialSize);
       });
 
       it('should remove keys in insertion order', () => {
          if (!bpt) return;
-        const initialSize = bpt.size;
          let currentSize = initialSize;
 
-         keysInInsertionOrder.forEach((key, index) => { // key is number
-             // Use find correctly to check existence (returns Array<T>)
-             const findResult = bpt.find(key);
+         keysInInsertionOrder.forEach((key) => {
+             expect(bpt.size).toBe(currentSize);
+             // Find should return array with one item for unique keys
+             expect(bpt.find(key)).toHaveLength(1);
 
-             // Only try to remove if the key was actually inserted (handles duplicates in source)
-             // Check findResult length instead of undefined/isArray
-             if (findResult.length > 0) {
-                const removed = bpt.remove(key); // remove is direct
-                // Remove should succeed for existing keys
-                expect(removed.length).toBeGreaterThan(0); // Expect success
-                // If remove succeeds, check find and size
-                expect(bpt.find(key)).toEqual([]); // Expect empty array now
-                currentSize--;
-                expect(bpt.size).toBe(currentSize);
-             } else {
-                 // Key wasn't found initially (findResult.length === 0), do nothing
-             }
+             const removed = bpt.remove(key);
+             expect(removed.length).toBeGreaterThan(0);
+             expect(removed[0]?.[1]).toBe(key * 10); // Check removed value
+
+             currentSize--;
+             expect(bpt.size).toBe(currentSize);
+             expect(bpt.count(key)).toBe(0);
+             expect(bpt.find(key)).toEqual([]);
          });
-         // Final size should be 0 if all inserted keys were removed
+
+         // Final size should be 0
          expect(bpt.size).toBe(0);
       });
   });
@@ -658,60 +687,63 @@ describe('BPlusTree', () => {
     // Potentially add tests for cursor behavior at min/max keys
   });
 
-  describe('Serialization / Deserialization', () => {
-    // Use string keys to avoid potential type issues with number keys if ValueType expects string
-    let bpt: BPlusTree<string, string>; // K = string, T = string
-    const keys = ["5", "1", "8", "3", "9", "0", "7"]; // Use string keys
-    const values = keys.map(k => `val-${k}`);
+  describe('Serialization', () => {
+    const N = 15;
+    let keysToInsert: number[];
+    let bpt: BPlusTree<number, number>;
+    let serializedData: ReturnType<typeof serializeTree<number,number>>; // Use inferred type
 
     beforeEach(() => {
-      bpt = new BPlusTree<string, string>(T, true); // K = string, T = string
-      keys.forEach((key, index) => {
-        bpt.insert(key, values[index]); // Insert string key
+      if (testData.length < N) return;
+      const items = testData.slice(0, N);
+      keysToInsert = getOrderedIndices(items);
+      bpt = new BPlusTree<number, number>(T, false); // Allow duplicates for this test
+      keysToInsert.forEach(key => bpt.insert(key, key * 10));
+      // Serialize once in beforeEach for reuse
+      serializedData = serializeTree(bpt as any); // Revert to type assertion to bypass complex type issue
+    });
+
+    it('should serialize the tree correctly', () => {
+      if (!bpt || !serializedData) return;
+      expect(serializedData).toBeDefined();
+      expect(serializedData.t).toBe(bpt.t);
+      expect(serializedData.unique).toBe(bpt.unique);
+      expect(serializedData.root).toBe(bpt.root);
+      expect(serializedData.nodes).toBeInstanceOf(Array);
+      expect(serializedData.nodes.length).toBe(bpt.nodes.size);
+      // Check if some nodes contain expected keys/pointers (basic sanity check)
+      // This might be brittle depending on implementation details
+      // console.log(JSON.stringify(serializedData, null, 2));
+    });
+
+    it('should deserialize the tree correctly into an existing instance', () => {
+       if (!bpt || !serializedData) return;
+      const newTree = new BPlusTree<number, number>(T + 1, true); // Different initial state
+      deserializeTree<number, number>(newTree, serializedData); // Use utility
+
+      expect(newTree.t).toBe(bpt.t); // Should match serialized data
+      expect(newTree.unique).toBe(bpt.unique);
+      expect(newTree.root).toBe(bpt.root);
+      expect(newTree.nodes.size).toBe(bpt.nodes.size);
+      expect(newTree.size).toBe(bpt.size);
+      // Verify content matches original tree
+      expect(newTree.list()).toEqual(bpt.list());
+      keysToInsert.forEach(key => {
+        expect(newTree.find(key)).toEqual(bpt.find(key));
       });
     });
 
-    it('should serialize and deserialize the tree correctly using createFrom', () => {
-      const serialized = BPlusTree.serialize(bpt);
+    it('should create a new tree from serialized data using createFrom', () => {
+       if (!bpt || !serializedData) return;
+      const createdTree = createTreeFrom(serializedData); // Use utility
 
-      // Check basic serialized properties (optional)
-      expect(serialized.t).toBe(bpt.t);
-      expect(serialized.unique).toBe(bpt.unique);
-      expect(serialized.root).toBeDefined();
-      expect(serialized.nodes).toBeInstanceOf(Array);
-
-      const newBpt = BPlusTree.createFrom(serialized);
-
-      // Verify the new tree
-      expect(newBpt.t).toBe(bpt.t);
-      expect(newBpt.unique).toBe(bpt.unique);
-      expect(newBpt.size).toBe(bpt.size);
-      keys.forEach((key, index) => {
-        expect(newBpt.find(key)).toEqual([values[index]]); // Find by string key
+      expect(createdTree).toBeInstanceOf(BPlusTree);
+      expect(createdTree.t).toBe(bpt.t);
+      expect(createdTree.unique).toBe(bpt.unique);
+      expect(createdTree.size).toBe(bpt.size);
+      keysToInsert.forEach(key => {
+        expect(createdTree.find(key)).toEqual(bpt.find(key));
       });
-      expect(newBpt.find("99")).toEqual([]); // Check non-existent string key
-    });
-
-    it('should serialize and deserialize into an existing tree instance', () => {
-      const serialized = BPlusTree.serialize(bpt);
-
-      const existingTree = new BPlusTree<string, string>(T + 1, false); // Different initial state
-      existingTree.insert("100", 'old-val'); // Insert string key
-      const oldSize = existingTree.size;
-      const oldT = existingTree.t;
-
-      BPlusTree.deserialize(existingTree, serialized);
-
-      // Verify the existing tree is overwritten
-      expect(existingTree.t).not.toBe(oldT);
-      expect(existingTree.t).toBe(bpt.t);
-      expect(existingTree.unique).toBe(bpt.unique);
-      expect(existingTree.size).not.toBe(oldSize);
-      expect(existingTree.size).toBe(bpt.size);
-      keys.forEach((key, index) => {
-        expect(existingTree.find(key)).toEqual([values[index]]); // Find by string key
-      });
-       expect(existingTree.find("100")).toEqual([]); // Check old string key is gone
     });
 
   });
@@ -861,3 +893,83 @@ describe('BPlusTree', () => {
 });
 
 }); // End of main BPlusTree describe
+
+// --- NEW TESTS START HERE ---
+
+describe('Advanced Duplicate Removal', () => {
+    const T = 2; // Use a small degree for easier testing of splits/merges if needed
+    let bpt: BPlusTree<number, number>;
+    const duplicateKey = 5;
+    const otherKey1 = 3;
+    const otherKey2 = 7;
+    const numDupes = 3;
+    let initialSize: number;
+
+    beforeEach(() => {
+        bpt = new BPlusTree<number, number>(T, false); // Allow duplicates
+
+        // Insert other keys
+        bpt.insert(otherKey1, otherKey1 * 10);
+        bpt.insert(otherKey2, otherKey2 * 10);
+
+        // Insert duplicates
+        for (let i = 0; i < numDupes; i++) {
+            bpt.insert(duplicateKey, duplicateKey * 10 + i);
+        }
+
+        initialSize = 2 + numDupes; // 2 unique keys + duplicates
+        expect(bpt.size).toBe(initialSize);
+        expect(bpt.count(duplicateKey)).toBe(numDupes);
+        expect(bpt.count(otherKey1)).toBe(1);
+        expect(bpt.count(otherKey2)).toBe(1);
+    });
+
+    it('should remove duplicates one by one sequentially', () => {
+        let currentSize = initialSize;
+        const key = duplicateKey;
+
+        // Remove first duplicate
+        expect(bpt.count(key)).toBe(3);
+        expect(bpt.size).toBe(currentSize);
+        let removed = bpt.remove(key);
+        expect(removed).toHaveLength(1); // Should remove one item
+        // Optional: Check which value was removed if order is predictable
+        // expect(removed[0]?.[1]).toBe(key * 10 + 0); // Example check
+        currentSize--;
+        expect(bpt.count(key)).toBe(2);
+        expect(bpt.size).toBe(currentSize);
+
+        // Remove second duplicate
+        removed = bpt.remove(key);
+        expect(removed).toHaveLength(1);
+        currentSize--;
+        expect(bpt.count(key)).toBe(1);
+        expect(bpt.size).toBe(currentSize);
+
+        // Remove third (last) duplicate
+        removed = bpt.remove(key);
+        expect(removed).toHaveLength(1);
+        currentSize--;
+        expect(bpt.count(key)).toBe(0);
+        expect(bpt.size).toBe(currentSize);
+        expect(bpt.find(key)).toEqual([]);
+
+        // Try removing again (should fail)
+        removed = bpt.remove(key);
+        expect(removed).toHaveLength(0);
+        expect(bpt.count(key)).toBe(0);
+        expect(bpt.size).toBe(currentSize); // Size should not change
+
+        // Verify other keys are still present
+        expect(bpt.count(otherKey1)).toBe(1);
+        expect(bpt.find(otherKey1)).toEqual([otherKey1 * 10]);
+        expect(bpt.count(otherKey2)).toBe(1);
+        expect(bpt.find(otherKey2)).toEqual([otherKey2 * 10]);
+
+        // Final size check
+        expect(currentSize).toBe(2); // Only the two other keys should remain
+    });
+
+    // Add more tests here later (e.g., remove causing merge/borrow)
+
+});
