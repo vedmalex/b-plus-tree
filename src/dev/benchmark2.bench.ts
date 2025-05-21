@@ -3,7 +3,7 @@ import { bench, describe } from 'vitest'
 import SBPlTree from 'sorted-btree'
 import { RBTree } from 'bintrees'
 import { BPlusTree } from '../BPlusTree'
-import { find_first_key, find_last_key, find_first_node } from '../methods'
+import { find_first_key, find_last_key } from '../methods'
 
 const comparator = (a, b) => a[0] - b[0]
 const N = 95000

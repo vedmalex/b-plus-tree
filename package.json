@@ -1,6 +1,6 @@
 {
 	"name": "b-pl-tree",
-	"version": "1.0.2",
+	"version": "1.1.0",
 	"description": "Pretty simple b+ tree implementation on typescript",
 	"main": "./dist/index.js",
 	"types": "./types/index.d.ts",
