@@ -1,6 +1,6 @@
 {
 	"name": "b-pl-tree",
-	"version": "1.2.3",
+	"version": "1.2.5",
 	"description": "Production-ready B+ Tree with full transactional support, Copy-on-Write operations, and 2PC (Two-Phase Commit)",
   "exports": {
     ".": {
@@ -34,7 +34,7 @@
 		"type": "git",
 		"url": "git+https://github.com/vedmalex/b-plus-tree.git"
 	},
-	"files": ["dist", "types"],
+	"files": ["dist", "types", "src"],
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",
 		"@types/bun": "^1.2.2",

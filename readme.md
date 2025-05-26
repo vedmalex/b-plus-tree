@@ -32,6 +32,7 @@
   - [Two-Phase Commit (2PC)](#-two-phase-commit-2pc)
 - [Serialization and Persistence](#-serialization-and-persistence)
 - [Advanced Examples](#-advanced-examples)
+- [Complex Indexes and Composite Keys](#-complex-indexes-and-composite-keys)
 - [Query Operations](#-query-operations)
 - [Performance Characteristics](#-performance-characteristics)
 - [Type Safety](#-type-safety)
@@ -692,6 +693,758 @@ try {
 // Graceful handling of invalid data
 const malformedData = { invalid: 'data' }
 deserializeTree(tree, malformedData) // Won't throw, tree remains unchanged
+```
+
+## 🔗 Complex Indexes and Composite Keys
+
+Библиотека поддерживает создание сложных индексов, состоящих из нескольких полей, что позволяет создавать составные ключи для более гибкого поиска и сортировки данных.
+
+### Составные ключи с объектами
+
+```typescript
+// Определяем тип составного ключа
+interface CompositeKey {
+  department: string
+  level: number
+  joinDate?: Date
+}
+
+// Создаем компаратор для составного ключа
+const compositeComparator = (a: CompositeKey, b: CompositeKey): number => {
+  // Обработка null/undefined значений
+  if (!a || !b) {
+    if (a === b) return 0
+    return !a ? -1 : 1
+  }
+
+  // Сравнение по department (первый приоритет)
+  if (a.department !== b.department) {
+    return a.department.localeCompare(b.department)
+  }
+
+  // Сравнение по level (второй приоритет)
+  if (a.level !== b.level) {
+    return a.level - b.level
+  }
+
+  // Сравнение по joinDate (третий приоритет, опционально)
+  if (a.joinDate && b.joinDate) {
+    return a.joinDate.getTime() - b.joinDate.getTime()
+  }
+  if (a.joinDate && !b.joinDate) return 1
+  if (!a.joinDate && b.joinDate) return -1
+
+  return 0
+}
+
+// Создаем дерево с составным ключом
+const employeeIndex = new BPlusTree<Employee, CompositeKey>(
+  3,
+  false, // Разрешаем дубликаты
+  compositeComparator
+)
+```
+
+### Использование составных ключей
+
+```typescript
+interface Employee {
+  id: number
+  name: string
+  department: string
+  level: number
+  joinDate: Date
+  salary: number
+}
+
+// Вставка данных с составными ключами
+const employees: Employee[] = [
+  {
+    id: 1,
+    name: 'Alice Johnson',
+    department: 'Engineering',
+    level: 3,
+    joinDate: new Date('2020-01-15'),
+    salary: 95000
+  },
+  {
+    id: 2,
+    name: 'Bob Smith',
+    department: 'Engineering',
+    level: 2,
+    joinDate: new Date('2021-03-10'),
+    salary: 75000
+  },
+  {
+    id: 3,
+    name: 'Charlie Brown',
+    department: 'Marketing',
+    level: 3,
+    joinDate: new Date('2019-08-22'),
+    salary: 85000
+  }
+]
+
+// Индексирование по составному ключу
+employees.forEach(emp => {
+  const compositeKey: CompositeKey = {
+    department: emp.department,
+    level: emp.level,
+    joinDate: emp.joinDate
+  }
+  employeeIndex.insert(compositeKey, emp)
+})
+
+// Поиск по точному составному ключу
+const engineeringLevel3 = employeeIndex.find_all({
+  department: 'Engineering',
+  level: 3
+})
+
+// Поиск с частичным ключом (используя query API)
+import { sourceEach, filter, executeQuery } from 'b-pl-tree'
+
+const engineeringEmployees = executeQuery(
+  sourceEach<Employee, CompositeKey>(true),
+  filter(([key, _]) => key.department === 'Engineering')
+)(employeeIndex)
+```
+
+### Массивы как составные ключи
+
+```typescript
+// Использование массивов для составных ключей
+import { compare_keys_array } from 'b-pl-tree'
+
+// Составной ключ: [год, месяц, день, час]
+type DateTimeKey = [number, number, number, number]
+
+const timeSeriesIndex = new BPlusTree<SensorReading, DateTimeKey>(
+  3,
+  false,
+  compare_keys_array // Встроенный компаратор для массивов
+)
+
+interface SensorReading {
+  sensorId: string
+  value: number
+  timestamp: Date
+}
+
+// Вставка данных временных рядов
+const readings: SensorReading[] = [
+  {
+    sensorId: 'temp-01',
+    value: 23.5,
+    timestamp: new Date('2024-01-15T10:30:00')
+  },
+  {
+    sensorId: 'temp-02',
+    value: 24.1,
+    timestamp: new Date('2024-01-15T10:31:00')
+  }
+]
+
+readings.forEach(reading => {
+  const date = reading.timestamp
+  const key: DateTimeKey = [
+    date.getFullYear(),
+    date.getMonth() + 1,
+    date.getDate(),
+    date.getHours()
+  ]
+  timeSeriesIndex.insert(key, reading)
+})
+
+// Поиск данных за конкретный час
+const hourlyData = timeSeriesIndex.find_all([2024, 1, 15, 10])
+```
+
+### Многоуровневые индексы
+
+```typescript
+// Создание системы многоуровневых индексов
+class EmployeeDatabase {
+  // Первичный индекс по ID
+  private primaryIndex = new BPlusTree<Employee, number>(3, true)
+
+  // Вторичный индекс по отделу и уровню
+  private departmentLevelIndex = new BPlusTree<Employee, CompositeKey>(
+    3,
+    false,
+    compositeComparator
+  )
+
+  // Индекс по зарплате (для диапазонных запросов)
+  private salaryIndex = new BPlusTree<Employee, number>(3, false)
+
+  addEmployee(employee: Employee): void {
+    // Вставка в первичный индекс
+    this.primaryIndex.insert(employee.id, employee)
+
+    // Вставка во вторичные индексы
+    this.departmentLevelIndex.insert({
+      department: employee.department,
+      level: employee.level,
+      joinDate: employee.joinDate
+    }, employee)
+
+    this.salaryIndex.insert(employee.salary, employee)
+  }
+
+  // Поиск по ID (быстрый поиск)
+  findById(id: number): Employee | null {
+    return this.primaryIndex.find(id)
+  }
+
+  // Поиск по отделу и уровню
+  findByDepartmentAndLevel(department: string, level: number): Employee[] {
+    return this.departmentLevelIndex.find_all({
+      department,
+      level
+    })
+  }
+
+  // Поиск в диапазоне зарплат
+  findBySalaryRange(minSalary: number, maxSalary: number): Employee[] {
+    const results: Employee[] = []
+
+    // Используем query API для диапазонного поиска
+    const generator = executeQuery(
+      sourceRange<Employee, number>(minSalary, maxSalary, true, true),
+      filter(([salary, _]) => salary >= minSalary && salary <= maxSalary)
+    )(this.salaryIndex)
+
+    for (const cursor of generator) {
+      results.push(cursor.value)
+    }
+
+    return results
+  }
+}
+```
+
+### Транзакционная поддержка для сложных индексов
+
+```typescript
+// Транзакционные операции с несколькими индексами
+async function addEmployeeTransactionally(
+  database: EmployeeDatabase,
+  employee: Employee
+): Promise<boolean> {
+  const primaryTx = database.primaryIndex.begin_transaction()
+  const departmentTx = database.departmentLevelIndex.begin_transaction()
+  const salaryTx = database.salaryIndex.begin_transaction()
+
+  try {
+    // Вставка во все индексы в рамках транзакций
+    database.primaryIndex.insert_in_transaction(employee.id, employee, primaryTx)
+
+    database.departmentLevelIndex.insert_in_transaction({
+      department: employee.department,
+      level: employee.level,
+      joinDate: employee.joinDate
+    }, employee, departmentTx)
+
+    database.salaryIndex.insert_in_transaction(employee.salary, employee, salaryTx)
+
+    // Подготовка к коммиту (2PC)
+    const canCommit = await Promise.all([
+      primaryTx.prepareCommit(),
+      departmentTx.prepareCommit(),
+      salaryTx.prepareCommit()
+    ])
+
+    if (canCommit.every(result => result)) {
+      // Финализация коммита
+      await Promise.all([
+        primaryTx.finalizeCommit(),
+        departmentTx.finalizeCommit(),
+        salaryTx.finalizeCommit()
+      ])
+      return true
+    } else {
+      throw new Error('Prepare phase failed')
+    }
+  } catch (error) {
+    // Откат всех транзакций
+    await Promise.all([
+      primaryTx.abort(),
+      departmentTx.abort(),
+      salaryTx.abort()
+    ])
+    return false
+  }
+}
+```
+
+### Встроенные компараторы
+
+Библиотека предоставляет готовые компараторы для различных типов составных ключей. Компараторы не являются обязательными - если не указать компаратор, будет использован стандартный компаратор для примитивных типов.
+
+#### 1. Компаратор для примитивных типов
+
+```typescript
+import { compare_keys_primitive } from 'b-pl-tree'
+
+// Автоматически используется по умолчанию для number, string, boolean
+const simpleTree = new BPlusTree<User, number>(3, true)
+// Эквивалентно:
+const explicitTree = new BPlusTree<User, number>(3, true, compare_keys_primitive)
+
+// Поддерживает сравнение:
+// - Чисел: 1 < 2 < 3
+// - Строк: 'a' < 'b' < 'c' (лексикографическое сравнение)
+// - Булевых значений: false < true
+// - Смешанных типов с приоритетом: boolean < number < string
+```
+
+#### 2. Компаратор для массивов
+
+```typescript
+import { compare_keys_array } from 'b-pl-tree'
+
+// Сравнивает массивы поэлементно
+const arrayTree = new BPlusTree<Data, number[]>(3, false, compare_keys_array)
+
+// Примеры сравнения:
+// [1, 2] < [1, 3]     (второй элемент больше)
+// [1, 2] < [1, 2, 3]  (первый массив короче)
+// [2] > [1, 9, 9]     (первый элемент больше)
+
+// Практическое применение - временные ряды
+type TimeKey = [year: number, month: number, day: number, hour: number]
+const timeSeriesTree = new BPlusTree<SensorData, TimeKey>(3, false, compare_keys_array)
+
+// Автоматическая сортировка по времени:
+timeSeriesTree.insert([2024, 1, 15, 10], data1)  // 2024-01-15 10:00
+timeSeriesTree.insert([2024, 1, 15, 9], data2)   // 2024-01-15 09:00
+timeSeriesTree.insert([2024, 1, 16, 8], data3)   // 2024-01-16 08:00
+```
+
+#### 3. Компаратор для объектов
+
+```typescript
+import { compare_keys_object } from 'b-pl-tree'
+
+// Сравнивает объекты по всем свойствам в алфавитном порядке ключей
+interface ProductKey {
+  category: string
+  brand: string
+  price: number
+}
+
+const productTree = new BPlusTree<Product, ProductKey>(
+  3,
+  false,
+  compare_keys_object
+)
+
+// Порядок сравнения: brand -> category -> price (алфавитный порядок ключей)
+// Примеры:
+// { brand: 'Apple', category: 'Electronics', price: 999 }
+// < { brand: 'Apple', category: 'Electronics', price: 1099 }
+// < { brand: 'Samsung', category: 'Electronics', price: 899 }
+
+// ВАЖНО: Все объекты должны иметь одинаковую структуру ключей
+```
+
+#### 4. Создание пользовательских компараторов
+
+Для более сложной логики сравнения создавайте собственные компараторы:
+
+##### Смешанный порядок сортировки (ASC/DESC)
+
+```typescript
+// Пример: сортировка по отделу (по возрастанию), затем по зарплате (по убыванию)
+interface EmployeeSortKey {
+  department: string  // ASC
+  salary: number      // DESC
+  joinDate: Date      // ASC
+}
+
+const mixedSortComparator = (a: EmployeeSortKey, b: EmployeeSortKey): number => {
+  // 1. Отдел по возрастанию (A-Z)
+  if (a.department !== b.department) {
+    return a.department.localeCompare(b.department) // ASC
+  }
+
+  // 2. Зарплата по убыванию (высокая -> низкая)
+  if (a.salary !== b.salary) {
+    return b.salary - a.salary // DESC (обратный порядок)
+  }
+
+  // 3. Дата приема по возрастанию (старые -> новые)
+  return a.joinDate.getTime() - b.joinDate.getTime() // ASC
+}
+
+// Результат сортировки:
+// Engineering, $100000, 2020-01-01
+// Engineering, $95000,  2021-01-01
+// Engineering, $90000,  2019-01-01
+// Marketing,   $85000,  2020-06-01
+// Marketing,   $80000,  2021-03-01
+```
+
+##### Приоритетная сортировка с весами
+
+```typescript
+// Пример: система рейтингов с приоритетами
+interface RatingKey {
+  priority: number    // DESC (высокий приоритет первым)
+  score: number       // DESC (высокий балл первым)
+  timestamp: Date     // ASC (старые записи первыми при равенстве)
+}
+
+const priorityComparator = (a: RatingKey, b: RatingKey): number => {
+  // 1. Приоритет по убыванию (1 = высший, 5 = низший)
+  if (a.priority !== b.priority) {
+    return a.priority - b.priority // ASC для приоритета (1, 2, 3, 4, 5)
+  }
+
+  // 2. Балл по убыванию (100 -> 0)
+  if (a.score !== b.score) {
+    return b.score - a.score // DESC
+  }
+
+  // 3. Время по возрастанию (FIFO при равенстве)
+  return a.timestamp.getTime() - b.timestamp.getTime() // ASC
+}
+```
+
+##### Географическая сортировка
+
+```typescript
+// Пример: сортировка локаций
+interface LocationKey {
+  country: string     // ASC (алфавитный порядок)
+  population: number  // DESC (большие города первыми)
+  name: string        // ASC (алфавитный порядок городов)
+}
+
+const geoComparator = (a: LocationKey, b: LocationKey): number => {
+  // 1. Страна по алфавиту
+  if (a.country !== b.country) {
+    return a.country.localeCompare(b.country)
+  }
+
+  // 2. Население по убыванию (мегаполисы первыми)
+  if (a.population !== b.population) {
+    return b.population - a.population
+  }
+
+  // 3. Название города по алфавиту
+  return a.name.localeCompare(b.name)
+}
+
+// Результат:
+// Russia, Moscow, 12000000
+// Russia, SPb, 5000000
+// Russia, Kazan, 1200000
+// USA, NYC, 8000000
+// USA, LA, 4000000
+```
+
+##### Версионная сортировка
+
+```typescript
+// Пример: сортировка версий ПО
+interface VersionKey {
+  major: number       // DESC (новые версии первыми)
+  minor: number       // DESC
+  patch: number       // DESC
+  isStable: boolean   // DESC (стабильные версии первыми)
+}
+
+const versionComparator = (a: VersionKey, b: VersionKey): number => {
+  // 1. Стабильность (true > false)
+  if (a.isStable !== b.isStable) {
+    return b.isStable ? 1 : -1 // Стабильные первыми
+  }
+
+  // 2. Major версия по убыванию
+  if (a.major !== b.major) {
+    return b.major - a.major
+  }
+
+  // 3. Minor версия по убыванию
+  if (a.minor !== b.minor) {
+    return b.minor - a.minor
+  }
+
+  // 4. Patch версия по убыванию
+  return b.patch - a.patch
+}
+
+// Результат:
+// 2.1.0 (stable)
+// 2.0.5 (stable)
+// 2.0.0 (stable)
+// 2.2.0 (beta)
+// 2.1.1 (beta)
+```
+
+```typescript
+// Компаратор с приоритетами полей
+interface EmployeeKey {
+  department: string
+  level: number
+  joinDate: Date
+}
+
+const employeeComparator = (a: EmployeeKey, b: EmployeeKey): number => {
+  // Приоритет 1: Отдел
+  if (a.department !== b.department) {
+    return a.department.localeCompare(b.department)
+  }
+
+  // Приоритет 2: Уровень (по убыванию)
+  if (a.level !== b.level) {
+    return b.level - a.level // Обратный порядок
+  }
+
+  // Приоритет 3: Дата приема на работу
+  return a.joinDate.getTime() - b.joinDate.getTime()
+}
+
+// Компаратор с обработкой null/undefined
+const nullSafeComparator = (a: string | null, b: string | null): number => {
+  if (a === null && b === null) return 0
+  if (a === null) return -1  // null считается меньше
+  if (b === null) return 1
+  return a.localeCompare(b)
+}
+
+// Компаратор для сложных вложенных структур
+interface LocationKey {
+  country: string
+  city: string
+  coordinates: { lat: number; lng: number }
+}
+
+const locationComparator = (a: LocationKey, b: LocationKey): number => {
+  // Сначала по стране
+  if (a.country !== b.country) {
+    return a.country.localeCompare(b.country)
+  }
+
+  // Затем по городу
+  if (a.city !== b.city) {
+    return a.city.localeCompare(b.city)
+  }
+
+  // Наконец по координатам (сначала широта, потом долгота)
+  if (a.coordinates.lat !== b.coordinates.lat) {
+    return a.coordinates.lat - b.coordinates.lat
+  }
+
+  return a.coordinates.lng - b.coordinates.lng
+}
+```
+
+#### 5. Производительность компараторов
+
+```typescript
+// Оптимизированный компаратор для частых сравнений
+const optimizedComparator = (a: ComplexKey, b: ComplexKey): number => {
+  // Быстрое сравнение наиболее различающихся полей в первую очередь
+
+  // 1. Числовые поля сравниваются быстрее строковых
+  if (a.numericField !== b.numericField) {
+    return a.numericField - b.numericField
+  }
+
+  // 2. Короткие строки сравниваются быстрее длинных
+  if (a.shortString !== b.shortString) {
+    return a.shortString.localeCompare(b.shortString)
+  }
+
+  // 3. Дорогие операции в последнюю очередь
+  return a.expensiveField.localeCompare(b.expensiveField)
+}
+
+// Кэширование результатов для очень дорогих компараторов
+const memoizedComparator = (() => {
+  const cache = new Map<string, number>()
+
+  return (a: ComplexKey, b: ComplexKey): number => {
+    const cacheKey = `${JSON.stringify(a)}_${JSON.stringify(b)}`
+
+    if (cache.has(cacheKey)) {
+      return cache.get(cacheKey)!
+    }
+
+    const result = expensiveComparisonLogic(a, b)
+    cache.set(cacheKey, result)
+    return result
+  }
+})()
+```
+
+#### 6. Рекомендации по выбору компараторов
+
+- **Простые ключи (number, string, boolean)**: Используйте стандартный компаратор (не указывайте)
+- **Массивы**: Используйте `compare_keys_array` для временных рядов, координат, версий
+- **Объекты с одинаковой структурой**: Используйте `compare_keys_object`
+- **Сложная логика**: Создавайте пользовательские компараторы
+- **Производительность критична**: Оптимизируйте порядок сравнения полей
+- **Null/undefined значения**: Обрабатывайте явно в пользовательских компараторах
+
+### Примеры смешанной сортировки (ASC/DESC)
+
+Для демонстрации различных типов смешанной сортировки создан специальный пример:
+
+```bash
+# Запуск примера смешанной сортировки
+bun run examples/mixed-sort-example.ts
+```
+
+Этот пример демонстрирует:
+- **Рейтинг сотрудников**: отдел (ASC), зарплата (DESC), дата приема (ASC)
+- **Каталог товаров**: категория (ASC), в наличии (DESC), рейтинг (DESC), цена (ASC)
+- **Планирование событий**: приоритет (custom), срочность (DESC), время (ASC)
+- **Управление версиями**: стабильность (DESC), major (DESC), minor (DESC), patch (DESC)
+
+📖 **Подробное руководство**: Для детального изучения смешанной сортировки см. [MIXED_SORT_GUIDE.md](./MIXED_SORT_GUIDE.md)
+
+### Практические применения составных ключей
+
+#### 1. Системы управления базами данных
+
+```typescript
+// Индекс для таблицы заказов: (customer_id, order_date, order_id)
+interface OrderKey {
+  customerId: number
+  orderDate: Date
+  orderId: number
+}
+
+const orderComparator = (a: OrderKey, b: OrderKey): number => {
+  if (a.customerId !== b.customerId) return a.customerId - b.customerId
+  if (a.orderDate.getTime() !== b.orderDate.getTime()) {
+    return a.orderDate.getTime() - b.orderDate.getTime()
+  }
+  return a.orderId - b.orderId
+}
+
+// Эффективные запросы:
+// - Все заказы клиента
+// - Заказы клиента за период
+// - Конкретный заказ
+```
+
+#### 2. Геопространственные индексы
+
+```typescript
+// Индекс для геолокации: (страна, регион, город, почтовый_код)
+type GeoKey = [country: string, region: string, city: string, postalCode: string]
+
+const geoIndex = new BPlusTree<Location, GeoKey>(3, false, compare_keys_array)
+
+// Быстрый поиск по иерархии:
+// - Все локации в стране
+// - Все города в регионе
+// - Точный адрес
+```
+
+#### 3. Временные ряды и аналитика
+
+```typescript
+// Метрики по времени: (метрика, год, месяц, день, час)
+type MetricKey = [metric: string, year: number, month: number, day: number, hour: number]
+
+const metricsIndex = new BPlusTree<MetricData, MetricKey>(3, false, compare_keys_array)
+
+// Агрегация данных:
+// - Все метрики за день
+// - Конкретная метрика за период
+// - Почасовая детализация
+```
+
+#### 4. Многоуровневые каталоги
+
+```typescript
+// Каталог товаров: (категория, подкатегория, бренд, модель)
+interface ProductCatalogKey {
+  category: string
+  subcategory: string
+  brand: string
+  model: string
+}
+
+// Навигация по каталогу:
+// - Все товары категории
+// - Товары бренда в подкатегории
+// - Конкретная модель
+```
+
+#### 5. Системы версионирования
+
+```typescript
+// Версии документов: (проект, документ, версия_мажор, версия_минор)
+type VersionKey = [project: string, document: string, major: number, minor: number]
+
+const versionIndex = new BPlusTree<DocumentVersion, VersionKey>(3, false, compare_keys_array)
+
+// Управление версиями:
+// - Все версии документа
+// - Последняя версия проекта
+// - Конкретная версия
+```
+
+### Производительность сложных индексов
+
+- **Время поиска:** O(log n) для любого типа составного ключа
+- **Память:** Минимальные накладные расходы благодаря эффективному хранению
+- **Транзакции:** Copy-on-Write обеспечивает изоляцию без блокировок
+- **Масштабируемость:** Поддержка миллионов записей с составными ключами
+
+### Рекомендации по проектированию составных ключей
+
+#### Порядок полей в ключе
+
+```typescript
+// ❌ Неэффективный порядок (редко используемое поле первым)
+interface BadKey {
+  timestamp: Date    // Уникальное значение
+  category: string   // Часто используется в запросах
+  userId: number     // Часто используется в запросах
+}
+
+// ✅ Эффективный порядок (часто используемые поля первыми)
+interface GoodKey {
+  category: string   // Часто используется в запросах
+  userId: number     // Часто используется в запросах
+  timestamp: Date    // Уникальное значение для сортировки
+}
+```
+
+#### Селективность полей
+
+```typescript
+// Располагайте поля по убыванию селективности
+interface OptimalKey {
+  highSelectivity: string    // Много уникальных значений
+  mediumSelectivity: number  // Средняя селективность
+  lowSelectivity: boolean    // Мало уникальных значений
+}
+```
+
+#### Размер ключей
+
+```typescript
+// ❌ Слишком большие ключи
+interface HeavyKey {
+  longDescription: string  // Может быть очень длинным
+  metadata: object        // Сложная структура
+}
+
+// ✅ Компактные ключи
+interface LightKey {
+  id: number             // Компактный идентификатор
+  type: string           // Короткая строка
+  priority: number       // Числовое значение
+}
 ```
 
 ## 🧪 Query Operations
