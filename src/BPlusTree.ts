@@ -261,7 +261,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
     // TRANSACTION ISOLATION: Pass active transaction info and tree reference to size calculation
     const hasActiveTransactions = this.activeTransactions.size > 0;
     const result = size(rootNode, hasActiveTransactions, this);
-    console.warn(`[get size] Final result: ${result} from root ${this.root}`);
+    // console.warn(`[get size] Final result: ${result} from root ${this.root}`);
     return result;
   }
   public node(id: number): Node<T, K> {
@@ -314,7 +314,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
       removedItems.push(...singleRemove);
     }
 
-    console.log(`[removeMany] TEMP FIX: Removed ${removedItems.length} items for key ${key} using simple loop`);
+    // console.log(`[removeMany] TEMP FIX: Removed ${removedItems.length} items for key ${key} using simple loop`);
     return removedItems;
   }
 
@@ -475,7 +475,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
 
   public insert_in_transaction(key: K, value: T, txCtx: ITransactionContext<T, K>): void {
     if (key === null && Object.is(this.defaultEmpty, Number.NEGATIVE_INFINITY as unknown as K)) {
-      console.warn("[insert_in_transaction] Attempted to insert null key without a defaultEmpty set.");
+      // console.warn("[insert_in_transaction] Attempted to insert null key without a defaultEmpty set.");
       return;
     }
 
@@ -642,7 +642,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
     } catch (error) {
         // Here, you would abort the transaction
         // For CoW, this often means just discarding txContext.workingNodes and changes.
-        console.error("Transaction failed:", error);
+        // console.error("Transaction failed:", error);
         throw error;
     }
   }
@@ -671,14 +671,14 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
   }
 
   public find_all_in_transaction(key: K, txCtx: ITransactionContext<T, K>): { values: T[], leafIdsWithKey: Set<number> } {
-    console.log(`[find_all_in_transaction] Called with key=${key}`);
+    // console.log(`[find_all_in_transaction] Called with key=${key}`);
     const rootNode = txCtx.getRootNode();
     if (!rootNode) {
-      console.log(`[find_all_in_transaction] No root node found`);
+      // console.log(`[find_all_in_transaction] No root node found`);
       return { values: [], leafIdsWithKey: new Set() };
     }
 
-    console.log(`[find_all_in_transaction] Root node: id=${rootNode.id}, keys=[${rootNode.keys.join(',')}], leaf=${rootNode.leaf}, children=[${rootNode.children?.join(',') || 'none'}]`);
+    // console.log(`[find_all_in_transaction] Root node: id=${rootNode.id}, keys=[${rootNode.keys.join(',')}], leaf=${rootNode.leaf}, children=[${rootNode.children?.join(',') || 'none'}]`);
 
     const allValues: T[] = [];
     const leafIdsWithKey = new Set<number>();
@@ -688,16 +688,16 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
       let node = txCtx.getNode(nodeId);
       if (!node) {
         // ENHANCED: Fallback to main tree nodes for orphaned references
-        console.warn(`[find_all_in_transaction] Node ${nodeId} not found in transaction context, checking main tree`);
+        // console.warn(`[find_all_in_transaction] Node ${nodeId} not found in transaction context, checking main tree`);
         node = this.nodes.get(nodeId);
         if (!node) {
-          console.warn(`[find_all_in_transaction] Node ${nodeId} not found in main tree either`);
+          // console.warn(`[find_all_in_transaction] Node ${nodeId} not found in main tree either`);
 
           // FINAL FALLBACK: Try to find any working node that might be a replacement for this node
           for (const [workingNodeId, workingNode] of txCtx.workingNodes) {
             const originalId = (workingNode as any)._originalNodeId;
             if (originalId === nodeId) {
-              console.warn(`[find_all_in_transaction] Found working node ${workingNodeId} as replacement for missing node ${nodeId}`);
+              // console.warn(`[find_all_in_transaction] Found working node ${workingNodeId} as replacement for missing node ${nodeId}`);
               node = workingNode;
               break;
             }
@@ -707,7 +707,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
             return;
           }
         } else {
-          console.warn(`[find_all_in_transaction] Found node ${nodeId} in main tree as fallback`);
+          // console.warn(`[find_all_in_transaction] Found node ${nodeId} in main tree as fallback`);
         }
       }
 
@@ -731,7 +731,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
         }
 
         if (foundInThisLeaf) {
-          console.log(`[find_all_in_transaction] Found key ${key} in leaf ${node.id}, keys=[${node.keys.join(',')}]`);
+          // console.log(`[find_all_in_transaction] Found key ${key} in leaf ${node.id}, keys=[${node.keys.join(',')}]`);
         }
       } else {
         // Internal node - determine which children could contain the key
@@ -755,7 +755,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
 
           if (shouldSearchChild && i < node.children.length) {
             const childId = node.children[i];
-            console.log(`[find_all_in_transaction] Searching child ${childId} at index ${i} for key ${key}`);
+            // console.log(`[find_all_in_transaction] Searching child ${childId} at index ${i} for key ${key}`);
             searchInSubtree(childId);
           }
         }
@@ -768,7 +768,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
     // ENHANCED: If no values found through normal traversal, try alternative search
     // This handles cases where tree structure is damaged due to orphaned references
     if (allValues.length === 0) {
-      console.warn(`[find_all_in_transaction] No values found through normal traversal, attempting alternative search`);
+      // console.warn(`[find_all_in_transaction] No values found through normal traversal, attempting alternative search`);
 
       // Search through all available leaf nodes in both transaction context and main tree
       const searchAllLeaves = () => {
@@ -780,7 +780,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
             checkedNodes.add(nodeId);
             for (let i = 0; i < workingNode.keys.length; i++) {
               if (this.comparator(workingNode.keys[i], key) === 0) {
-                console.warn(`[find_all_in_transaction] Alternative search found key ${key} in working leaf ${nodeId}`);
+                // console.warn(`[find_all_in_transaction] Alternative search found key ${key} in working leaf ${nodeId}`);
                 leafIdsWithKey.add(nodeId);
                 if (Array.isArray(workingNode.pointers[i])) {
                   allValues.push(...(workingNode.pointers[i] as T[]));
@@ -801,12 +801,12 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
             const isDeleted = txCtx.deletedNodes.has(nodeId);
 
             if (hasWorkingCopy) {
-              console.warn(`[find_all_in_transaction] Skipping main tree leaf ${nodeId} because working copy exists (node was modified in transaction)`);
+              // console.warn(`[find_all_in_transaction] Skipping main tree leaf ${nodeId} because working copy exists (node was modified in transaction)`);
               continue;
             }
 
                         if (isDeleted) {
-              console.warn(`[find_all_in_transaction] Skipping main tree leaf ${nodeId} because it was deleted in transaction`);
+              // console.warn(`[find_all_in_transaction] Skipping main tree leaf ${nodeId} because it was deleted in transaction`);
               continue;
             }
 
@@ -815,7 +815,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
             const isModifiedSinceSnapshot = (txCtx as any).isNodeModifiedSinceSnapshot?.(nodeId) ?? false;
 
             if (isModifiedSinceSnapshot) {
-              console.warn(`[find_all_in_transaction] Skipping main tree leaf ${nodeId} because it was modified since transaction snapshot (enforcing snapshot isolation)`);
+              // console.warn(`[find_all_in_transaction] Skipping main tree leaf ${nodeId} because it was modified since transaction snapshot (enforcing snapshot isolation)`);
               continue;
             }
 
@@ -823,14 +823,14 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
             // This prevents finding data in nodes that are no longer part of the tree structure
             const isReachableFromCurrentRoot = this.isNodeReachableFromSpecificRoot(nodeId, this.root);
             if (!isReachableFromCurrentRoot) {
-              console.warn(`[find_all_in_transaction] Skipping main tree leaf ${nodeId} because it's not reachable from current root (orphaned node)`);
+              // console.warn(`[find_all_in_transaction] Skipping main tree leaf ${nodeId} because it's not reachable from current root (orphaned node)`);
               continue;
             }
 
             checkedNodes.add(nodeId);
             for (let i = 0; i < mainNode.keys.length; i++) {
               if (this.comparator(mainNode.keys[i], key) === 0) {
-                console.warn(`[find_all_in_transaction] Alternative search found key ${key} in main tree leaf ${nodeId}`);
+                // console.warn(`[find_all_in_transaction] Alternative search found key ${key} in main tree leaf ${nodeId}`);
                 leafIdsWithKey.add(nodeId);
                 if (Array.isArray(mainNode.pointers[i])) {
                   allValues.push(...(mainNode.pointers[i] as T[]));
@@ -846,9 +846,9 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
       searchAllLeaves();
 
       if (allValues.length > 0) {
-        console.warn(`[find_all_in_transaction] Alternative search found ${allValues.length} values for key ${key}`);
+        // console.warn(`[find_all_in_transaction] Alternative search found ${allValues.length} values for key ${key}`);
       } else {
-        console.warn(`[find_all_in_transaction] Alternative search also found no values for key ${key}`);
+        // console.warn(`[find_all_in_transaction] Alternative search also found no values for key ${key}`);
 
         // FINAL DESPERATE SEARCH: If tree size > 0 but we can't find anything,
         // search ALL nodes regardless of reachability (for debugging complex transaction states)
@@ -857,7 +857,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
         const treeSize = this.size;
 
         if (treeSize > 0 && !hasSnapshotIsolation) {
-          console.warn(`[find_all_in_transaction] Tree size is ${treeSize} but no values found - attempting desperate search`);
+          // console.warn(`[find_all_in_transaction] Tree size is ${treeSize} but no values found - attempting desperate search`);
 
           const checkedNodes = new Set<number>();
           for (const [nodeId, mainNode] of this.nodes) {
@@ -865,7 +865,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
               checkedNodes.add(nodeId);
               for (let i = 0; i < mainNode.keys.length; i++) {
                 if (this.comparator(mainNode.keys[i], key) === 0) {
-                  console.warn(`[find_all_in_transaction] DESPERATE: Found key ${key} in unreachable main tree leaf ${nodeId}`);
+                  // console.warn(`[find_all_in_transaction] DESPERATE: Found key ${key} in unreachable main tree leaf ${nodeId}`);
                   leafIdsWithKey.add(nodeId);
                   if (Array.isArray(mainNode.pointers[i])) {
                     allValues.push(...(mainNode.pointers[i] as T[]));
@@ -878,15 +878,15 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
           }
 
           if (allValues.length > 0) {
-            console.warn(`[find_all_in_transaction] Desperate search found ${allValues.length} values for key ${key}`);
+            // console.warn(`[find_all_in_transaction] Desperate search found ${allValues.length} values for key ${key}`);
           }
         } else if (hasSnapshotIsolation) {
-          console.warn(`[find_all_in_transaction] Skipping desperate search due to snapshot isolation requirements`);
+          // console.warn(`[find_all_in_transaction] Skipping desperate search due to snapshot isolation requirements`);
         }
       }
     }
 
-    console.log(`[find_all_in_transaction] Found ${allValues.length} values for key ${key}: [${allValues.join(',')}] in leaves: [${Array.from(leafIdsWithKey).join(',')}]`);
+    // console.log(`[find_all_in_transaction] Found ${allValues.length} values for key ${key}: [${allValues.join(',')}] in leaves: [${Array.from(leafIdsWithKey).join(',')}]`);
     return { values: allValues, leafIdsWithKey };
   }
 
@@ -900,15 +900,15 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
   }
 
   public remove_in_transaction(key: K, txCtx: ITransactionContext<T, K>, all: boolean = false): boolean {
-    console.log(`[remove_in_transaction] Called with key=${key}, all=${all}`);
+    // console.log(`[remove_in_transaction] Called with key=${key}, all=${all}`);
     const currentRootNode = txCtx.getRootNode();
 
     if (!currentRootNode || (currentRootNode.leaf && currentRootNode.key_num === 0)) {
-      console.log(`[remove_in_transaction] Tree is empty, returning false`);
+      // console.log(`[remove_in_transaction] Tree is empty, returning false`);
       return false;
     }
 
-    console.log(`[remove_in_transaction] Initial tree state: root=${currentRootNode.id}, keys=[${currentRootNode.keys.join(',')}], leaf=${currentRootNode.leaf}`);
+    // console.log(`[remove_in_transaction] Initial tree state: root=${currentRootNode.id}, keys=[${currentRootNode.keys.join(',')}], leaf=${currentRootNode.leaf}`);
 
     if (all) {
       let itemsWereRemoved = false;
@@ -932,7 +932,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
       for (const leafId of leafIdsWithKey) {
         const originalLeafNode = txCtx.getNode(leafId); // Get the node (could be original or already a working copy)
         if (!originalLeafNode) {
-            console.warn(`[remove_in_transaction] Leaf node with ID ${leafId} not found in transaction context. Skipping.`);
+            // console.warn(`[remove_in_transaction] Leaf node with ID ${leafId} not found in transaction context. Skipping.`);
             continue;
         }
 
@@ -1098,9 +1098,9 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
       // Fix ALL structural issues since duplicate keys in parents affect navigation
       const validation = this.validateTreeStructure();
       if (!validation.isValid) {
-        console.warn(`[remove_in_transaction] Tree structure issues detected after all=true removal: ${validation.issues.join('; ')}`);
+        // console.warn(`[remove_in_transaction] Tree structure issues detected after all=true removal: ${validation.issues.join('; ')}`);
         if (validation.fixedIssues.length > 0) {
-          console.log(`[remove_in_transaction] Auto-fixed issues: ${validation.fixedIssues.join('; ')}`);
+          // console.log(`[remove_in_transaction] Auto-fixed issues: ${validation.fixedIssues.join('; ')}`);
         }
       }
 
@@ -1108,15 +1108,15 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
       return itemsWereRemoved;
     } else {
       // ENHANCED Single removal logic - find ALL leaves containing the key, then pick the best one
-              console.log(`[remove_in_transaction] Single remove: Starting find_all_in_transaction for key ${key}`);
+              // console.log(`[remove_in_transaction] Single remove: Starting find_all_in_transaction for key ${key}`);
       const { leafIdsWithKey } = this.find_all_in_transaction(key, txCtx);
 
       if (leafIdsWithKey.size === 0) {
-        console.log(`[remove_in_transaction] Single remove: No leaves found containing key ${key}`);
+        // console.log(`[remove_in_transaction] Single remove: No leaves found containing key ${key}`);
         return false; // Key not found
       }
 
-              console.log(`[remove_in_transaction] Single remove: Found ${leafIdsWithKey.size} leaf node IDs containing key ${key}: [${Array.from(leafIdsWithKey).join(',')}]`);
+              // console.log(`[remove_in_transaction] Single remove: Found ${leafIdsWithKey.size} leaf node IDs containing key ${key}: [${Array.from(leafIdsWithKey).join(',')}]`);
 
       // STRATEGY: Pick the leaf with the MOST keys (to avoid creating empty leaves)
       let bestLeafId: number | undefined;
@@ -1131,13 +1131,13 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
       }
 
       if (!bestLeafId) {
-        console.warn(`[remove_in_transaction] Single remove: No valid leaf found among candidates`);
+        // console.warn(`[remove_in_transaction] Single remove: No valid leaf found among candidates`);
         return false;
       }
 
       const originalLeafNode = txCtx.getNode(bestLeafId);
       if (!originalLeafNode) {
-        console.warn(`[remove_in_transaction] Single remove: Best leaf node with ID ${bestLeafId} not found in transaction context.`);
+        // console.warn(`[remove_in_transaction] Single remove: Best leaf node with ID ${bestLeafId} not found in transaction context.`);
         return false;
       }
 
@@ -1164,7 +1164,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
       }
 
       if (!keyWasFound) {
-        console.warn(`[remove_in_transaction] Single remove: Key ${key} not found in leaf ${workingLeaf.id} despite being in leafIdsWithKey`);
+        // console.warn(`[remove_in_transaction] Single remove: Key ${key} not found in leaf ${workingLeaf.id} despite being in leafIdsWithKey`);
         return false;
       }
 
@@ -1181,17 +1181,17 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
                       // console.log(`[remove_in_transaction] Single remove: Handling underflow for leaf ${finalLeaf.id}, key_num=${finalLeaf.key_num}, t-1=${this.t - 1}`);
           const underflowResult = this.#handle_underflow_cow(finalLeaf, txCtx);
 
-          console.log(`[remove_in_transaction] Single remove: Underflow result - nodeWasDeleted: ${underflowResult.nodeWasDeleted}, newRootIdForParent: ${underflowResult.newRootIdForParent}, parentUpdatedToId: ${underflowResult.parentUpdatedToId}`);
+          // console.log(`[remove_in_transaction] Single remove: Underflow result - nodeWasDeleted: ${underflowResult.nodeWasDeleted}, newRootIdForParent: ${underflowResult.newRootIdForParent}, parentUpdatedToId: ${underflowResult.parentUpdatedToId}`);
 
           // Handle root updates from underflow
           if (underflowResult.newRootIdForParent) {
-            console.log(`[remove_in_transaction] Single remove: New root ${underflowResult.newRootIdForParent} created during underflow`);
+            // console.log(`[remove_in_transaction] Single remove: New root ${underflowResult.newRootIdForParent} created during underflow`);
             txCtx.workingRootId = underflowResult.newRootIdForParent;
           } else if (underflowResult.parentUpdatedToId) {
             // Check if the updated parent should become the new root
             const updatedParent = txCtx.getNode(underflowResult.parentUpdatedToId);
             if (updatedParent && updatedParent._parent === undefined) {
-              console.log(`[remove_in_transaction] Single remove: Updated parent ${underflowResult.parentUpdatedToId} is new root`);
+              // console.log(`[remove_in_transaction] Single remove: Updated parent ${underflowResult.parentUpdatedToId} is new root`);
               txCtx.workingRootId = underflowResult.parentUpdatedToId;
             }
           }
@@ -1204,11 +1204,11 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
       const hadUnderflow = leafWasModified && currentLeaf && currentLeaf.key_num < this.t - 1 && currentLeaf.id !== txCtx.workingRootId;
 
       if (keyWasFound && hadUnderflow) {
-        console.log(`[remove_in_transaction] Single remove: Post-underflow cleanup triggered - checking for duplicate keys created during underflow`);
+        // console.log(`[remove_in_transaction] Single remove: Post-underflow cleanup triggered - checking for duplicate keys created during underflow`);
 
         // Search for any remaining instances of the key in working nodes
         const postUnderflowResults = this.find_all_in_transaction(key, txCtx);
-        console.log(`[remove_in_transaction] Single remove: Post-underflow search found ${postUnderflowResults.values.length} instances in leaves: [${Array.from(postUnderflowResults.leafIdsWithKey).join(',')}]`);
+        // console.log(`[remove_in_transaction] Single remove: Post-underflow search found ${postUnderflowResults.values.length} instances in leaves: [${Array.from(postUnderflowResults.leafIdsWithKey).join(',')}]`);
 
         // If there are multiple instances (meaning underflow created duplicates), remove ONE more
         if (postUnderflowResults.values.length > 1) {
@@ -1216,21 +1216,21 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
           const targetLeaf = txCtx.getNode(targetLeafId);
 
           if (targetLeaf && targetLeaf.leaf) {
-            console.log(`[remove_in_transaction] Single remove: Removing additional duplicate from leaf ${targetLeafId}, keys=[${targetLeaf.keys.join(',')}]`);
+            // console.log(`[remove_in_transaction] Single remove: Removing additional duplicate from leaf ${targetLeafId}, keys=[${targetLeaf.keys.join(',')}]`);
 
             // Find and remove the key - use the immutable method for proper CoW handling
             for (let i = 0; i < targetLeaf.keys.length; i++) {
               if (this.comparator(targetLeaf.keys[i], key) === 0) {
                 const removalResult = remove_key_immutable(targetLeaf, targetLeaf.keys[i], txCtx, false);
                 if (removalResult.keyExisted) {
-                  console.log(`[remove_in_transaction] Single remove: Successfully removed additional duplicate created by underflow`);
+                  // console.log(`[remove_in_transaction] Single remove: Successfully removed additional duplicate created by underflow`);
                 }
                 break; // Only remove one instance for single remove
               }
             }
           }
         } else {
-          console.log(`[remove_in_transaction] Single remove: No additional duplicates found after underflow - post-cleanup not needed`);
+          // console.log(`[remove_in_transaction] Single remove: No additional duplicates found after underflow - post-cleanup not needed`);
         }
       }
 
@@ -1238,21 +1238,21 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
       const finalRootNode = txCtx.getRootNode();
       if (finalRootNode && finalRootNode.key_num === 0 && finalRootNode.leaf) {
         // If root became empty and it's a leaf, this is okay (empty tree)
-        console.log(`[remove_in_transaction] Single remove: Root leaf became empty - tree is now empty`);
+        // console.log(`[remove_in_transaction] Single remove: Root leaf became empty - tree is now empty`);
       }
 
             // Final cleanup: scan for any remaining empty leaf nodes in the working tree and remove them
-      console.log(`[remove_in_transaction] Single remove: Starting final cleanup of empty nodes`);
+      // console.log(`[remove_in_transaction] Single remove: Starting final cleanup of empty nodes`);
       const emptyLeafIds: number[] = [];
 
       // Scan all working nodes for empty leaves and internal nodes with problematic structure
       for (const workingNode of txCtx.workingNodes.values()) {
         if (workingNode.leaf && workingNode.keys.length === 0) {
-          console.log(`[remove_in_transaction] Found empty leaf ${workingNode.id} during final cleanup`);
+          // console.log(`[remove_in_transaction] Found empty leaf ${workingNode.id} during final cleanup`);
           emptyLeafIds.push(workingNode.id);
         } else if (!workingNode.leaf && workingNode.keys.length === 0 && workingNode.children.length <= 1) {
           // Empty internal node with 0 or 1 children needs to be cleaned up
-          console.log(`[remove_in_transaction] Found problematic internal node ${workingNode.id} with empty keys and ${workingNode.children.length} children during final cleanup`);
+          // console.log(`[remove_in_transaction] Found problematic internal node ${workingNode.id} with empty keys and ${workingNode.children.length} children during final cleanup`);
           emptyLeafIds.push(workingNode.id); // Reuse same cleanup logic
         }
       }
@@ -1276,10 +1276,10 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
         if (!node) continue;
 
         if (node.leaf && node.keys.length === 0 && !emptyLeafIds.includes(nodeId)) {
-          console.log(`[remove_in_transaction] Found additional empty leaf ${nodeId} during tree traversal`);
+          // console.log(`[remove_in_transaction] Found additional empty leaf ${nodeId} during tree traversal`);
           emptyLeafIds.push(nodeId);
         } else if (!node.leaf && node.keys.length === 0 && node.children.length <= 1 && !emptyLeafIds.includes(nodeId)) {
-          console.log(`[remove_in_transaction] Found additional problematic internal node ${nodeId} during tree traversal`);
+          // console.log(`[remove_in_transaction] Found additional problematic internal node ${nodeId} during tree traversal`);
           emptyLeafIds.push(nodeId);
         }
 
@@ -1304,21 +1304,21 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
         // ENHANCED: Also handle internal nodes with empty keys but with valid child count
         // These nodes violate B+ tree invariants and should be replaced by their children
         if (!emptyNode.leaf && emptyNode.keys.length === 0 && emptyNode.children.length >= 1) {
-          console.log(`[remove_in_transaction] Found internal node ${emptyNodeId} with empty keys but ${emptyNode.children.length} children - needs special handling`);
+          // console.log(`[remove_in_transaction] Found internal node ${emptyNodeId} with empty keys but ${emptyNode.children.length} children - needs special handling`);
         }
 
-        console.log(`[remove_in_transaction] Processing empty ${emptyNode.leaf ? 'leaf' : 'internal'} node ${emptyNodeId}, keys=[${emptyNode.keys.join(',')}], children=[${emptyNode.children?.join(',') || 'none'}]`);
+        // console.log(`[remove_in_transaction] Processing empty ${emptyNode.leaf ? 'leaf' : 'internal'} node ${emptyNodeId}, keys=[${emptyNode.keys.join(',')}], children=[${emptyNode.children?.join(',') || 'none'}]`);
 
         const parentId = emptyNode._parent;
         if (parentId === undefined) {
           // Empty node is root - this is okay for completely empty tree
-          console.log(`[remove_in_transaction] Empty ${emptyNode.leaf ? 'leaf' : 'internal'} node ${emptyNodeId} is root - keeping as empty tree`);
+          // console.log(`[remove_in_transaction] Empty ${emptyNode.leaf ? 'leaf' : 'internal'} node ${emptyNodeId} is root - keeping as empty tree`);
           continue;
         }
 
         const parentNode = txCtx.getNode(parentId);
         if (!parentNode) {
-          console.warn(`[remove_in_transaction] Parent ${parentId} not found for empty ${emptyNode.leaf ? 'leaf' : 'internal'} node ${emptyNodeId}`);
+          // console.warn(`[remove_in_transaction] Parent ${parentId} not found for empty ${emptyNode.leaf ? 'leaf' : 'internal'} node ${emptyNodeId}`);
           continue;
         }
 
@@ -1334,7 +1334,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
           const emptyNodeOriginalId = (emptyNode as any)._originalNodeId;
           if (emptyNodeOriginalId !== undefined) {
             childIndex = parentWC.children.indexOf(emptyNodeOriginalId);
-            console.log(`[remove_in_transaction] Empty ${emptyNode.leaf ? 'leaf' : 'internal'} node ${emptyNodeId} found by original ID ${emptyNodeOriginalId} at index ${childIndex}`);
+            // console.log(`[remove_in_transaction] Empty ${emptyNode.leaf ? 'leaf' : 'internal'} node ${emptyNodeId} found by original ID ${emptyNodeOriginalId} at index ${childIndex}`);
           }
         }
 
@@ -1353,20 +1353,20 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
             const potentialOriginal = txCtx.getCommittedNode(childIdInParent);
             if (potentialOriginal && emptyNode && (emptyNode as any)._originalNodeId === childIdInParent) {
               childIndex = i;
-              console.log(`[remove_in_transaction] Empty ${emptyNode.leaf ? 'leaf' : 'internal'} node ${emptyNodeId} found via reverse mapping at index ${i} (original: ${childIdInParent})`);
+              // console.log(`[remove_in_transaction] Empty ${emptyNode.leaf ? 'leaf' : 'internal'} node ${emptyNodeId} found via reverse mapping at index ${i} (original: ${childIdInParent})`);
               break;
             }
           }
         }
 
         if (childIndex !== -1) {
-          console.log(`[remove_in_transaction] Removing empty ${emptyNode.leaf ? 'leaf' : 'internal'} node ${emptyNodeId} from parent ${parentWC.id} at index ${childIndex}`);
+          // console.log(`[remove_in_transaction] Removing empty ${emptyNode.leaf ? 'leaf' : 'internal'} node ${emptyNodeId} from parent ${parentWC.id} at index ${childIndex}`);
 
           // ENHANCED: Special handling for problematic internal nodes
           if (!emptyNode.leaf) {
             if (emptyNode.children.length === 0) {
               // Internal node with no children - delete completely
-              console.log(`[remove_in_transaction] Removing internal node ${emptyNodeId} with no children`);
+              // console.log(`[remove_in_transaction] Removing internal node ${emptyNodeId} with no children`);
 
               const newChildren = [...parentWC.children];
               newChildren.splice(childIndex, 1);
@@ -1381,7 +1381,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
             } else if (emptyNode.children.length === 1) {
               // Replace the internal node with its single child
               const singleChild = emptyNode.children[0];
-              console.log(`[remove_in_transaction] Replacing internal node ${emptyNodeId} (keys=[${emptyNode.keys.join(',')}]) with its single child ${singleChild}`);
+              // console.log(`[remove_in_transaction] Replacing internal node ${emptyNodeId} (keys=[${emptyNode.keys.join(',')}]) with its single child ${singleChild}`);
 
               // Update parent to point to the child instead
               const newChildren = [...parentWC.children];
@@ -1397,7 +1397,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
               }
             } else {
               // Internal node with multiple children but problematic keys - try to fix the keys
-              console.log(`[remove_in_transaction] Attempting to fix internal node ${emptyNodeId} with ${emptyNode.children.length} children but problematic keys [${emptyNode.keys.join(',')}]`);
+              // console.log(`[remove_in_transaction] Attempting to fix internal node ${emptyNodeId} with ${emptyNode.children.length} children but problematic keys [${emptyNode.keys.join(',')}]`);
 
               // If keys are empty but we have multiple children, this is a B+ tree violation
               // Try to regenerate the separator keys based on child contents
@@ -1416,19 +1416,19 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
                   if (leftChild && leftChild.keys.length > 0) {
                     const separatorKey = leftChild.keys[leftChild.keys.length - 1];
                     newKeys.push(separatorKey);
-                    console.log(`[remove_in_transaction] Generated separator key ${separatorKey} between children ${leftChildId} and ${rightChildId}`);
+                    // console.log(`[remove_in_transaction] Generated separator key ${separatorKey} between children ${leftChildId} and ${rightChildId}`);
                   } else if (rightChild && rightChild.keys.length > 0) {
                     // Fallback: use min key of right child
                     const separatorKey = rightChild.keys[0];
                     newKeys.push(separatorKey);
-                    console.log(`[remove_in_transaction] Generated fallback separator key ${separatorKey} from right child ${rightChildId}`);
+                    // console.log(`[remove_in_transaction] Generated fallback separator key ${separatorKey} from right child ${rightChildId}`);
                   }
                 }
 
                 workingEmptyNode.keys = newKeys;
                 workingEmptyNode.key_num = newKeys.length;
                 txCtx.addWorkingNode(workingEmptyNode);
-                console.log(`[remove_in_transaction] Fixed internal node ${emptyNodeId} keys: [${newKeys.join(',')}]`);
+                // console.log(`[remove_in_transaction] Fixed internal node ${emptyNodeId} keys: [${newKeys.join(',')}]`);
 
                 // Skip further processing as we fixed the node rather than removing it
                 continue;
@@ -1462,14 +1462,14 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
               uniqueKeys.push(key);
             } else {
               hasDuplicates = true;
-              console.warn(`[remove_in_transaction] Found duplicate key ${key} in parent ${parentWC.id}, removing duplicate`);
+              // console.warn(`[remove_in_transaction] Found duplicate key ${key} in parent ${parentWC.id}, removing duplicate`);
             }
           }
 
           if (hasDuplicates) {
             parentWC.keys = uniqueKeys;
             parentWC.key_num = uniqueKeys.length;
-            console.log(`[remove_in_transaction] Fixed duplicate keys in parent ${parentWC.id}, new keys: [${uniqueKeys.join(',')}]`);
+            // console.log(`[remove_in_transaction] Fixed duplicate keys in parent ${parentWC.id}, new keys: [${uniqueKeys.join(',')}]`);
           }
 
           const updatedParent = update_state_immutable(parentWC, txCtx);
@@ -1478,23 +1478,23 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
           // Mark empty node for deletion
           txCtx.markNodeForDeletion(emptyNodeId);
 
-          console.log(`[remove_in_transaction] Successfully removed empty ${emptyNode.leaf ? 'leaf' : 'internal'} node ${emptyNodeId}, parent ${finalParent.id} now has children: [${finalParent.children.join(',')}], keys: [${finalParent.keys.join(',')}]`);
+          // console.log(`[remove_in_transaction] Successfully removed empty ${emptyNode.leaf ? 'leaf' : 'internal'} node ${emptyNodeId}, parent ${finalParent.id} now has children: [${finalParent.children.join(',')}], keys: [${finalParent.keys.join(',')}]`);
         } else {
-          console.warn(`[remove_in_transaction] Empty ${emptyNode.leaf ? 'leaf' : 'internal'} node ${emptyNodeId} not found in parent ${parentWC.id} children: [${parentWC.children.join(',')}]`);
+          // console.warn(`[remove_in_transaction] Empty ${emptyNode.leaf ? 'leaf' : 'internal'} node ${emptyNodeId} not found in parent ${parentWC.id} children: [${parentWC.children.join(',')}]`);
         }
       }
 
-      console.log(`[remove_in_transaction] Single remove: Completed successfully with final cleanup, keyWasFound: ${keyWasFound}`);
+      // console.log(`[remove_in_transaction] Single remove: Completed successfully with final cleanup, keyWasFound: ${keyWasFound}`);
 
             // DISABLED: Orphaned node recovery for single remove operations
       // This system was too aggressive and caused more problems than it solved
       // It would restore data that became orphaned during legitimate underflow/merge operations
       // For single remove, we trust the underflow/merge logic to handle structure correctly
-      console.log(`[remove_in_transaction] DISABLED: Orphaned node recovery for single remove operations (key ${key})`);
+      // console.log(`[remove_in_transaction] DISABLED: Orphaned node recovery for single remove operations (key ${key})`);
 
             // DISABLED: Smart orphaned node recovery system (causes infinite loops)
       // This system was causing test hangs due to complex recovery logic
-      console.log(`[remove_in_transaction] DISABLED: Smart orphaned node recovery (key ${key}) - preventing test hangs`);
+      // console.log(`[remove_in_transaction] DISABLED: Smart orphaned node recovery (key ${key}) - preventing test hangs`);
 
       /*
       const rootForOrphanCheck = txCtx.getRootNode();
@@ -1526,11 +1526,11 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
             // CRITICAL FIX: Do NOT recover orphaned nodes that contain the key we just removed
             const containsRemovedKey = node.keys.some(nodeKey => this.comparator(nodeKey, key) === 0);
             if (containsRemovedKey) {
-              console.warn(`[remove_in_transaction] CRITICAL: Skipping orphaned leaf ${nodeId} because it contains removed key ${key}: keys=[${node.keys.join(',')}], values=[${node.pointers.join(',')}]`);
+              // console.warn(`[remove_in_transaction] CRITICAL: Skipping orphaned leaf ${nodeId} because it contains removed key ${key}: keys=[${node.keys.join(',')}], values=[${node.pointers.join(',')}]`);
               continue; // Skip this orphaned node - it contains data we intentionally removed
             }
 
-            console.warn(`[remove_in_transaction] CRITICAL: Found orphaned leaf ${nodeId} with valid data: keys=[${node.keys.join(',')}], values=[${node.pointers.join(',')}]`);
+            // console.warn(`[remove_in_transaction] CRITICAL: Found orphaned leaf ${nodeId} with valid data: keys=[${node.keys.join(',')}], values=[${node.pointers.join(',')}]`);
             orphanedNodesWithData.push({ nodeId, node });
           }
         }
@@ -1541,18 +1541,18 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
             // CRITICAL FIX: Do NOT recover orphaned working nodes that contain the key we just removed
             const containsRemovedKey = workingNode.keys.some(nodeKey => this.comparator(nodeKey, key) === 0);
             if (containsRemovedKey) {
-              console.warn(`[remove_in_transaction] CRITICAL: Skipping orphaned working leaf ${workingNode.id} because it contains removed key ${key}: keys=[${workingNode.keys.join(',')}], values=[${workingNode.pointers.join(',')}]`);
+              // console.warn(`[remove_in_transaction] CRITICAL: Skipping orphaned working leaf ${workingNode.id} because it contains removed key ${key}: keys=[${workingNode.keys.join(',')}], values=[${workingNode.pointers.join(',')}]`);
               continue; // Skip this orphaned node - it contains data we intentionally removed
             }
 
-            console.warn(`[remove_in_transaction] CRITICAL: Found orphaned working leaf ${workingNode.id} with valid data: keys=[${workingNode.keys.join(',')}], values=[${workingNode.pointers.join(',')}]`);
+            // console.warn(`[remove_in_transaction] CRITICAL: Found orphaned working leaf ${workingNode.id} with valid data: keys=[${workingNode.keys.join(',')}], values=[${workingNode.pointers.join(',')}]`);
             orphanedNodesWithData.push({ nodeId: workingNode.id, node: workingNode });
           }
         }
 
         // Attempt to recover orphaned data by merging it into reachable leaves
         if (orphanedNodesWithData.length > 0) {
-          console.warn(`[remove_in_transaction] CRITICAL: Attempting to recover ${orphanedNodesWithData.length} orphaned nodes with data`);
+          // console.warn(`[remove_in_transaction] CRITICAL: Attempting to recover ${orphanedNodesWithData.length} orphaned nodes with data`);
 
           for (const { nodeId, node } of orphanedNodesWithData) {
             // Find a suitable reachable leaf to merge the orphaned data into
@@ -1586,7 +1586,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
 
             // Strategy 3: Create a new leaf and attach it to the tree
             if (!targetLeafId) {
-              console.warn(`[remove_in_transaction] CRITICAL: Creating new leaf to preserve orphaned data from node ${nodeId}`);
+              // console.warn(`[remove_in_transaction] CRITICAL: Creating new leaf to preserve orphaned data from node ${nodeId}`);
 
               // Create a new leaf with the orphaned data
               const newLeaf = Node.createLeaf(txCtx.treeSnapshot);
@@ -1625,7 +1625,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
                   }
 
                   txCtx.addWorkingNode(grandParentWC);
-                  console.warn(`[remove_in_transaction] CRITICAL: Attached new leaf ${newLeaf.id} to parent ${grandParentWC.id} to preserve orphaned data`);
+                  // console.warn(`[remove_in_transaction] CRITICAL: Attached new leaf ${newLeaf.id} to parent ${grandParentWC.id} to preserve orphaned data`);
                 }
               }
 
@@ -1635,7 +1635,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
             if (targetLeafId) {
               const targetLeaf = txCtx.getNode(targetLeafId);
               if (targetLeaf && targetLeafId !== nodeId) {
-                console.warn(`[remove_in_transaction] CRITICAL: Merging orphaned data from node ${nodeId} into reachable leaf ${targetLeafId}`);
+                // console.warn(`[remove_in_transaction] CRITICAL: Merging orphaned data from node ${nodeId} into reachable leaf ${targetLeafId}`);
 
                 const targetWC = txCtx.ensureWorkingNode(targetLeafId);
 
@@ -1648,13 +1648,13 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
                 targetWC.key_num = targetWC.keys.length;
                 txCtx.addWorkingNode(targetWC);
 
-                console.warn(`[remove_in_transaction] CRITICAL: Successfully merged orphaned data, target leaf ${targetLeafId} now has ${targetWC.keys.length} keys`);
+                // console.warn(`[remove_in_transaction] CRITICAL: Successfully merged orphaned data, target leaf ${targetLeafId} now has ${targetWC.keys.length} keys`);
               }
             }
 
             // Mark the orphaned node for deletion
             if (this.nodes.has(nodeId)) {
-              console.warn(`[remove_in_transaction] CRITICAL: Removing orphaned node ${nodeId} from main tree after data recovery`);
+              // console.warn(`[remove_in_transaction] CRITICAL: Removing orphaned node ${nodeId} from main tree after data recovery`);
               this.nodes.delete(nodeId);
             }
           }
@@ -1663,7 +1663,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
       */
 
             // SIMPLE FIX: Check for orphaned nodes with valid data and reconnect them
-      console.log(`[remove_in_transaction] SIMPLE FIX: Checking for orphaned nodes with valid data`);
+      // console.log(`[remove_in_transaction] SIMPLE FIX: Checking for orphaned nodes with valid data`);
 
       const rootForSimpleFix = txCtx.getRootNode();
       if (rootForSimpleFix) {
@@ -1693,18 +1693,18 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
 
             if (!containsRemovedKey && !wasModifiedInTransaction) {
               orphanedLeaves.push({ nodeId, node });
-              console.warn(`[remove_in_transaction] SIMPLE FIX: Found orphaned leaf ${nodeId} with valid data: keys=[${node.keys.join(',')}]`);
+              // console.warn(`[remove_in_transaction] SIMPLE FIX: Found orphaned leaf ${nodeId} with valid data: keys=[${node.keys.join(',')}]`);
             } else if (containsRemovedKey) {
-              console.warn(`[remove_in_transaction] SIMPLE FIX: Skipping orphaned leaf ${nodeId} because it contains removed key ${key}: keys=[${node.keys.join(',')}]`);
+              // console.warn(`[remove_in_transaction] SIMPLE FIX: Skipping orphaned leaf ${nodeId} because it contains removed key ${key}: keys=[${node.keys.join(',')}]`);
             } else if (wasModifiedInTransaction) {
-              console.warn(`[remove_in_transaction] SIMPLE FIX: Skipping orphaned leaf ${nodeId} because it was modified in this transaction: keys=[${node.keys.join(',')}]`);
+              // console.warn(`[remove_in_transaction] SIMPLE FIX: Skipping orphaned leaf ${nodeId} because it was modified in this transaction: keys=[${node.keys.join(',')}]`);
             }
           }
         }
 
                 // Simple reconnection: add orphaned leaves as children of root
         if (orphanedLeaves.length > 0 && !rootForSimpleFix.leaf) {
-          console.warn(`[remove_in_transaction] SIMPLE FIX: Reconnecting ${orphanedLeaves.length} orphaned leaves to root`);
+          // console.warn(`[remove_in_transaction] SIMPLE FIX: Reconnecting ${orphanedLeaves.length} orphaned leaves to root`);
 
           const rootWC = txCtx.ensureWorkingNode(rootForSimpleFix.id);
 
@@ -1727,18 +1727,18 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
                 const keyExists = rootWC.keys.some(existingKey => this.comparator(existingKey, separatorKey) === 0);
                 if (!keyExists) {
                   rootWC.keys.push(separatorKey);
-                  console.warn(`[remove_in_transaction] SIMPLE FIX: Added separator key ${separatorKey} for orphaned leaf ${nodeId}`);
+                  // console.warn(`[remove_in_transaction] SIMPLE FIX: Added separator key ${separatorKey} for orphaned leaf ${nodeId}`);
                 } else {
-                  console.warn(`[remove_in_transaction] SIMPLE FIX: Separator key ${separatorKey} already exists, skipping addition for orphaned leaf ${nodeId}`);
+                  // console.warn(`[remove_in_transaction] SIMPLE FIX: Separator key ${separatorKey} already exists, skipping addition for orphaned leaf ${nodeId}`);
                 }
               } else if (wasInvolvedInBorrow) {
-                console.warn(`[remove_in_transaction] SIMPLE FIX: Skipping separator key addition for leaf ${nodeId} - was involved in borrow operation`);
+                // console.warn(`[remove_in_transaction] SIMPLE FIX: Skipping separator key addition for leaf ${nodeId} - was involved in borrow operation`);
               }
 
               // Update parent pointer
               nodeWC._parent = rootWC.id;
 
-              console.warn(`[remove_in_transaction] SIMPLE FIX: Reconnected orphaned leaf ${nodeId} to root ${rootWC.id}`);
+              // console.warn(`[remove_in_transaction] SIMPLE FIX: Reconnected orphaned leaf ${nodeId} to root ${rootWC.id}`);
             }
           }
 
@@ -1752,9 +1752,9 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
       // This fixes orphaned references, duplicate leaves, and structural issues
       const structureValidation = this.validateTreeStructure();
       if (!structureValidation.isValid) {
-        console.warn(`[remove_in_transaction] Tree structure issues detected: ${structureValidation.issues.join('; ')}`);
+        // console.warn(`[remove_in_transaction] Tree structure issues detected: ${structureValidation.issues.join('; ')}`);
         if (structureValidation.fixedIssues.length > 0) {
-          console.log(`[remove_in_transaction] Auto-fixed tree structure issues: ${structureValidation.fixedIssues.join('; ')}`);
+          // console.log(`[remove_in_transaction] Auto-fixed tree structure issues: ${structureValidation.fixedIssues.join('; ')}`);
         }
       }
 
@@ -1766,7 +1766,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
 
             // CONDITIONAL FINAL VERIFICATION: Only for cases where complete removal is expected
       // For single remove operations, we expect some instances to remain
-      console.log(`[remove_in_transaction] CONDITIONAL VERIFICATION: Checking if complete removal of key ${key} is expected`);
+      // console.log(`[remove_in_transaction] CONDITIONAL VERIFICATION: Checking if complete removal of key ${key} is expected`);
 
       // Count current instances of the key
       let totalRemainingInstances = 0;
@@ -1783,13 +1783,13 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
           if (indices.length > 0) {
             // ENHANCED: Check if this node is reachable from current root
             const isReachable = this.isNodeReachableFromRoot(nodeId);
-            console.warn(`[remove_in_transaction] CONDITIONAL VERIFICATION: Found ${indices.length} remaining instances of key ${key} in node ${nodeId}: keys=[${node.keys.join(',')}], reachable=${isReachable}`);
+            // console.warn(`[remove_in_transaction] CONDITIONAL VERIFICATION: Found ${indices.length} remaining instances of key ${key} in node ${nodeId}: keys=[${node.keys.join(',')}], reachable=${isReachable}`);
 
             if (isReachable) {
               remainingInstances.push({ nodeId, indices });
               totalRemainingInstances += indices.length;
             } else {
-              console.warn(`[remove_in_transaction] CONDITIONAL VERIFICATION: Node ${nodeId} is orphaned (unreachable from root), removing it completely`);
+              // console.warn(`[remove_in_transaction] CONDITIONAL VERIFICATION: Node ${nodeId} is orphaned (unreachable from root), removing it completely`);
               // Remove orphaned node with remaining key instances
               this.nodes.delete(nodeId);
             }
@@ -1803,7 +1803,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
       const shouldApplyForceCleanup = all && totalRemainingInstances > 0;
 
             if (shouldApplyForceCleanup) {
-        console.warn(`[remove_in_transaction] FORCE CLEANUP: Removing all ${totalRemainingInstances} remaining instances of key ${key} (all=true)`);
+        // console.warn(`[remove_in_transaction] FORCE CLEANUP: Removing all ${totalRemainingInstances} remaining instances of key ${key} (all=true)`);
 
         for (const { nodeId, indices } of remainingInstances) {
           const node = this.nodes.get(nodeId);
@@ -1815,11 +1815,11 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
               node.pointers.splice(index, 1);
               node.key_num--;
             }
-            console.warn(`[remove_in_transaction] FORCE CLEANUP: Removed ${indices.length} instances from node ${nodeId}, remaining keys: [${node.keys.join(',')}]`);
+            // console.warn(`[remove_in_transaction] FORCE CLEANUP: Removed ${indices.length} instances from node ${nodeId}, remaining keys: [${node.keys.join(',')}]`);
 
             // If node is now empty, mark it for deletion
             if (node.keys.length === 0) {
-              console.warn(`[remove_in_transaction] FORCE CLEANUP: Node ${nodeId} is now empty, marking for deletion`);
+              // console.warn(`[remove_in_transaction] FORCE CLEANUP: Node ${nodeId} is now empty, marking for deletion`);
               this.nodes.delete(nodeId);
             }
           }
@@ -1828,19 +1828,19 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
         // Re-run structure validation after force cleanup
         const postCleanupValidation = this.validateTreeStructure();
         if (!postCleanupValidation.isValid) {
-          console.warn(`[remove_in_transaction] FORCE CLEANUP: Tree structure issues after force cleanup: ${postCleanupValidation.issues.join('; ')}`);
+          // console.warn(`[remove_in_transaction] FORCE CLEANUP: Tree structure issues after force cleanup: ${postCleanupValidation.issues.join('; ')}`);
           if (postCleanupValidation.fixedIssues.length > 0) {
-            console.log(`[remove_in_transaction] FORCE CLEANUP: Auto-fixed issues: ${postCleanupValidation.fixedIssues.join('; ')}`);
+            // console.log(`[remove_in_transaction] FORCE CLEANUP: Auto-fixed issues: ${postCleanupValidation.fixedIssues.join('; ')}`);
           }
         }
       } else if (totalRemainingInstances > 0) {
-        console.log(`[remove_in_transaction] CONDITIONAL VERIFICATION: Found ${totalRemainingInstances} remaining instances of key ${key}, this is expected for single remove (all=false)`);
+        // console.log(`[remove_in_transaction] CONDITIONAL VERIFICATION: Found ${totalRemainingInstances} remaining instances of key ${key}, this is expected for single remove (all=false)`);
       } else {
-        console.log(`[remove_in_transaction] CONDITIONAL VERIFICATION: No remaining instances of key ${key} found - cleanup successful`);
+        // console.log(`[remove_in_transaction] CONDITIONAL VERIFICATION: No remaining instances of key ${key} found - cleanup successful`);
       }
 
       // ENHANCED: Additional cleanup for duplicate nodes that might have been created during recovery
-      console.warn(`[remove_in_transaction] ENHANCED CLEANUP: Checking for duplicate nodes after orphaned node removal`);
+      // console.warn(`[remove_in_transaction] ENHANCED CLEANUP: Checking for duplicate nodes after orphaned node removal`);
       const nodeSignatures = new Map<string, number[]>(); // signature -> array of node IDs with this signature
 
       for (const [nodeId, node] of this.nodes) {
@@ -1856,7 +1856,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
       // Remove duplicate nodes (keep the one with the lowest ID, which is likely the original)
       for (const [signature, nodeIds] of nodeSignatures) {
         if (nodeIds.length > 1) {
-          console.warn(`[remove_in_transaction] ENHANCED CLEANUP: Found ${nodeIds.length} duplicate nodes with signature ${signature}: [${nodeIds.join(',')}]`);
+          // console.warn(`[remove_in_transaction] ENHANCED CLEANUP: Found ${nodeIds.length} duplicate nodes with signature ${signature}: [${nodeIds.join(',')}]`);
 
           // Sort by ID and keep the first (lowest ID), remove the rest
           nodeIds.sort((a, b) => a - b);
@@ -1865,7 +1865,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
 
           for (const duplicateNodeId of nodesToRemove) {
             const isReachableFromRoot = this.isNodeReachableFromRoot(duplicateNodeId);
-            console.warn(`[remove_in_transaction] ENHANCED CLEANUP: Removing duplicate node ${duplicateNodeId} (reachable=${isReachableFromRoot}), keeping node ${nodeToKeep}`);
+            // console.warn(`[remove_in_transaction] ENHANCED CLEANUP: Removing duplicate node ${duplicateNodeId} (reachable=${isReachableFromRoot}), keeping node ${nodeToKeep}`);
             this.nodes.delete(duplicateNodeId);
           }
         }
@@ -1936,9 +1936,9 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
         // This is critical to fix structural issues immediately after they're created
         const postUnderflowValidation = this.validateTreeStructure();
         if (!postUnderflowValidation.isValid) {
-          console.warn(`[_do_remove_cow_for_test] Post-underflow structure issues: ${postUnderflowValidation.issues.join('; ')}`);
+          // console.warn(`[_do_remove_cow_for_test] Post-underflow structure issues: ${postUnderflowValidation.issues.join('; ')}`);
           if (postUnderflowValidation.fixedIssues.length > 0) {
-            console.log(`[_do_remove_cow_for_test] Auto-fixed post-underflow issues: ${postUnderflowValidation.fixedIssues.join('; ')}`);
+            // console.log(`[_do_remove_cow_for_test] Auto-fixed post-underflow issues: ${postUnderflowValidation.fixedIssues.join('; ')}`);
           }
         }
 
@@ -1980,32 +1980,32 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
     // Try to get the sibling node using multiple approaches
     let siblingNode = txCtx.getWorkingNode(siblingId);
     if (siblingNode) {
-      console.log(`[findSiblingNode] Found ${direction} sibling ${siblingId} in working nodes`);
+      // console.log(`[findSiblingNode] Found ${direction} sibling ${siblingId} in working nodes`);
       return siblingNode;
     }
 
     siblingNode = txCtx.getCommittedNode(siblingId);
     if (siblingNode) {
-      console.log(`[findSiblingNode] Found ${direction} sibling ${siblingId} in committed nodes`);
+      // console.log(`[findSiblingNode] Found ${direction} sibling ${siblingId} in committed nodes`);
       return siblingNode;
     }
 
     // If direct lookup fails, try to find by searching all nodes that could be mapped to this sibling ID
-    console.warn(`[findSiblingNode] Direct lookup for ${direction} sibling ${siblingId} failed, trying reverse lookup`);
+    // console.warn(`[findSiblingNode] Direct lookup for ${direction} sibling ${siblingId} failed, trying reverse lookup`);
 
     // Check if any working node has the sibling ID as its original ID
     for (const workingNode of txCtx.workingNodes.values()) {
       const originalId = (workingNode as any)._originalNodeId;
       if (originalId === siblingId) {
-        console.warn(`[findSiblingNode] Found ${direction} sibling via reverse lookup: working node ${workingNode.id} has original ID ${siblingId}`);
+        // console.warn(`[findSiblingNode] Found ${direction} sibling via reverse lookup: working node ${workingNode.id} has original ID ${siblingId}`);
         return workingNode;
       }
     }
 
-    console.error(`[findSiblingNode] CRITICAL: Could not find ${direction} sibling ${siblingId} in any context`);
-    console.error(`[findSiblingNode] Parent ${parentNode.id} children: [${parentNode.children.join(',')}]`);
-    console.error(`[findSiblingNode] Available working nodes: [${Array.from(txCtx.workingNodes.keys()).join(',')}]`);
-    console.error(`[findSiblingNode] Available committed nodes: this information is not directly accessible via ITransactionContext`);
+    // console.error(`[findSiblingNode] CRITICAL: Could not find ${direction} sibling ${siblingId} in any context`);
+    // console.error(`[findSiblingNode] Parent ${parentNode.id} children: [${parentNode.children.join(',')}]`);
+    // console.error(`[findSiblingNode] Available working nodes: [${Array.from(txCtx.workingNodes.keys()).join(',')}]`);
+    // console.error(`[findSiblingNode] Available committed nodes: this information is not directly accessible via ITransactionContext`);
 
     return undefined;
   }
@@ -2032,7 +2032,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
     for (const possibleId of possibleChildIds) {
       childIndex = updatedParent.children.indexOf(possibleId);
       if (childIndex !== -1) {
-        console.log(`[ensureParentChildSync] Found child ${updatedChild.id} (checking ID ${possibleId}) at index ${childIndex} in parent ${updatedParent.id}`);
+        // console.log(`[ensureParentChildSync] Found child ${updatedChild.id} (checking ID ${possibleId}) at index ${childIndex} in parent ${updatedParent.id}`);
         break;
       }
     }
@@ -2049,7 +2049,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
           if (possibleChildIds.has(workingOriginalId) ||
               possibleChildIds.has(workingNodeForChildId.id)) {
             childIndex = i;
-            console.log(`[ensureParentChildSync] Found child via working node mapping: parent[${i}]=${childIdInParent} -> working node ${workingNodeForChildId.id} relates to target ${updatedChild.id}`);
+            // console.log(`[ensureParentChildSync] Found child via working node mapping: parent[${i}]=${childIdInParent} -> working node ${workingNodeForChildId.id} relates to target ${updatedChild.id}`);
             break;
           }
         }
@@ -2057,7 +2057,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
         // Also check if the child ID in parent directly maps to our target through original ID
         if (possibleChildIds.has(childIdInParent)) {
           childIndex = i;
-          console.log(`[ensureParentChildSync] Found child via direct ID match: parent[${i}]=${childIdInParent} matches target ${updatedChild.id}`);
+          // console.log(`[ensureParentChildSync] Found child via direct ID match: parent[${i}]=${childIdInParent} matches target ${updatedChild.id}`);
           break;
         }
       }
@@ -2068,8 +2068,8 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
       const childMinKey = updatedChild.keys[0];
       const childMaxKey = updatedChild.keys[updatedChild.keys.length - 1];
 
-      console.warn(`[ensureParentChildSync] Child ${updatedChild.id} not found in parent ${updatedParent.id} children: [${updatedParent.children.join(',')}]. Attempting logical positioning based on keys.`);
-      console.warn(`[ensureParentChildSync] Child key range: [${childMinKey}, ${childMaxKey}], Parent keys: [${updatedParent.keys.join(',')}]`);
+      // console.warn(`[ensureParentChildSync] Child ${updatedChild.id} not found in parent ${updatedParent.id} children: [${updatedParent.children.join(',')}]. Attempting logical positioning based on keys.`);
+      // console.warn(`[ensureParentChildSync] Child key range: [${childMinKey}, ${childMaxKey}], Parent keys: [${updatedParent.keys.join(',')}]`);
 
       // Find where this child should logically be placed based on key ordering
       let logicalIndex = 0;
@@ -2089,7 +2089,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
       // Instead, only place child if the calculated logical position is truly empty
       // or if we're sure this child BELONGS in this position
 
-      console.warn(`[ensureParentChildSync] Logical positioning suggests index ${logicalIndex} for child with keys [${childMinKey}, ${childMaxKey}]`);
+      // console.warn(`[ensureParentChildSync] Logical positioning suggests index ${logicalIndex} for child with keys [${childMinKey}, ${childMaxKey}]`);
 
       // Check if the logical position is within bounds and available
       if (logicalIndex < updatedParent.children.length) {
@@ -2098,33 +2098,33 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
 
         if (!existingChild || existingChild.keys.length === 0) {
           // Only replace if existing child is truly missing or empty
-          console.warn(`[ensureParentChildSync] Replacing empty/missing child at logical index ${logicalIndex}`);
+          // console.warn(`[ensureParentChildSync] Replacing empty/missing child at logical index ${logicalIndex}`);
           childIndex = logicalIndex;
         } else {
           // NEVER replace a valid existing child - this breaks tree structure
-          console.warn(`[ensureParentChildSync] Logical position ${logicalIndex} already occupied by valid child ${existingChildId}, cannot place here`);
+          // console.warn(`[ensureParentChildSync] Logical position ${logicalIndex} already occupied by valid child ${existingChildId}, cannot place here`);
           // Don't set childIndex - let it fall through to the end placement
         }
               } else {
           // Child should be placed at the end
-          console.warn(`[ensureParentChildSync] Child belongs at the end, appending to parent children`);
+          // console.warn(`[ensureParentChildSync] Child belongs at the end, appending to parent children`);
           childIndex = updatedParent.children.length;
         }
       } else {
         // Logical position is at the end - this is safe
-        console.warn(`[ensureParentChildSync] Child belongs at the end, placing at index ${logicalIndex}`);
+        // console.warn(`[ensureParentChildSync] Child belongs at the end, placing at index ${logicalIndex}`);
         childIndex = logicalIndex;
       }
     }
 
     // Final fallback: If we still couldn't place the child, something is very wrong
     if (childIndex === -1) {
-      console.error(`[ensureParentChildSync] CRITICAL: Could not place child ${updatedChild.id} in parent ${updatedParent.id}. Tree structure is severely corrupted.`);
-      console.error(`[ensureParentChildSync] Child keys: [${updatedChild.keys.join(',')}], Parent children: [${updatedParent.children.join(',')}], Parent keys: [${updatedParent.keys.join(',')}]`);
+      // console.error(`[ensureParentChildSync] CRITICAL: Could not place child ${updatedChild.id} in parent ${updatedParent.id}. Tree structure is severely corrupted.`);
+      // console.error(`[ensureParentChildSync] Child keys: [${updatedChild.keys.join(',')}], Parent children: [${updatedParent.children.join(',')}], Parent keys: [${updatedParent.keys.join(',')}]`);
 
       // Last resort: append to the end and hope for the best
       childIndex = updatedParent.children.length;
-      console.error(`[ensureParentChildSync] Last resort: appending child to end at index ${childIndex}`);
+      // console.error(`[ensureParentChildSync] Last resort: appending child to end at index ${childIndex}`);
     }
 
     // Update parent's children array
@@ -2145,11 +2145,11 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
     // In B+ trees: keys.length must equal children.length - 1
     const expectedKeysLength = updatedParent.children.length - 1;
     if (updatedParent.keys.length !== expectedKeysLength) {
-      console.warn(`[ensureParentChildSync] B+ tree structure violation detected in parent ${updatedParent.id}: children.length=${updatedParent.children.length}, keys.length=${updatedParent.keys.length}, expected keys.length=${expectedKeysLength}`);
+      // console.warn(`[ensureParentChildSync] B+ tree structure violation detected in parent ${updatedParent.id}: children.length=${updatedParent.children.length}, keys.length=${updatedParent.keys.length}, expected keys.length=${expectedKeysLength}`);
 
       if (updatedParent.keys.length < expectedKeysLength) {
         // We have too few keys - need to add separator keys
-        console.warn(`[ensureParentChildSync] Adding missing separator keys to parent ${updatedParent.id}`);
+        // console.warn(`[ensureParentChildSync] Adding missing separator keys to parent ${updatedParent.id}`);
 
         // Try to derive separator keys from child nodes
         const newKeys = [...updatedParent.keys];
@@ -2172,29 +2172,29 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
           } else {
             // Both children are empty or missing - use a default value
             separatorKey = this.defaultEmpty;
-            console.warn(`[ensureParentChildSync] Both children empty, using defaultEmpty ${separatorKey} as separator`);
+            // console.warn(`[ensureParentChildSync] Both children empty, using defaultEmpty ${separatorKey} as separator`);
           }
 
           if (separatorKey !== undefined) {
             newKeys.push(separatorKey);
-            console.warn(`[ensureParentChildSync] Added separator key ${separatorKey} at position ${i} between children ${leftChildId} and ${rightChildId}`);
+            // console.warn(`[ensureParentChildSync] Added separator key ${separatorKey} at position ${i} between children ${leftChildId} and ${rightChildId}`);
           }
         }
         updatedParent.keys = newKeys;
       } else if (updatedParent.keys.length > expectedKeysLength) {
         // We have too many keys - remove excess keys
-        console.warn(`[ensureParentChildSync] Removing excess keys from parent ${updatedParent.id}`);
+        // console.warn(`[ensureParentChildSync] Removing excess keys from parent ${updatedParent.id}`);
         updatedParent.keys = updatedParent.keys.slice(0, expectedKeysLength);
       }
 
-      console.warn(`[ensureParentChildSync] Corrected parent ${updatedParent.id} structure: children.length=${updatedParent.children.length}, keys.length=${updatedParent.keys.length}`);
+      // console.warn(`[ensureParentChildSync] Corrected parent ${updatedParent.id} structure: children.length=${updatedParent.children.length}, keys.length=${updatedParent.keys.length}`);
     }
 
     // Ensure both are in transaction context
     txCtx.addWorkingNode(updatedChild);
     txCtx.addWorkingNode(updatedParent);
 
-    console.log(`[ensureParentChildSync] Successfully synchronized: child ${updatedChild.id} placed at index ${childIndex} in parent ${updatedParent.id}`);
+    // console.log(`[ensureParentChildSync] Successfully synchronized: child ${updatedChild.id} placed at index ${childIndex} in parent ${updatedParent.id}`);
     return { updatedChild, updatedParent };
   }
 
@@ -2230,7 +2230,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
     if (childIndexInParent === -1) {
       // If we still can't find the child after sync, it means the tree structure is too damaged
       // Let's try to find where this child *should* be and fix it
-      console.warn(`[#handle_underflow_cow] After parent-child sync, child ${finalUnderflowNode.id} not found in parent ${parentWC.id} children: [${parentWC.children.join(',')}]. Attempting to fix.`);
+      // console.warn(`[#handle_underflow_cow] After parent-child sync, child ${finalUnderflowNode.id} not found in parent ${parentWC.id} children: [${parentWC.children.join(',')}]. Attempting to fix.`);
 
       // Try to find the original child ID in the parent's children array
       const originalChildId = (underflowNodeWorkingCopy as any)._originalNodeId || underflowNodeWorkingCopy.id;
@@ -2242,12 +2242,12 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
         newChildren[childIndexInParent] = finalUnderflowNode.id;
         parentWC.children = newChildren;
         txCtx.addWorkingNode(parentWC);
-        console.warn(`[#handle_underflow_cow] Fixed parent ${parentWC.id} children array, updated index ${childIndexInParent} from ${originalChildId} to ${finalUnderflowNode.id}`);
+        // console.warn(`[#handle_underflow_cow] Fixed parent ${parentWC.id} children array, updated index ${childIndexInParent} from ${originalChildId} to ${finalUnderflowNode.id}`);
       } else {
         // If we still can't find it, let's try a more aggressive approach:
         // Look for any child in the parent that has keys that could contain our underflow node's keys
         // This is a heuristic approach when tree structure is severely damaged
-        console.warn(`[#handle_underflow_cow] Attempting aggressive fix for child ${finalUnderflowNode.id} (original: ${originalChildId}) in parent ${parentWC.id}`);
+        // console.warn(`[#handle_underflow_cow] Attempting aggressive fix for child ${finalUnderflowNode.id} (original: ${originalChildId}) in parent ${parentWC.id}`);
 
         // Try to find where this child logically belongs based on its keys
         if (finalUnderflowNode.keys.length > 0) {
@@ -2265,7 +2265,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
 
           // Check if there's space at this logical position or if we need to replace
           if (logicalIndex < parentWC.children.length) {
-            console.warn(`[#handle_underflow_cow] Attempting to place child ${finalUnderflowNode.id} at logical index ${logicalIndex} in parent ${parentWC.id}`);
+            // console.warn(`[#handle_underflow_cow] Attempting to place child ${finalUnderflowNode.id} at logical index ${logicalIndex} in parent ${parentWC.id}`);
       const newChildren = [...parentWC.children];
             newChildren[logicalIndex] = finalUnderflowNode.id;
       parentWC.children = newChildren;
@@ -2273,10 +2273,10 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
             childIndexInParent = logicalIndex;
             finalUnderflowNode._parent = parentWC.id;
             txCtx.addWorkingNode(finalUnderflowNode);
-            console.warn(`[#handle_underflow_cow] Aggressively fixed child placement at index ${logicalIndex}`);
+            // console.warn(`[#handle_underflow_cow] Aggressively fixed child placement at index ${logicalIndex}`);
     } else {
             // Last resort: append to the end
-            console.warn(`[#handle_underflow_cow] Last resort: appending child ${finalUnderflowNode.id} to end of parent ${parentWC.id} children`);
+            // console.warn(`[#handle_underflow_cow] Last resort: appending child ${finalUnderflowNode.id} to end of parent ${parentWC.id} children`);
             const newChildren = [...parentWC.children, finalUnderflowNode.id];
       parentWC.children = newChildren;
             txCtx.addWorkingNode(parentWC);
@@ -2287,7 +2287,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
         } else {
           // If underflow node has no keys, it might be empty, but let's be less aggressive
           // Instead of immediately deleting it, let's try to proceed with normal borrow/merge logic
-          console.warn(`[#handle_underflow_cow] Child ${finalUnderflowNode.id} (original: ${originalChildId}) has no keys - attempting normal underflow handling first`);
+          // console.warn(`[#handle_underflow_cow] Child ${finalUnderflowNode.id} (original: ${originalChildId}) has no keys - attempting normal underflow handling first`);
 
           // Try to find where this child logically belongs and fix the structure
           // But don't immediately delete - let the normal borrow/merge logic handle the empty node
@@ -2307,7 +2307,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
 
           // If we couldn't place it by replacing original ID, try appending (fallback)
           if (!placed) {
-            console.warn(`[#handle_underflow_cow] Fallback: appending empty child ${finalUnderflowNode.id} to parent ${parentWC.id}`);
+            // console.warn(`[#handle_underflow_cow] Fallback: appending empty child ${finalUnderflowNode.id} to parent ${parentWC.id}`);
             newChildren.push(finalUnderflowNode.id);
             childIndexInParent = newChildren.length - 1;
           }
@@ -2317,7 +2317,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
           txCtx.addWorkingNode(parentWC);
           txCtx.addWorkingNode(finalUnderflowNode);
 
-          console.warn(`[#handle_underflow_cow] Placed empty child ${finalUnderflowNode.id} at index ${childIndexInParent}, proceeding with normal borrow/merge logic`);
+          // console.warn(`[#handle_underflow_cow] Placed empty child ${finalUnderflowNode.id} at index ${childIndexInParent}, proceeding with normal borrow/merge logic`);
         }
       }
     }
@@ -2332,8 +2332,8 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
     if (childIndexInParent > 0) {
       const leftSiblingOriginal = this.findSiblingNode(parentWC, childIndexInParent, 'left', txCtx);
       if (!leftSiblingOriginal) {
-        console.warn(`[#handle_underflow_cow] Left sibling not found at index ${childIndexInParent - 1} in parent ${parentWC.id}`);
-        console.warn(`[#handle_underflow_cow] Parent children: [${parentWC.children.join(',')}], target index: ${childIndexInParent - 1}`);
+        // console.warn(`[#handle_underflow_cow] Left sibling not found at index ${childIndexInParent - 1} in parent ${parentWC.id}`);
+        // console.warn(`[#handle_underflow_cow] Parent children: [${parentWC.children.join(',')}], target index: ${childIndexInParent - 1}`);
 
         // Instead of throwing error, skip borrowing from left sibling
         // This allows the function to try borrowing from right sibling or proceed to merge
@@ -2362,7 +2362,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
 
         // FIXED: Check if the node became empty after borrowing and handle cleanup
         if (finalUpdatedNode.leaf && finalUpdatedNode.key_num === 0) {
-          console.warn(`[#handle_underflow_cow] After borrowing from left, node ${finalUpdatedNode.id} became empty. Deleting empty leaf.`);
+          // console.warn(`[#handle_underflow_cow] After borrowing from left, node ${finalUpdatedNode.id} became empty. Deleting empty leaf.`);
 
           // Mark empty node for deletion
           txCtx.markNodeForDeletion(finalUpdatedNode.id);
@@ -2383,7 +2383,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
 
             parentWC.key_num = parentWC.keys.length;
             txCtx.addWorkingNode(parentWC);
-            console.warn(`[#handle_underflow_cow] Deleted empty leaf ${finalUpdatedNode.id} from parent ${parentWC.id}`);
+            // console.warn(`[#handle_underflow_cow] Deleted empty leaf ${finalUpdatedNode.id} from parent ${parentWC.id}`);
           }
 
           return { updatedNode: finalUpdatedNode, nodeWasDeleted: true, replacementNodeId: undefined, newRootIdForParent: undefined, parentUpdatedToId: finalParentIdAfterOperation };
@@ -2398,8 +2398,8 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
     if (childIndexInParent < parentWC.children.length - 1) {
       const rightSiblingOriginal = this.findSiblingNode(parentWC, childIndexInParent, 'right', txCtx);
       if (!rightSiblingOriginal) {
-        console.warn(`[#handle_underflow_cow] Right sibling not found at index ${childIndexInParent + 1} in parent ${parentWC.id}`);
-        console.warn(`[#handle_underflow_cow] Parent children: [${parentWC.children.join(',')}], target index: ${childIndexInParent + 1}`);
+        // console.warn(`[#handle_underflow_cow] Right sibling not found at index ${childIndexInParent + 1} in parent ${parentWC.id}`);
+        // console.warn(`[#handle_underflow_cow] Parent children: [${parentWC.children.join(',')}], target index: ${childIndexInParent + 1}`);
 
         // Instead of throwing error, skip borrowing from right sibling
         // This allows the function to proceed to merge operations
@@ -2425,7 +2425,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
 
         // FIXED: Check if the node became empty after borrowing and handle cleanup
         if (finalUpdatedNode.leaf && finalUpdatedNode.key_num === 0) {
-          console.warn(`[#handle_underflow_cow] After borrowing from right, node ${finalUpdatedNode.id} became empty. Deleting empty leaf.`);
+          // console.warn(`[#handle_underflow_cow] After borrowing from right, node ${finalUpdatedNode.id} became empty. Deleting empty leaf.`);
 
           // Mark empty node for deletion
           txCtx.markNodeForDeletion(finalUpdatedNode.id);
@@ -2446,7 +2446,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
 
             parentWC.key_num = parentWC.keys.length;
             txCtx.addWorkingNode(parentWC);
-            console.warn(`[#handle_underflow_cow] Deleted empty leaf ${finalUpdatedNode.id} from parent ${parentWC.id}`);
+            // console.warn(`[#handle_underflow_cow] Deleted empty leaf ${finalUpdatedNode.id} from parent ${parentWC.id}`);
           }
 
           return { updatedNode: finalUpdatedNode, nodeWasDeleted: true, replacementNodeId: undefined, newRootIdForParent: undefined, parentUpdatedToId: finalParentIdAfterOperation };
@@ -2462,8 +2462,8 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
     if (childIndexInParent > 0) {
       const leftSiblingOriginal = this.findSiblingNode(parentWC, childIndexInParent, 'left', txCtx);
       if (!leftSiblingOriginal) {
-        console.warn(`[#handle_underflow_cow] Left sibling for merge not found at index ${childIndexInParent - 1} in parent ${parentWC.id}`);
-        console.warn(`[#handle_underflow_cow] Skipping merge with left sibling, will try merge with right sibling`);
+        // console.warn(`[#handle_underflow_cow] Left sibling for merge not found at index ${childIndexInParent - 1} in parent ${parentWC.id}`);
+        // console.warn(`[#handle_underflow_cow] Skipping merge with left sibling, will try merge with right sibling`);
       } else {
       // console.log(`[#handle_underflow_cow] Merging with left sibling ${leftSiblingOriginal.id}`);
 
@@ -2554,8 +2554,8 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
     if (childIndexInParent < parentWC.children.length - 1) {
         const rightSiblingOriginal = this.findSiblingNode(parentWC, childIndexInParent, 'right', txCtx);
         if (!rightSiblingOriginal) {
-            console.error(`[#handle_underflow_cow] CRITICAL: Right sibling for merge not found at index ${childIndexInParent + 1} in parent ${parentWC.id}`);
-            console.error(`[#handle_underflow_cow] No merge options available, returning original node`);
+            // console.error(`[#handle_underflow_cow] CRITICAL: Right sibling for merge not found at index ${childIndexInParent + 1} in parent ${parentWC.id}`);
+            // console.error(`[#handle_underflow_cow] No merge options available, returning original node`);
             return { updatedNode: finalUnderflowNode, nodeWasDeleted: false, replacementNodeId: undefined, newRootIdForParent: undefined, parentUpdatedToId: parentWC.id };
         }
         // console.log(`[#handle_underflow_cow] Merging with right sibling ${rightSiblingOriginal.id}`);
@@ -2656,11 +2656,11 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
 
       const node = this.nodes.get(nodeId);
       if (!node) {
-        console.warn(`[fixDuplicateKeysInParents] Node ${nodeId} not found in nodes map`);
+        // console.warn(`[fixDuplicateKeysInParents] Node ${nodeId} not found in nodes map`);
         return;
       }
 
-      console.log(`[fixDuplicateKeysInParents] Visiting node ${nodeId}: leaf=${node.leaf}, keys=[${node.keys.join(',')}], children=[${node.children?.join(',') || 'none'}]`);
+      // console.log(`[fixDuplicateKeysInParents] Visiting node ${nodeId}: leaf=${node.leaf}, keys=[${node.keys.join(',')}], children=[${node.children?.join(',') || 'none'}]`);
 
       // Only fix internal nodes (not leaves)
       if (!node.leaf) {
@@ -2700,14 +2700,14 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
         // NEW: Check for empty keys with any children (B+ tree violation)
         if (node.keys.length === 0 && node.children.length >= 1) {
           issues.push(`Node ${nodeId}: empty keys but ${node.children.length} children - B+ tree violation`);
-          console.log(`[fixDuplicateKeysInParents] Found empty internal node ${nodeId} with ${node.children.length} children: [${node.children.join(',')}]`);
+          // console.log(`[fixDuplicateKeysInParents] Found empty internal node ${nodeId} with ${node.children.length} children: [${node.children.join(',')}]`);
 
           // Auto-fix: replace this node with its single child if possible
           if (node.children.length === 1) {
             const singleChildId = node.children[0];
             const singleChild = this.nodes.get(singleChildId);
 
-            console.log(`[fixDuplicateKeysInParents] Attempting to replace empty node ${nodeId} with single child ${singleChildId}`);
+            // console.log(`[fixDuplicateKeysInParents] Attempting to replace empty node ${nodeId} with single child ${singleChildId}`);
 
             if (singleChild) {
               // Replace this node with its single child
@@ -2718,7 +2718,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
                   // Find this node in parent's children and replace it
                   const nodeIndex = parent.children.indexOf(nodeId);
                   if (nodeIndex !== -1) {
-                    console.log(`[fixDuplicateKeysInParents] Replacing node ${nodeId} at index ${nodeIndex} in parent ${parentId} with child ${singleChildId}`);
+                    // console.log(`[fixDuplicateKeysInParents] Replacing node ${nodeId} at index ${nodeIndex} in parent ${parentId} with child ${singleChildId}`);
                     parent.children[nodeIndex] = singleChildId;
                     singleChild._parent = parentId;
 
@@ -2727,14 +2727,14 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
 
                     fixedIssues.push(`Replaced empty internal node ${nodeId} with its single child ${singleChildId}`);
                   } else {
-                    console.warn(`[fixDuplicateKeysInParents] Node ${nodeId} not found in parent ${parentId} children: [${parent.children.join(',')}]`);
+                    // console.warn(`[fixDuplicateKeysInParents] Node ${nodeId} not found in parent ${parentId} children: [${parent.children.join(',')}]`);
                   }
                 } else {
-                  console.warn(`[fixDuplicateKeysInParents] Parent ${parentId} not found for node ${nodeId}`);
+                  // console.warn(`[fixDuplicateKeysInParents] Parent ${parentId} not found for node ${nodeId}`);
                 }
               } else {
                 // This is the root - promote the single child to root
-                console.log(`[fixDuplicateKeysInParents] Promoting single child ${singleChildId} to root, removing empty root ${nodeId}`);
+                // console.log(`[fixDuplicateKeysInParents] Promoting single child ${singleChildId} to root, removing empty root ${nodeId}`);
                 this.root = singleChildId;
                 singleChild._parent = undefined;
                 this.nodes.delete(nodeId);
@@ -2742,7 +2742,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
                 fixedIssues.push(`Promoted single child ${singleChildId} to root, removed empty root ${nodeId}`);
               }
             } else {
-              console.warn(`[fixDuplicateKeysInParents] Single child ${singleChildId} not found for empty node ${nodeId}`);
+              // console.warn(`[fixDuplicateKeysInParents] Single child ${singleChildId} not found for empty node ${nodeId}`);
             }
           } else {
             // Multiple children but empty keys - try to regenerate separator keys
@@ -2787,12 +2787,12 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
     // After fixing, ensure root is still valid and update if necessary
     if (!this.nodes.has(this.root)) {
       // Root was deleted, find new root
-      console.warn(`[fixDuplicateKeysInParents] Root ${this.root} was deleted, searching for new root`);
+      // console.warn(`[fixDuplicateKeysInParents] Root ${this.root} was deleted, searching for new root`);
 
       // Find a node that has no parent (should be the new root)
       for (const [nodeId, node] of this.nodes) {
         if (node._parent === undefined) {
-          console.log(`[fixDuplicateKeysInParents] Found new root: ${nodeId}`);
+          // console.log(`[fixDuplicateKeysInParents] Found new root: ${nodeId}`);
           this.root = nodeId;
           fixedIssues.push(`Updated root from deleted node to ${nodeId}`);
           break;
@@ -2810,7 +2810,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
           if (this.nodes.has(childId)) {
             validChildren.push(childId);
           } else {
-            console.log(`[fixDuplicateKeysInParents] Removing reference to deleted child ${childId} from node ${nodeId}`);
+            // console.log(`[fixDuplicateKeysInParents] Removing reference to deleted child ${childId} from node ${nodeId}`);
             childrenChanged = true;
           }
         }
@@ -2821,7 +2821,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
 
           // Adjust keys to match children count (B+ tree invariant)
           if (validChildren.length > 0 && node.keys.length !== validChildren.length - 1) {
-            console.log(`[fixDuplicateKeysInParents] Adjusting keys in node ${nodeId} to match ${validChildren.length} children`);
+            // console.log(`[fixDuplicateKeysInParents] Adjusting keys in node ${nodeId} to match ${validChildren.length} children`);
             // Keep only the first (validChildren.length - 1) keys
             node.keys = node.keys.slice(0, validChildren.length - 1);
             fixedIssues.push(`Adjusted keys in node ${nodeId} to maintain B+ tree invariant`);
@@ -3003,7 +3003,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
             } else {
               // Single node with this content - this is legitimate in non-unique trees
               // Just log it as informational, don't treat as an issue
-              console.log(`[validateTreeStructure] Legitimate duplicate keys in non-unique tree: node ${contentNodeIds[0]} with keys [${keySignature}]`);
+              // console.log(`[validateTreeStructure] Legitimate duplicate keys in non-unique tree: node ${contentNodeIds[0]} with keys [${keySignature}]`);
             }
           }
         } else {
@@ -3077,7 +3077,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
           // Auto-fix: remove duplicate keys
           node.keys = uniqueKeys;
           fixedIssues.push(`Fixed duplicate keys in internal node ${nodeId}: [${uniqueKeys.join(',')}]`);
-          console.log(`[fixDuplicateKeysOnly] Fixed duplicate keys in node ${nodeId}: [${node.keys.join(',')}] -> [${uniqueKeys.join(',')}]`);
+          // console.log(`[fixDuplicateKeysOnly] Fixed duplicate keys in node ${nodeId}: [${node.keys.join(',')}] -> [${uniqueKeys.join(',')}]`);
         }
       }
     }
@@ -3094,17 +3094,17 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
    * If the root has orphaned references, find a better root or create a new one.
    */
   private ensureValidRoot(): void {
-    console.warn(`[ensureValidRoot] Checking root ${this.root} for validity`);
+    // console.warn(`[ensureValidRoot] Checking root ${this.root} for validity`);
 
     // TRANSACTION ISOLATION: Don't interfere during active transactions
     if (this.activeTransactions.size > 0) {
-      console.warn(`[ensureValidRoot] ${this.activeTransactions.size} active transactions detected - skipping validation to preserve transaction isolation`);
+      // console.warn(`[ensureValidRoot] ${this.activeTransactions.size} active transactions detected - skipping validation to preserve transaction isolation`);
       return;
     }
 
     const currentRoot = this.nodes.get(this.root);
     if (!currentRoot) {
-      console.error(`[ensureValidRoot] Current root ${this.root} does not exist! Finding alternative root.`);
+      // console.error(`[ensureValidRoot] Current root ${this.root} does not exist! Finding alternative root.`);
       this.findValidRoot();
       return;
     }
@@ -3126,16 +3126,16 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
       }
 
       if (orphanedChildren.length > 0) {
-        console.warn(`[ensureValidRoot] Root ${this.root} has ${orphanedChildren.length} orphaned children: [${orphanedChildren.join(',')}]`);
+        // console.warn(`[ensureValidRoot] Root ${this.root} has ${orphanedChildren.length} orphaned children: [${orphanedChildren.join(',')}]`);
 
         if (validChildren.length === 0) {
-          console.error(`[ensureValidRoot] Root has no valid children! Finding alternative root.`);
+          // console.error(`[ensureValidRoot] Root has no valid children! Finding alternative root.`);
           this.findValidRoot();
           return;
         } else if (validChildren.length === 1) {
           // If root has only one valid child, make that child the new root
           const newRootId = validChildren[0];
-          console.warn(`[ensureValidRoot] Root has only one valid child ${newRootId}. Making it the new root.`);
+          // console.warn(`[ensureValidRoot] Root has only one valid child ${newRootId}. Making it the new root.`);
           this.root = newRootId;
 
           // Update the new root to have no parent
@@ -3145,13 +3145,13 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
           }
         } else {
           // Root has multiple valid children, clean up orphaned references
-          console.warn(`[ensureValidRoot] Root has ${validChildren.length} valid children. Cleaning up orphaned references.`);
+          // console.warn(`[ensureValidRoot] Root has ${validChildren.length} valid children. Cleaning up orphaned references.`);
           currentRoot.children = validChildren;
 
           // Adjust keys to match children count
           const expectedKeyCount = validChildren.length - 1;
           if (currentRoot.keys.length !== expectedKeyCount) {
-            console.warn(`[ensureValidRoot] Adjusting root key count from ${currentRoot.keys.length} to ${expectedKeyCount}`);
+            // console.warn(`[ensureValidRoot] Adjusting root key count from ${currentRoot.keys.length} to ${expectedKeyCount}`);
             if (expectedKeyCount === 0) {
               currentRoot.keys = [];
             } else {
@@ -3194,8 +3194,8 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
     const unreachableLeaves = [...allLeafNodes].filter(leafId => !reachableLeafNodes.has(leafId));
 
     if (unreachableLeaves.length > 0) {
-      console.warn(`[ensureValidRoot] Found ${unreachableLeaves.length} unreachable leaf nodes: [${unreachableLeaves.join(',')}]`);
-      console.warn(`[ensureValidRoot] All leaves: [${[...allLeafNodes].join(',')}], Reachable: [${[...reachableLeafNodes].join(',')}]`);
+      // console.warn(`[ensureValidRoot] Found ${unreachableLeaves.length} unreachable leaf nodes: [${unreachableLeaves.join(',')}]`);
+      // console.warn(`[ensureValidRoot] All leaves: [${[...allLeafNodes].join(',')}], Reachable: [${[...reachableLeafNodes].join(',')}]`);
 
       // CONSERVATIVE APPROACH: Don't automatically reconstruct
       // Only reconstruct if the root has NO reachable leaves AND the root is not an empty leaf
@@ -3204,12 +3204,12 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
 
         // If root is an empty leaf, this might be an intentionally empty tree
         if (currentRootNode && currentRootNode.leaf && currentRootNode.keys.length === 0) {
-          console.warn(`[ensureValidRoot] Root is an empty leaf - tree is intentionally empty, not broken`);
+          // console.warn(`[ensureValidRoot] Root is an empty leaf - tree is intentionally empty, not broken`);
           return;
         }
 
         // If root is not a leaf or has keys but can't reach leaves, it's broken
-        console.warn(`[ensureValidRoot] Root cannot reach ANY leaves and is not an empty leaf - tree is severely broken, reconstructing`);
+        // console.warn(`[ensureValidRoot] Root cannot reach ANY leaves and is not an empty leaf - tree is severely broken, reconstructing`);
         this.findValidRoot();
         return;
       } else {
@@ -3218,16 +3218,16 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
 
         if (unreachableRatio > 0.3) {
           // If more than 30% of leaves are unreachable, this is likely transaction corruption
-          console.warn(`[ensureValidRoot] High unreachable ratio (${(unreachableRatio * 100).toFixed(1)}%) - likely transaction corruption, reconstructing tree to recover data`);
+          // console.warn(`[ensureValidRoot] High unreachable ratio (${(unreachableRatio * 100).toFixed(1)}%) - likely transaction corruption, reconstructing tree to recover data`);
           this.findValidRoot();
           return;
         } else {
-          console.warn(`[ensureValidRoot] Some leaves unreachable but root is functional and ratio is low (${(unreachableRatio * 100).toFixed(1)}%) - skipping reconstruction to preserve transaction isolation`);
+          // console.warn(`[ensureValidRoot] Some leaves unreachable but root is functional and ratio is low (${(unreachableRatio * 100).toFixed(1)}%) - skipping reconstruction to preserve transaction isolation`);
         }
       }
     }
 
-    console.warn(`[ensureValidRoot] Root validation completed. Current root: ${this.root}`);
+    // console.warn(`[ensureValidRoot] Root validation completed. Current root: ${this.root}`);
   }
 
   /**
@@ -3235,13 +3235,13 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
    * This searches for the best internal node or creates a new root from all leaves.
    */
   private findValidRoot(): void {
-    console.warn(`[findValidRoot] Searching for a valid root node`);
+    // console.warn(`[findValidRoot] Searching for a valid root node`);
 
     // TRANSACTION ISOLATION: Only work with committed nodes in the main tree
     // This prevents any potential transaction artifacts from being included
     const committedNodes = this.nodes;
 
-    console.warn(`[findValidRoot] Working with ${committedNodes.size} committed nodes from main tree`);
+    // console.warn(`[findValidRoot] Working with ${committedNodes.size} committed nodes from main tree`);
 
     // CONSERVATIVE APPROACH: Only include leaves that were already reachable or look like "main tree" leaves
     // This helps avoid including transaction nodes that should be isolated
@@ -3283,9 +3283,9 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
         const signature = `keys:[${node.keys.join(',')}]|values:[${node.pointers.join(',')}]`;
         if (!leafNodesMap.has(signature)) {
           leafNodesMap.set(signature, node);
-          console.warn(`[findValidRoot] Added candidate leaf ${nodeId} with signature: ${signature}`);
+          // console.warn(`[findValidRoot] Added candidate leaf ${nodeId} with signature: ${signature}`);
         } else {
-          console.warn(`[findValidRoot] Skipped duplicate leaf ${nodeId} with signature: ${signature}`);
+          // console.warn(`[findValidRoot] Skipped duplicate leaf ${nodeId} with signature: ${signature}`);
         }
       }
     }
@@ -3293,7 +3293,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
     const leafNodes: Node<T, K>[] = Array.from(leafNodesMap.values());
 
     if (leafNodes.length === 0) {
-      console.error(`[findValidRoot] No valid leaf nodes found! Tree is empty.`);
+      // console.error(`[findValidRoot] No valid leaf nodes found! Tree is empty.`);
       // Create an empty root
       const emptyRoot = Node.createLeaf<T, K>(this);
       this.root = emptyRoot.id;
@@ -3302,7 +3302,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
 
     if (leafNodes.length === 1) {
       // Only one leaf, make it the root
-      console.warn(`[findValidRoot] Only one leaf node found. Making it the root.`);
+      // console.warn(`[findValidRoot] Only one leaf node found. Making it the root.`);
       this.root = leafNodes[0].id;
       leafNodes[0]._parent = undefined;
       return;
@@ -3333,7 +3333,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
         countReachableLeaves(nodeId);
 
         if (reachableLeaves.size > 0) {
-          console.warn(`[findValidRoot] Internal node ${nodeId} can reach ${reachableLeaves.size} leaves`);
+          // console.warn(`[findValidRoot] Internal node ${nodeId} can reach ${reachableLeaves.size} leaves`);
           if (!bestRootCandidate || reachableLeaves.size > bestRootCandidate.reachableLeaves) {
             bestRootCandidate = { nodeId, reachableLeaves: reachableLeaves.size };
           }
@@ -3343,7 +3343,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
 
     // If we found a good root candidate that can reach ALL leaves, use it
     if (bestRootCandidate && bestRootCandidate.reachableLeaves === leafNodes.length) {
-      console.warn(`[findValidRoot] Found optimal internal node ${bestRootCandidate.nodeId} that reaches all ${bestRootCandidate.reachableLeaves} leaves`);
+      // console.warn(`[findValidRoot] Found optimal internal node ${bestRootCandidate.nodeId} that reaches all ${bestRootCandidate.reachableLeaves} leaves`);
       this.root = bestRootCandidate.nodeId;
       const rootNode = committedNodes.get(bestRootCandidate.nodeId)!;
       rootNode._parent = undefined;
@@ -3361,7 +3361,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
     }
 
     // No existing internal node can reach all leaves - create a new root that includes ALL leaves
-    console.warn(`[findValidRoot] No single internal node can reach all ${leafNodes.length} leaves. Creating new comprehensive root.`);
+    // console.warn(`[findValidRoot] No single internal node can reach all ${leafNodes.length} leaves. Creating new comprehensive root.`);
 
     // Sort leaves by their minimum key for proper B+ tree structure
     leafNodes.sort((a, b) => {
@@ -3373,18 +3373,18 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
     const newRoot = Node.createNode<T, K>(this);
 
     // DEBUG: Show leafNodes details
-    console.warn(`[findValidRoot] leafNodes details:`);
+    // console.warn(`[findValidRoot] leafNodes details:`);
     for (const leaf of leafNodes) {
-      console.warn(`[findValidRoot] Leaf ${leaf.id}: keys=[${leaf.keys.join(',')}]`);
+      // console.warn(`[findValidRoot] Leaf ${leaf.id}: keys=[${leaf.keys.join(',')}]`);
     }
 
     // Add all leaves as children
     newRoot.children = leafNodes.map(leaf => leaf.id);
-    console.warn(`[findValidRoot] Before deduplication - children: [${newRoot.children.join(',')}]`);
+    // console.warn(`[findValidRoot] Before deduplication - children: [${newRoot.children.join(',')}]`);
 
     // ENHANCED: Remove duplicates from children array
     newRoot.children = [...new Set(newRoot.children)];
-    console.warn(`[findValidRoot] After deduplication - children: [${newRoot.children.join(',')}]`);
+    // console.warn(`[findValidRoot] After deduplication - children: [${newRoot.children.join(',')}]`);
 
     // Create separator keys (use the minimum key of each leaf except the first)
     // In B+ tree: keys.length = children.length - 1, so we need exactly children.length - 1 keys
@@ -3394,13 +3394,13 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
       if (childNode && childNode.keys.length > 0) {
         const separatorKey = childNode.keys[0];
         newRoot.keys.push(separatorKey);
-        console.warn(`[findValidRoot] Added separator key ${separatorKey} for child ${childNode.id} at index ${i}`);
+        // console.warn(`[findValidRoot] Added separator key ${separatorKey} for child ${childNode.id} at index ${i}`);
       }
     }
 
-    console.warn(`[findValidRoot] B+ tree structure check: ${newRoot.children.length} children, ${newRoot.keys.length} keys`);
+    // console.warn(`[findValidRoot] B+ tree structure check: ${newRoot.children.length} children, ${newRoot.keys.length} keys`);
     if (newRoot.keys.length !== newRoot.children.length - 1) {
-      console.warn(`[findValidRoot] WARNING: B+ tree violation - keys.length should equal children.length - 1`);
+      // console.warn(`[findValidRoot] WARNING: B+ tree violation - keys.length should equal children.length - 1`);
     }
 
     // Update parent pointers for all leaves
@@ -3416,8 +3416,8 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
     this.nodes.set(newRoot.id, newRoot);
     this.root = newRoot.id;
 
-    console.warn(`[findValidRoot] Created comprehensive new root ${newRoot.id} with ${newRoot.children.length} children and ${newRoot.keys.length} keys`);
-    console.warn(`[findValidRoot] New root children: [${newRoot.children.join(',')}], keys: [${newRoot.keys.join(',')}]`);
+    // console.warn(`[findValidRoot] Created comprehensive new root ${newRoot.id} with ${newRoot.children.length} children and ${newRoot.keys.length} keys`);
+    // console.warn(`[findValidRoot] New root children: [${newRoot.children.join(',')}], keys: [${newRoot.keys.join(',')}]`);
   }
 
   /**
@@ -3425,7 +3425,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
    * This function removes references to nodes that no longer exist in the nodes map.
    */
   private cleanupOrphanedReferences(): void {
-    console.log(`[cleanupOrphanedReferences] Starting cleanup of orphaned references`);
+    // console.log(`[cleanupOrphanedReferences] Starting cleanup of orphaned references`);
 
     // Clean up both committed nodes and any working nodes that might exist
     const allNodesToCheck = new Map<number, Node<T, K>>();
@@ -3460,7 +3460,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
 
         // If we found orphaned children, clean them up
         if (orphanedChildren.length > 0) {
-          console.log(`[cleanupOrphanedReferences] Node ${nodeId}: found ${orphanedChildren.length} orphaned children: [${orphanedChildren.join(',')}]`);
+          // console.log(`[cleanupOrphanedReferences] Node ${nodeId}: found ${orphanedChildren.length} orphaned children: [${orphanedChildren.join(',')}]`);
 
           // Update children array to only include valid children
           node.children = validChildren;
@@ -3472,15 +3472,15 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
           if (node.keys.length > expectedKeyCount) {
             node.keys = node.keys.slice(0, expectedKeyCount);
             node.key_num = node.keys.length;
-            console.log(`[cleanupOrphanedReferences] Node ${nodeId}: adjusted keys to match children count, new keys: [${node.keys.join(',')}]`);
+            // console.log(`[cleanupOrphanedReferences] Node ${nodeId}: adjusted keys to match children count, new keys: [${node.keys.join(',')}]`);
           }
 
-          console.log(`[cleanupOrphanedReferences] Node ${nodeId}: cleaned up, valid children: [${validChildren.join(',')}], keys: [${node.keys.join(',')}]`);
+          // console.log(`[cleanupOrphanedReferences] Node ${nodeId}: cleaned up, valid children: [${validChildren.join(',')}], keys: [${node.keys.join(',')}]`);
         }
       }
     }
 
-    console.log(`[cleanupOrphanedReferences] Cleanup completed`);
+    // console.log(`[cleanupOrphanedReferences] Cleanup completed`);
   }
 
     /**
@@ -3489,7 +3489,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
    * CONSERVATIVE: Only remove clearly orphaned duplicates, not transaction artifacts.
    */
   private removeDuplicateNodes(): void {
-    console.log(`[removeDuplicateNodes] Starting cleanup of duplicate nodes`);
+    // console.log(`[removeDuplicateNodes] Starting cleanup of duplicate nodes`);
 
     // CONSERVATIVE: Don't remove duplicates that might be legitimate transaction artifacts
     // Only remove clearly orphaned unreachable nodes
@@ -3511,7 +3511,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
     // Only remove duplicates if there are MANY instances (3+) and they are clearly orphaned
     for (const [signature, nodeIds] of allLeafNodes) {
       if (nodeIds.length > 2) {
-        console.log(`[removeDuplicateNodes] Found ${nodeIds.length} potential duplicate nodes with signature: ${signature}`);
+        // console.log(`[removeDuplicateNodes] Found ${nodeIds.length} potential duplicate nodes with signature: ${signature}`);
 
         // Check which ones are completely unreachable
         const unreachableNodeIds: number[] = [];
@@ -3526,7 +3526,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
           const nodesToRemove = unreachableNodeIds.slice(0, Math.max(0, nodeIds.length - 2));
 
           for (const duplicateId of nodesToRemove) {
-            console.log(`[removeDuplicateNodes] Removing clearly orphaned duplicate node ${duplicateId}`);
+            // console.log(`[removeDuplicateNodes] Removing clearly orphaned duplicate node ${duplicateId}`);
             this.removeNodeFromParents(duplicateId);
             this.nodes.delete(duplicateId);
           }
@@ -3534,7 +3534,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
       }
     }
 
-    console.log(`[removeDuplicateNodes] Cleanup completed`);
+    // console.log(`[removeDuplicateNodes] Cleanup completed`);
   }
 
   /**
@@ -3559,7 +3559,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
         update_state(parentNode);
         update_min_max(parentNode);
 
-        console.log(`[removeNodeFromParents] Removed child ${nodeId} from parent ${parentId}`);
+        // console.log(`[removeNodeFromParents] Removed child ${nodeId} from parent ${parentId}`);
       }
     }
   }

@@ -532,7 +532,7 @@ export function remove_node<T, K extends ValueType>(
     // Item not found in children, maybe it's a leaf being removed?
     // This case needs clarification or separate handling if applicable.
     // For now, let's assume obj is always the parent.
-    console.warn(`[remove_node] Node ${item.id} not found in parent ${obj.id} children.`);
+    // console.warn(`[remove_node] Node ${item.id} not found in parent ${obj.id} children.`);
     return item; // Or throw error
   }
 
@@ -773,13 +773,13 @@ export function replace_min_immutable<T, K extends ValueType>(
           }
         }
       } else {
-        console.error(`[replace_min_immutable] CRITICAL: Child original ID ${originalNodeIdToFind} (or current ID ${originalNode.id}) not found in parent ${parentWorkCopy.id} children [${parentWorkCopy.children.join(',')}]`);
+        // console.error(`[replace_min_immutable] CRITICAL: Child original ID ${originalNodeIdToFind} (or current ID ${originalNode.id}) not found in parent ${parentWorkCopy.id} children [${parentWorkCopy.children.join(',')}]`);
       }
     } else {
       // console.warn(...)
     }
   } else if (skipParentSeparatorUpdate) {
-    console.log(`[replace_min_immutable] Skipping parent separator update for node ${workingNode.id} due to _skipParentSeparatorUpdate flag`);
+    // console.log(`[replace_min_immutable] Skipping parent separator update for node ${workingNode.id} due to _skipParentSeparatorUpdate flag`);
   }
   return workingNode;
 }
@@ -837,13 +837,13 @@ export function replace_max_immutable<T, K extends ValueType>(
           }
         }
       } else {
-        console.error(`[replace_max_immutable] CRITICAL: Child original ID ${originalNodeIdToFind} (or current ID ${originalNode.id}) not found in parent ${parentWorkCopy.id} children [${parentWorkCopy.children.join(',')}]`);
+        // console.error(`[replace_max_immutable] CRITICAL: Child original ID ${originalNodeIdToFind} (or current ID ${originalNode.id}) not found in parent ${parentWorkCopy.id} children [${parentWorkCopy.children.join(',')}]`);
       }
     } else {
       // console.warn(...)
     }
   } else if (skipParentSeparatorUpdate) {
-    console.log(`[replace_max_immutable] Skipping parent separator update for node ${workingNode.id} due to _skipParentSeparatorUpdate flag`);
+    // console.log(`[replace_max_immutable] Skipping parent separator update for node ${workingNode.id} due to _skipParentSeparatorUpdate flag`);
   }
   return workingNode;
 }
@@ -878,7 +878,7 @@ export function update_min_max_immutable<T, K extends ValueType>(
 
   // console.log(`[update_min_max_immutable] Called for node ${originalNode.id} (isLeaf: ${originalNode.leaf}, keys: [${originalNode.keys.join(',')}], current min: ${originalNode.min}, max: ${originalNode.max})`); // LOG REMOVED
 
-  console.log(`[update_min_max_immutable] Starting for node ${workingNode.id}, leaf: ${workingNode.leaf}, key_num: ${workingNode.key_num}`);
+  // console.log(`[update_min_max_immutable] Starting for node ${workingNode.id}, leaf: ${workingNode.leaf}, key_num: ${workingNode.key_num}`);
 
   // CRITICAL FIX: Check if parent separator updates should be skipped
   const skipParentSeparatorUpdate = (originalNode as any)._skipParentSeparatorUpdate || (workingNode as any)._skipParentSeparatorUpdate;
@@ -889,8 +889,8 @@ export function update_min_max_immutable<T, K extends ValueType>(
       const currentMax = workingNode.keys[workingNode.key_num - 1];
       let minChanged = workingNode.min === undefined || transactionContext.treeSnapshot.comparator(workingNode.min, currentMin) !== 0;
       let maxChanged = workingNode.max === undefined || transactionContext.treeSnapshot.comparator(workingNode.max, currentMax) !== 0;
-      console.log(`[update_min_max_immutable] Leaf node ${workingNode.id}: currentMin=${currentMin}, currentMax=${currentMax}, workingNode.min=${workingNode.min}, workingNode.max=${workingNode.max}`);
-      console.log(`[update_min_max_immutable] Leaf node ${workingNode.id}: minChanged=${minChanged}, maxChanged=${maxChanged}`);
+      // console.log(`[update_min_max_immutable] Leaf node ${workingNode.id}: currentMin=${currentMin}, currentMax=${currentMax}, workingNode.min=${workingNode.min}, workingNode.max=${workingNode.max}`);
+      // console.log(`[update_min_max_immutable] Leaf node ${workingNode.id}: minChanged=${minChanged}, maxChanged=${maxChanged}`);
 
       if (minChanged || maxChanged) {
         // console.log(`[update_min_max_immutable] Leaf ${workingNode.id} min/max changed. Min: ${minChanged}, Max: ${maxChanged}. Already copied.`); // LOG REMOVED
@@ -900,7 +900,7 @@ export function update_min_max_immutable<T, K extends ValueType>(
 
         // If this node is an edge child of its parent, and its min/max changed,
         // we need to propagate this change upwards immutably.
-        console.log(`[update_min_max_immutable] workingNode: ${workingNode.id}, _parent: ${workingNode._parent}`);
+        // console.log(`[update_min_max_immutable] workingNode: ${workingNode.id}, _parent: ${workingNode._parent}`);
         if (workingNode._parent !== undefined && !skipParentSeparatorUpdate) {
           const parentNode = transactionContext.getNode(workingNode._parent);
           if (parentNode) {
@@ -908,14 +908,14 @@ export function update_min_max_immutable<T, K extends ValueType>(
             let parentDidChange = false;
             let finalParentNode = parentNode;
 
-            console.log(`[update_min_max_immutable] DEBUG: workingNode: ${workingNode.id}, parentNode: ${parentNode.id}`);
-            console.log(`[update_min_max_immutable] DEBUG: minChanged: ${minChanged}, maxChanged: ${maxChanged}`);
-            console.log(`[update_min_max_immutable] DEBUG: parentNode.children[0]: ${parentNode.children[0]}, originalNode.id: ${originalNode.id}`);
-            console.log(`[update_min_max_immutable] DEBUG: parentNode.children: [${parentNode.children.join(',')}]`);
+            // console.log(`[update_min_max_immutable] DEBUG: workingNode: ${workingNode.id}, parentNode: ${parentNode.id}`);
+            // console.log(`[update_min_max_immutable] DEBUG: minChanged: ${minChanged}, maxChanged: ${maxChanged}`);
+            // console.log(`[update_min_max_immutable] DEBUG: parentNode.children[0]: ${parentNode.children[0]}, originalNode.id: ${originalNode.id}`);
+            // console.log(`[update_min_max_immutable] DEBUG: parentNode.children: [${parentNode.children.join(',')}]`);
 
             if (minChanged && parentNode.children[0] === originalNode.id) {
-              console.log(`[update_min_max_immutable] Leaf ${workingNode.id} is first child of ${parentNode.id}. Propagating min ${currentMin}.`);
-              console.log(`[update_min_max_immutable] Parent children: [${parentNode.children.join(',')}], originalNode.id: ${originalNode.id}`);
+              // console.log(`[update_min_max_immutable] Leaf ${workingNode.id} is first child of ${parentNode.id}. Propagating min ${currentMin}.`);
+              // console.log(`[update_min_max_immutable] Parent children: [${parentNode.children.join(',')}], originalNode.id: ${originalNode.id}`);
               finalParentNode = replace_min_immutable(parentNode, currentMin, transactionContext);
               parentDidChange = true;
             }
@@ -934,7 +934,7 @@ export function update_min_max_immutable<T, K extends ValueType>(
             }
           }
         } else if (skipParentSeparatorUpdate) {
-          console.log(`[update_min_max_immutable] Skipping parent separator update for node ${workingNode.id} due to _skipParentSeparatorUpdate flag`);
+          // console.log(`[update_min_max_immutable] Skipping parent separator update for node ${workingNode.id} due to _skipParentSeparatorUpdate flag`);
         }
       }
     } else { // Leaf node is empty
@@ -997,7 +997,7 @@ export function update_min_max_immutable<T, K extends ValueType>(
             }
           }
         } else if (skipParentSeparatorUpdate) {
-          console.log(`[update_min_max_immutable] Skipping parent separator update for internal node ${workingNode.id} due to _skipParentSeparatorUpdate flag`);
+          // console.log(`[update_min_max_immutable] Skipping parent separator update for internal node ${workingNode.id} due to _skipParentSeparatorUpdate flag`);
         }
       }
     } else { // Internal node is empty (no children)
@@ -1024,7 +1024,7 @@ export function insert_key_immutable<T, K extends ValueType>(
   // console.log(`[insert_key_immutable] Called for node ID: ${originalNode.id}, isLeaf: ${originalNode.leaf}, keys: [${originalNode.keys.join(',')}] with key: ${key}`); // LOG REMOVED
 
   if (!originalNode.leaf) {
-    console.error('[insert_key_immutable] Attempted to insert key into a non-leaf node. This function is for leaves only.');
+    // console.error('[insert_key_immutable] Attempted to insert key into a non-leaf node. This function is for leaves only.');
     // Potentially throw an error or return originalNode if this is an invalid operation
     throw new Error('insert_key_immutable can only be called on leaf nodes.'); // ADDED THROW
   }
@@ -1130,7 +1130,7 @@ export function split_leaf_cow<T, K extends ValueType>(
     // This is a stricter check. The node should have exactly 2t keys to be split this way.
     // Or, if the logic is that it splits when it *would* exceed 2t-1, then this check needs adjustment.
     // For now, assuming it's called when leafToSplit has 2t keys.
-    console.warn(`[split_leaf_cow] Called on leaf ${leafToSplit.id} with ${leafToSplit.keys.length} keys, but expected ${2 * leafToSplit.t} keys for t=${leafToSplit.t}.`);
+    // console.warn(`[split_leaf_cow] Called on leaf ${leafToSplit.id} with ${leafToSplit.keys.length} keys, but expected ${2 * leafToSplit.t} keys for t=${leafToSplit.t}.`);
     // Potentially throw error or handle differently if this assumption is wrong.
   }
 
@@ -1293,11 +1293,11 @@ export function split_internal_node_cow<T, K extends ValueType>(
   // The left node gets the first t keys and t+1 children.
   // The right node gets the remaining t-1 keys and t children.
   if (internalNodeToSplit.keys.length !== 2 * t) {
-    console.warn(`[split_internal_node_cow] Called on node ${internalNodeToSplit.id} with ${internalNodeToSplit.keys.length} keys, but expected ${2 * t} keys for t=${t}.`);
+    // console.warn(`[split_internal_node_cow] Called on node ${internalNodeToSplit.id} with ${internalNodeToSplit.keys.length} keys, but expected ${2 * t} keys for t=${t}.`);
     // This indicates an issue with the calling logic or tree state.
   }
   if (internalNodeToSplit.children.length !== 2 * t + 1) {
-     console.warn(`[split_internal_node_cow] Called on node ${internalNodeToSplit.id} with ${internalNodeToSplit.children.length} children, but expected ${2 * t + 1} for t=${t}.`);
+    //  console.warn(`[split_internal_node_cow] Called on node ${internalNodeToSplit.id} with ${internalNodeToSplit.children.length} children, but expected ${2 * t + 1} for t=${t}.`);
   }
 
   // 1. Create a new sibling internal node.
@@ -1457,7 +1457,7 @@ export function merge_with_left_cow<T, K extends ValueType>(
             childWorkingCopy._parent = finalNode.id;
             finalChildrenIds.push(childWorkingCopy.id); // Add the ID of the working copy
         } else {
-             console.warn(`[merge_with_left_cow] Child node ${childId} not found during parent pointer update.`);
+            //  console.warn(`[merge_with_left_cow] Child node ${childId} not found during parent pointer update.`);
              finalChildrenIds.push(childId); // Keep original ID if not found, though this is an error state
         }
     }
@@ -1476,7 +1476,7 @@ export function merge_with_left_cow<T, K extends ValueType>(
   if (leftSiblingIndexInParent < newParentKeys.length) {
     newParentKeys.splice(leftSiblingIndexInParent, 1);
   } else {
-    console.warn(`[merge_with_left_cow] Separator key index ${leftSiblingIndexInParent} out of bounds for parent ${finalParent.id} keys (length: ${newParentKeys.length}) during removal. Using fallback.`);
+    // console.warn(`[merge_with_left_cow] Separator key index ${leftSiblingIndexInParent} out of bounds for parent ${finalParent.id} keys (length: ${newParentKeys.length}) during removal. Using fallback.`);
     // Fallback: remove the last key if keys exist
     if (newParentKeys.length > 0) {
       newParentKeys.splice(newParentKeys.length - 1, 1);
@@ -1485,7 +1485,7 @@ export function merge_with_left_cow<T, K extends ValueType>(
   if (leftSiblingIndexInParent < newParentChildren.length) {
     newParentChildren.splice(leftSiblingIndexInParent, 1);
   } else {
-    console.warn(`[merge_with_left_cow] Child index ${leftSiblingIndexInParent} for merged node out of bounds for parent ${finalParent.id} children (length: ${newParentChildren.length}) during removal. Using fallback.`);
+    // console.warn(`[merge_with_left_cow] Child index ${leftSiblingIndexInParent} for merged node out of bounds for parent ${finalParent.id} children (length: ${newParentChildren.length}) during removal. Using fallback.`);
     // Fallback: remove the last child if children exist
     if (newParentChildren.length > 0) {
       newParentChildren.splice(newParentChildren.length - 1, 1);
@@ -1511,7 +1511,7 @@ export function merge_with_left_cow<T, K extends ValueType>(
      if (leftSiblingIndexInParent < finalParent.children.length) {
         finalParent.children[leftSiblingIndexInParent] = updatedMergedNode.id;
      } else {
-        console.error(`[merge_with_left_cow] Index ${leftSiblingIndexInParent} for merged node slot is out of bounds in parent ${finalParent.id} children after splice.`);
+        // console.error(`[merge_with_left_cow] Index ${leftSiblingIndexInParent} for merged node slot is out of bounds in parent ${finalParent.id} children after splice.`);
      }
   }
   updatedMergedNode._parent = finalParent.id; // Merged node parent is finalParent
@@ -1617,7 +1617,7 @@ export function merge_with_right_cow<T, K extends ValueType>(
             childWorkingCopy._parent = finalRightSibling.id;
             finalChildrenIds.push(childWorkingCopy.id);
         } else {
-             console.warn(`[merge_with_right_cow] Child node ${childId} not found during parent pointer update.`);
+            //  console.warn(`[merge_with_right_cow] Child node ${childId} not found during parent pointer update.`);
              finalChildrenIds.push(childId);
         }
     }
@@ -1636,7 +1636,7 @@ export function merge_with_right_cow<T, K extends ValueType>(
   if (nodeIndexInParent < newParentKeys.length) {
     newParentKeys.splice(nodeIndexInParent, 1);
   } else {
-    console.warn(`[merge_with_right_cow] Separator key index ${nodeIndexInParent} out of bounds for parent ${finalParent.id} keys (length: ${newParentKeys.length}) during removal. Using fallback.`);
+    // console.warn(`[merge_with_right_cow] Separator key index ${nodeIndexInParent} out of bounds for parent ${finalParent.id} keys (length: ${newParentKeys.length}) during removal. Using fallback.`);
     // Fallback: remove the last key if keys exist
     if (newParentKeys.length > 0) {
       newParentKeys.splice(newParentKeys.length - 1, 1);
@@ -1647,7 +1647,7 @@ export function merge_with_right_cow<T, K extends ValueType>(
   if (nodeIndexInParent < newParentChildren.length) {
     newParentChildren.splice(nodeIndexInParent, 1);
   } else {
-    console.warn(`[merge_with_right_cow] Child index ${nodeIndexInParent} for nodeToMerge out of bounds for parent ${finalParent.id} children (length: ${newParentChildren.length}) during removal. Using fallback.`);
+    // console.warn(`[merge_with_right_cow] Child index ${nodeIndexInParent} for nodeToMerge out of bounds for parent ${finalParent.id} children (length: ${newParentChildren.length}) during removal. Using fallback.`);
     // Fallback: remove the last child if children exist
     if (newParentChildren.length > 0) {
       newParentChildren.splice(newParentChildren.length - 1, 1);
@@ -1683,7 +1683,7 @@ export function merge_with_right_cow<T, K extends ValueType>(
      if (finalParent.children.length === 0 && updatedMergedNode.id) { // If parent is now childless, but we have a merged node
          finalParent.children.push(updatedMergedNode.id); // This shouldn't really happen if logic is right. Parent should have at least one child.
      } else if (finalParent.children.length > 0 && nodeIndexInParent >= finalParent.children.length) {
-        console.error(`[merge_with_right_cow] Index ${nodeIndexInParent} for merged node slot is out of bounds in parent ${finalParent.id} children after splice. Children: [${finalParent.children.join(',')}]`);
+        // console.error(`[merge_with_right_cow] Index ${nodeIndexInParent} for merged node slot is out of bounds in parent ${finalParent.id} children after splice. Children: [${finalParent.children.join(',')}]`);
      }
      // If finalParent.children had only one element (the one we just put as updatedMergedNode.id), and nodeIndexInParent was 0, this is fine.
   }
@@ -1792,9 +1792,9 @@ export function borrow_from_left_cow<T, K extends ValueType>(
 
     const newParentKeys = [...fParent.keys];
     newParentKeys[separatorIndex] = borrowedKey;
-    console.log(`[borrow_from_left_cow] Parent ${fParent.id} (orig ID ${parentWorkingCopy.id}) keys BEFORE update: [${fParent.keys.join(',')}]`);
+    // console.log(`[borrow_from_left_cow] Parent ${fParent.id} (orig ID ${parentWorkingCopy.id}) keys BEFORE update: [${fParent.keys.join(',')}]`);
     fParent.keys = newParentKeys;
-    console.log(`[borrow_from_left_cow] Parent ${fParent.id} keys AFTER direct update to '${borrowedKey}' at index ${separatorIndex}: [${fParent.keys.join(',')}]`);
+    // console.log(`[borrow_from_left_cow] Parent ${fParent.id} keys AFTER direct update to '${borrowedKey}' at index ${separatorIndex}: [${fParent.keys.join(',')}]`);
 
     // Also, update parent's children array to point to the NEW IDs of the working copies
     // The original parent copy fParent might have children IDs that are original, not working copies.
@@ -1808,7 +1808,7 @@ export function borrow_from_left_cow<T, K extends ValueType>(
     let updatedParent = update_state_immutable(fParent, transactionContext);
     // Skip update_min_max_immutable for parent to prevent double separator updates
     // updatedParent = update_min_max_immutable(updatedParent, transactionContext);
-    console.log(`[borrow_from_left_cow] Parent ${updatedParent.id} keys AFTER state update (skipped minmax): [${updatedParent.keys.join(',')}]`);
+    // console.log(`[borrow_from_left_cow] Parent ${updatedParent.id} keys AFTER state update (skipped minmax): [${updatedParent.keys.join(',')}]`);
 
     // 4. Ensure parent pointers of children are to the latest parent version
     // This step is crucial and might involve creating new copies of children if they are not already the latest.
@@ -1916,11 +1916,11 @@ export function borrow_from_right_cow<T, K extends ValueType>(
     const newParentKeys = [...fParent.keys];
     // The new separator is the new minimum key of the right sibling (after it gave away its first key)
     const newSeparatorKeyValue = updatedRightSibling.min; // Store it before logging potentially undefined
-    console.log(`[borrow_from_right_cow] Parent ${fParent.id} (orig ID ${parentWorkingCopy.id}) keys BEFORE update: [${fParent.keys.join(',')}]`);
-    console.log(`[borrow_from_right_cow] Separator index: ${separatorIndex}, new separator value (updatedRightSibling.min): ${newSeparatorKeyValue}`);
+    // console.log(`[borrow_from_right_cow] Parent ${fParent.id} (orig ID ${parentWorkingCopy.id}) keys BEFORE update: [${fParent.keys.join(',')}]`);
+    // console.log(`[borrow_from_right_cow] Separator index: ${separatorIndex}, new separator value (updatedRightSibling.min): ${newSeparatorKeyValue}`);
     newParentKeys[separatorIndex] = newSeparatorKeyValue!; // Use non-null assertion if confident it's defined
     fParent.keys = newParentKeys;
-    console.log(`[borrow_from_right_cow] Parent ${fParent.id} keys AFTER direct update to '${newSeparatorKeyValue}' at index ${separatorIndex}: [${fParent.keys.join(',')}]`);
+    // console.log(`[borrow_from_right_cow] Parent ${fParent.id} keys AFTER direct update to '${newSeparatorKeyValue}' at index ${separatorIndex}: [${fParent.keys.join(',')}]`);
 
     // Update parent's children array to point to the NEW IDs of the working copies
     fParent.children[nodeIndexInParent] = updatedNode.id;
@@ -1932,7 +1932,7 @@ export function borrow_from_right_cow<T, K extends ValueType>(
     let updatedParent = update_state_immutable(fParent, transactionContext);
     // Skip update_min_max_immutable for parent to prevent double separator updates
     // updatedParent = update_min_max_immutable(updatedParent, transactionContext);
-    console.log(`[borrow_from_right_cow] Parent ${updatedParent.id} keys AFTER state update (skipped minmax): [${updatedParent.keys.join(',')}]`);
+    // console.log(`[borrow_from_right_cow] Parent ${updatedParent.id} keys AFTER state update (skipped minmax): [${updatedParent.keys.join(',')}]`);
 
     // 4. Ensure parent pointers of children are to the latest parent version
     const finalUpdatedNode = transactionContext.getWorkingNode(updatedNode.id) || updatedNode;
@@ -1949,7 +1949,7 @@ export function borrow_from_right_cow<T, K extends ValueType>(
 
   } else if (!fNode.leaf && !fRightSibling.leaf) {
     // INTERNAL NODE BORROW (placeholder for now)
-    console.warn("[borrow_from_right_cow] CoW Borrow from right for INTERNAL nodes is not yet implemented.");
+    // console.warn("[borrow_from_right_cow] CoW Borrow from right for INTERNAL nodes is not yet implemented.");
     return { updatedNode: fNode, updatedRightSibling: fRightSibling, updatedParent: fParent };
   } else {
     throw new Error("[borrow_from_right_cow] Mismatched node types (leaf/internal) for borrow operation.");

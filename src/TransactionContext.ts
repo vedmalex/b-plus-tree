@@ -127,22 +127,22 @@ export class TransactionContext<T, K extends ValueType> implements ITransactionC
       if (originalId !== undefined) {
         // If it's a working copy of an existing node, mark the original for deletion
         this._deletedNodes.add(originalId);
-        console.log(`[markNodeForDeletion] Marking original node ${originalId} (from working copy ${nodeId}) for deletion.`);
+        // console.log(`[markNodeForDeletion] Marking original node ${originalId} (from working copy ${nodeId}) for deletion.`);
       } else {
         // If it's a new node created within this transaction (no originalId),
         // mark the working copy ID for deletion. It won't be in treeSnapshot anyway.
         this._deletedNodes.add(nodeId);
-        console.log(`[markNodeForDeletion] Marking new node ${nodeId} for deletion.`);
+        // console.log(`[markNodeForDeletion] Marking new node ${nodeId} for deletion.`);
       }
 
       // Always remove the working copy from working nodes
       this._workingNodes.delete(nodeId);
-      console.log(`[markNodeForDeletion] Removed working copy ${nodeId} from working nodes.`);
+      // console.log(`[markNodeForDeletion] Removed working copy ${nodeId} from working nodes.`);
     } else {
       // The nodeId is not in working nodes, might be an original node ID
       // In this case, just mark it for deletion (assuming it exists in committed state)
       this._deletedNodes.add(nodeId);
-      console.log(`[markNodeForDeletion] Marking node ${nodeId} (assumed original) for deletion.`);
+      // console.log(`[markNodeForDeletion] Marking node ${nodeId} (assumed original) for deletion.`);
     }
 
     // If the node being marked for deletion was the working root, clear the working root.
@@ -308,7 +308,7 @@ export class TransactionContext<T, K extends ValueType> implements ITransactionC
 
       // Ensure the final root exists in the committed nodes
       if (!finalNodeMap.has(finalRootId)) {
-        console.error(`[commit CRITICAL] Final root ${finalRootId} not found in finalNodeMap`);
+        // console.error(`[commit CRITICAL] Final root ${finalRootId} not found in finalNodeMap`);
         // Keep the current root as fallback
         finalRootId = this.treeSnapshot.root;
       }

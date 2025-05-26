@@ -585,7 +585,7 @@ export function delete_in_node<T, K extends ValueType>(
             // but that breaks encapsulation.
             // For now, let's stick to reflowing the initial node if it exists.
             // If it doesn't exist, the merge operation that removed it should have already triggered reflow upwards.
-             console.warn(`[delete_in_node all=true] Initial node ${node.id} no longer exists after deletion loop. Reflow might have already occurred.`);
+             // console.warn(`[delete_in_node all=true] Initial node ${node.id} no longer exists after deletion loop. Reflow might have already occurred.`);
         }
     }
     // --- END REFLOW LOGIC ---
@@ -737,7 +737,7 @@ export function find_first_node<T, K extends ValueType>(
 
     // Add check for valid childNodeId and existence in nodes map
     if (childNodeId === undefined || !nodes.has(childNodeId)) {
-        console.error(`[find_first_node] Error: Invalid child node ID ${childNodeId} found in node ${cur.id}. Parent keys: ${JSON.stringify(cur.keys)}, search key: ${JSON.stringify(key)}, index i: ${i}`);
+        // console.error(`[find_first_node] Error: Invalid child node ID ${childNodeId} found in node ${cur.id}. Parent keys: ${JSON.stringify(cur.keys)}, search key: ${JSON.stringify(key)}, index i: ${i}`);
         // Attempt to recover or return current node?
         // Returning undefined might be safer if the structure is broken.
         return undefined; // Indicate failure to find the correct path
@@ -747,7 +747,7 @@ export function find_first_node<T, K extends ValueType>(
 
     // If cur becomes undefined, break the loop or return error
     if (!cur) {
-        console.error(`[find_first_node] Error: Child node ID ${childNodeId} not found in nodes map.`);
+        // console.error(`[find_first_node] Error: Child node ID ${childNodeId} not found in nodes map.`);
         return undefined;
     }
   }
@@ -760,7 +760,7 @@ export function find_first_node<T, K extends ValueType>(
         cur = cur.left;
         // Safety check in case sibling links are broken
         if (!cur) {
-            console.error("[find_first_node] Error: Current node became undefined during left sibling traversal.");
+            // console.error("[find_first_node] Error: Current node became undefined during left sibling traversal.");
             return undefined;
         }
     }
@@ -768,7 +768,7 @@ export function find_first_node<T, K extends ValueType>(
 
   // Final safety check before returning
   if (!cur) {
-      console.error("[find_first_node] Error: Current node is undefined after search.");
+      // console.error("[find_first_node] Error: Current node is undefined after search.");
       return undefined;
   }
   return cur
@@ -1064,12 +1064,12 @@ export function reflow<T, K extends ValueType>(
             if (leftSiblingIndex !== -1) {
                 parent.children.splice(leftSiblingIndex, 1);
             } else {
-                 console.error(`[REFLOW MERGE LEFT] CRITICAL Error: Actual Left sibling ${actual_left_sibling.id} not found in parent ${parent.id} children during merge!`);
+                 // console.error(`[REFLOW MERGE LEFT] CRITICAL Error: Actual Left sibling ${actual_left_sibling.id} not found in parent ${parent.id} children during merge!`);
             }
             if (separatorIndex < parent.keys.length) {
                  parent.keys.splice(separatorIndex, 1);
             } else {
-                 console.error(`[REFLOW MERGE LEFT] CRITICAL Error: Invalid separator index ${separatorIndex} for parent ${parent.id} keys (length ${parent.keys.length})`);
+                 // console.error(`[REFLOW MERGE LEFT] CRITICAL Error: Invalid separator index ${separatorIndex} for parent ${parent.id} keys (length ${parent.keys.length})`);
             }
             // Sibling links are updated by merge_with_left or should be handled here/in delete?
             // Let's rely on Node.delete to update neighbors of the deleted sibling
@@ -1083,7 +1083,7 @@ export function reflow<T, K extends ValueType>(
             reflow(tree, parent);
             return;
         } else {
-             console.error(`[REFLOW MERGE LEFT] Error: Could not find separator key at index ${separatorIndex} for parent ${parent.id}.`);
+             // console.error(`[REFLOW MERGE LEFT] Error: Could not find separator key at index ${separatorIndex} for parent ${parent.id}.`);
              node.commit();
         }
     }
@@ -1109,7 +1109,7 @@ export function reflow<T, K extends ValueType>(
             reflow(tree, parent);
             return;
         } else {
-            console.error(`[REFLOW MERGE RIGHT] Error: Could not find separator key at index ${separatorIndex} for parent ${parent.id}.`);
+            // console.error(`[REFLOW MERGE RIGHT] Error: Could not find separator key at index ${separatorIndex} for parent ${parent.id}.`);
             node.commit();
         }
     }
@@ -1204,7 +1204,7 @@ export function remove<T, K extends ValueType>(
 }
 
 export function size<T, K extends ValueType>(node: Node<T, K>, hasActiveTransactions: boolean = false, tree?: BPlusTree<T, K>): number {
-  console.warn(`[size] STARTING size calculation from node ${node.id} (leaf=${node.leaf}, keys=[${node.keys.join(',')}], tree.root=${node.tree.root})`);
+  // console.warn(`[size] STARTING size calculation from node ${node.id} (leaf=${node.leaf}, keys=[${node.keys.join(',')}], tree.root=${node.tree.root})`);
 
   // Use a global set to track all visited leaf nodes across the entire tree traversal
   // This prevents counting duplicate leaves that may exist due to structural issues
@@ -1229,14 +1229,14 @@ export function size<T, K extends ValueType>(node: Node<T, K>, hasActiveTransact
 
     // Add protection against undefined node
     if (!currentNode) {
-      console.warn('[size] Node is undefined - returning 0');
+      // console.warn('[size] Node is undefined - returning 0');
       return 0;
     }
 
         if (currentNode.leaf) {
       // For leaf nodes, check if we've already counted this leaf globally
       if (globalVisitedLeaves.has(currentNode.id)) {
-        console.warn(`[size] Skipping duplicate leaf node ${currentNode.id} - already counted`);
+        // console.warn(`[size] Skipping duplicate leaf node ${currentNode.id} - already counted`);
         return 0;
       }
       globalVisitedLeaves.add(currentNode.id);
@@ -1252,32 +1252,32 @@ export function size<T, K extends ValueType>(node: Node<T, K>, hasActiveTransact
       const existingLeafWithSameSignature = leafSignatures.get(leafSignature);
       if (existingLeafWithSameSignature !== undefined && existingLeafWithSameSignature === currentNode.id) {
         // This would be a true duplicate (visiting the same node twice in the traversal)
-        console.warn(`[size] Detected true duplicate traversal: leaf ${currentNode.id} already visited`);
+        // console.warn(`[size] Detected true duplicate traversal: leaf ${currentNode.id} already visited`);
         return 0;
       }
 
       // TRANSACTION ISOLATION: During active transactions, be more conservative about duplicate detection
       // Working nodes might appear as duplicates but should not be counted in main tree size
       if (hasActiveTransactions && existingLeafWithSameSignature !== undefined && existingLeafWithSameSignature !== currentNode.id) {
-        console.warn(`[size] Found leaf ${currentNode.id} with same content as leaf ${existingLeafWithSameSignature}: keys=[${currentNode.keys.join(',')}], values=[${currentNode.pointers.join(',')}]`);
+        // console.warn(`[size] Found leaf ${currentNode.id} with same content as leaf ${existingLeafWithSameSignature}: keys=[${currentNode.keys.join(',')}], values=[${currentNode.pointers.join(',')}]`);
 
         // During active transactions, check if this might be a working node
         // Working nodes typically have higher IDs (created later) than committed nodes
         if (currentNode.id > existingLeafWithSameSignature) {
-          console.warn(`[size] During active transaction: leaf ${currentNode.id} has higher ID than ${existingLeafWithSameSignature} - likely a working node, skipping to preserve transaction isolation`);
+          // console.warn(`[size] During active transaction: leaf ${currentNode.id} has higher ID than ${existingLeafWithSameSignature} - likely a working node, skipping to preserve transaction isolation`);
           return 0; // Skip this leaf during active transactions
         } else {
-          console.warn(`[size] During active transaction: leaf ${currentNode.id} has lower ID than ${existingLeafWithSameSignature} - counting as committed node`);
+          // console.warn(`[size] During active transaction: leaf ${currentNode.id} has lower ID than ${existingLeafWithSameSignature} - counting as committed node`);
         }
       } else if (!hasActiveTransactions && existingLeafWithSameSignature !== undefined && existingLeafWithSameSignature !== currentNode.id) {
-        console.warn(`[size] Found leaf ${currentNode.id} with same content as leaf ${existingLeafWithSameSignature}: keys=[${currentNode.keys.join(',')}], values=[${currentNode.pointers.join(',')}]`);
-        console.warn(`[size] In non-unique B+ tree, this is LEGITIMATE - both leaves should be counted`);
+        // console.warn(`[size] Found leaf ${currentNode.id} with same content as leaf ${existingLeafWithSameSignature}: keys=[${currentNode.keys.join(',')}], values=[${currentNode.pointers.join(',')}]`);
+        // console.warn(`[size] In non-unique B+ tree, this is LEGITIMATE - both leaves should be counted`);
       }
 
       // Record this leaf's signature for debugging only (don't use for skipping)
       leafSignatures.set(leafSignature, currentNode.id);
 
-      console.warn(`[size] COUNTING leaf ${currentNode.id} with ${currentNode.key_num} keys: [${currentNode.keys.join(',')}] and values: [${currentNode.pointers.join(',')}]`);
+      // console.warn(`[size] COUNTING leaf ${currentNode.id} with ${currentNode.key_num} keys: [${currentNode.keys.join(',')}] and values: [${currentNode.pointers.join(',')}]`);
       return currentNode.key_num;
     } else {
       const nodes = currentNode.tree.nodes
@@ -1288,7 +1288,7 @@ export function size<T, K extends ValueType>(node: Node<T, K>, hasActiveTransact
 
         // Skip if we've already visited this child (prevents counting duplicates)
         if (visitedNodes.has(childId)) {
-          console.warn(`[size] Skipping duplicate child node ${childId} in parent ${currentNode.id}`);
+          // console.warn(`[size] Skipping duplicate child node ${childId} in parent ${currentNode.id}`);
           i++;
           continue;
         }
@@ -1298,7 +1298,7 @@ export function size<T, K extends ValueType>(node: Node<T, K>, hasActiveTransact
 
                 // Add protection against undefined child nodes
         if (!childNode) {
-          console.warn(`[size] Child node ${childId} not found in node.tree.nodes for parent ${currentNode.id} - attempting recovery and cleanup`);
+          // console.warn(`[size] Child node ${childId} not found in node.tree.nodes for parent ${currentNode.id} - attempting recovery and cleanup`);
 
           // Try to find if this child exists in working nodes (for transaction contexts)
           // This is a fallback for orphaned references created during underflow operations
@@ -1307,7 +1307,7 @@ export function size<T, K extends ValueType>(node: Node<T, K>, hasActiveTransact
             const workingNodes = (currentNode.tree as any).workingNodes as Map<number, any>;
             const workingChild = workingNodes.get(childId);
             if (workingChild) {
-              console.warn(`[size] Found orphaned child ${childId} in working nodes, counting it`);
+              // console.warn(`[size] Found orphaned child ${childId} in working nodes, counting it`);
               const res = sizeRecursive(workingChild, visitedNodes);
               lres += res;
               foundInWorkingNodes = true;
@@ -1317,7 +1317,7 @@ export function size<T, K extends ValueType>(node: Node<T, K>, hasActiveTransact
           if (!foundInWorkingNodes) {
             // TRANSACTION ISOLATION: During active transactions, try alternative approaches
             if (hasActiveTransactions) {
-              console.warn(`[size] Child node ${childId} not found during active transaction - attempting alternative resolution`);
+              // console.warn(`[size] Child node ${childId} not found during active transaction - attempting alternative resolution`);
 
               // ENHANCED: Try to find available nodes that could represent the missing data
               if (tree) {
@@ -1340,24 +1340,24 @@ export function size<T, K extends ValueType>(node: Node<T, K>, hasActiveTransact
                     // This ensures consistency with find_all_in_transaction behavior
                     const isReachableFromCurrentRoot = (tree as any).isNodeReachableFromSpecificRoot?.(altNodeId, tree.root) ?? true;
                     if (!isReachableFromCurrentRoot) {
-                      console.warn(`[size] Skipping alternative leaf ${altNodeId} because it's not reachable from current root (orphaned node)`);
+                      // console.warn(`[size] Skipping alternative leaf ${altNodeId} because it's not reachable from current root (orphaned node)`);
                       continue;
                     }
 
                     // Check if this node has content we've already counted
                     const altSignature = `keys:[${altNode.keys.join(',')}]|values:[${altNode.pointers.join(',')}]`;
                     if (seenContentSignatures.has(altSignature)) {
-                      console.warn(`[size] Found alternative leaf ${altNodeId} but it duplicates already counted content: ${altSignature} - skipping`);
+                      // console.warn(`[size] Found alternative leaf ${altNodeId} but it duplicates already counted content: ${altSignature} - skipping`);
                       continue;
                     }
 
-                    console.warn(`[size] Found unvisited leaf ${altNodeId} with keys [${altNode.keys.join(',')}] - counting as alternative for missing child ${childId}`);
+                    // console.warn(`[size] Found unvisited leaf ${altNodeId} with keys [${altNode.keys.join(',')}] - counting as alternative for missing child ${childId}`);
                     visitedNodes.add(altNodeId);
                     globalVisitedLeaves.add(altNodeId);
                     seenContentSignatures.add(altSignature);
 
                     // Directly count the keys in this leaf instead of recursing
-                    console.warn(`[size] COUNTING alternative leaf ${altNodeId} with ${altNode.key_num} keys: [${altNode.keys.join(',')}] and values: [${altNode.pointers.join(',')}]`);
+                    // console.warn(`[size] COUNTING alternative leaf ${altNodeId} with ${altNode.key_num} keys: [${altNode.keys.join(',')}] and values: [${altNode.pointers.join(',')}]`);
                     lres += altNode.key_num;
                     foundAlternative = true;
                     break; // Only use one alternative to avoid over-counting
@@ -1365,7 +1365,7 @@ export function size<T, K extends ValueType>(node: Node<T, K>, hasActiveTransact
                 }
 
                 if (!foundAlternative) {
-                  console.warn(`[size] No suitable alternative found for missing child ${childId} - skipping`);
+                  // console.warn(`[size] No suitable alternative found for missing child ${childId} - skipping`);
                 }
               }
 
@@ -1373,13 +1373,13 @@ export function size<T, K extends ValueType>(node: Node<T, K>, hasActiveTransact
               continue;
             }
 
-            console.warn(`[size] Child node ${childId} completely orphaned - removing reference and continuing`);
+            // console.warn(`[size] Child node ${childId} completely orphaned - removing reference and continuing`);
 
             // AGGRESSIVE CLEANUP: Remove the orphaned reference from the parent node
             // This is safe because the child doesn't exist anyway
             const orphanedIndex = currentNode.children.indexOf(childId);
             if (orphanedIndex !== -1) {
-                            console.warn(`[size] Removing orphaned child reference ${childId} from parent ${currentNode.id} at index ${orphanedIndex}`);
+                            // console.warn(`[size] Removing orphaned child reference ${childId} from parent ${currentNode.id} at index ${orphanedIndex}`);
               currentNode.children.splice(orphanedIndex, 1);
               madeStructuralRepairs = true; // Mark that we made repairs
 
@@ -1387,7 +1387,7 @@ export function size<T, K extends ValueType>(node: Node<T, K>, hasActiveTransact
               // For internal nodes, children[i] corresponds to keys[i-1] (except for the first child)
               if (!currentNode.leaf && orphanedIndex > 0 && orphanedIndex <= currentNode.keys.length) {
                 const keyIndexToRemove = orphanedIndex - 1;
-                console.warn(`[size] Also removing corresponding key at index ${keyIndexToRemove} from parent ${currentNode.id}`);
+                // console.warn(`[size] Also removing corresponding key at index ${keyIndexToRemove} from parent ${currentNode.id}`);
                 currentNode.keys.splice(keyIndexToRemove, 1);
               }
 
@@ -1399,26 +1399,26 @@ export function size<T, K extends ValueType>(node: Node<T, K>, hasActiveTransact
               // Fix key count for internal nodes: children.length should equal keys.length + 1
               if (!currentNode.leaf && currentNode.children.length !== currentNode.keys.length + 1) {
                 const expectedKeyCount = currentNode.children.length - 1;
-                console.warn(`[size] Fixing key count for internal node ${currentNode.id}: has ${currentNode.keys.length} keys but needs ${expectedKeyCount} for ${currentNode.children.length} children`);
+                // console.warn(`[size] Fixing key count for internal node ${currentNode.id}: has ${currentNode.keys.length} keys but needs ${expectedKeyCount} for ${currentNode.children.length} children`);
 
                 if (expectedKeyCount === 0) {
                   // If we need 0 keys, clear the keys array
                   currentNode.keys = [];
                 } else if (expectedKeyCount > currentNode.keys.length) {
                   // If we need more keys, reconstruct them from children
-                  console.warn(`[size] Reconstructing ${expectedKeyCount - currentNode.keys.length} missing keys for node ${currentNode.id}`);
+                  // console.warn(`[size] Reconstructing ${expectedKeyCount - currentNode.keys.length} missing keys for node ${currentNode.id}`);
                   currentNode.keys = [];
                   for (let i = 1; i < currentNode.children.length; i++) {
                     const childNodeId = currentNode.children[i];
                     const childNode = currentNode.tree.nodes.get(childNodeId);
                     if (childNode && childNode.keys.length > 0) {
                       currentNode.keys.push(childNode.keys[0]);
-                      console.warn(`[size] Reconstructed separator key ${childNode.keys[0]} for child ${childNodeId}`);
+                      // console.warn(`[size] Reconstructed separator key ${childNode.keys[0]} for child ${childNodeId}`);
                     }
                   }
                 } else if (expectedKeyCount < currentNode.keys.length) {
                   // If we need fewer keys, trim the keys array
-                  console.warn(`[size] Trimming ${currentNode.keys.length - expectedKeyCount} excess keys from node ${currentNode.id}`);
+                  // console.warn(`[size] Trimming ${currentNode.keys.length - expectedKeyCount} excess keys from node ${currentNode.id}`);
                   currentNode.keys = currentNode.keys.slice(0, expectedKeyCount);
                 }
 
@@ -1427,7 +1427,7 @@ export function size<T, K extends ValueType>(node: Node<T, K>, hasActiveTransact
                 update_min_max(currentNode);
               }
 
-              console.warn(`[size] Parent ${currentNode.id} cleaned up: now has ${currentNode.children.length} children and ${currentNode.keys.length} keys`);
+              // console.warn(`[size] Parent ${currentNode.id} cleaned up: now has ${currentNode.children.length} children and ${currentNode.keys.length} keys`);
 
               // Don't increment i since we removed an element - the next element is now at the same index
               continue;
@@ -1440,14 +1440,14 @@ export function size<T, K extends ValueType>(node: Node<T, K>, hasActiveTransact
 
         // ENHANCED: Skip nodes with structural problems but try to handle them gracefully
         if (!childNode.leaf && childNode.keys.length === 0 && childNode.children.length <= 1) {
-          console.warn(`[size] Found problematic internal node ${childId} with empty keys and ${childNode.children.length} children`);
+          // console.warn(`[size] Found problematic internal node ${childId} with empty keys and ${childNode.children.length} children`);
 
           // If it has exactly one child, count that child instead
           if (childNode.children.length === 1) {
             const grandChildId = childNode.children[0];
             const grandChildNode = nodes.get(grandChildId);
             if (grandChildNode && !visitedNodes.has(grandChildId)) {
-              console.warn(`[size] Counting grandchild ${grandChildId} instead of problematic internal node ${childId}`);
+              // console.warn(`[size] Counting grandchild ${grandChildId} instead of problematic internal node ${childId}`);
               visitedNodes.add(grandChildId);
               const res = sizeRecursive(grandChildNode, visitedNodes);
               lres += res;
@@ -1471,15 +1471,15 @@ export function size<T, K extends ValueType>(node: Node<T, K>, hasActiveTransact
 
   // If we made structural repairs during size calculation, run a full tree validation
   if (madeStructuralRepairs && node.tree && typeof (node.tree as any).validateTreeStructure === 'function') {
-    console.warn(`[size] Made structural repairs during size calculation. Running validateTreeStructure() to ensure consistency.`);
+    // console.warn(`[size] Made structural repairs during size calculation. Running validateTreeStructure() to ensure consistency.`);
     const validationResult = (node.tree as any).validateTreeStructure();
     if (!validationResult.isValid) {
-      console.warn(`[size] Post-repair validation found issues: ${validationResult.issues.join('; ')}`);
+      // console.warn(`[size] Post-repair validation found issues: ${validationResult.issues.join('; ')}`);
       if (validationResult.fixedIssues.length > 0) {
-        console.warn(`[size] Post-repair validation fixed additional issues: ${validationResult.fixedIssues.join('; ')}`);
+        // console.warn(`[size] Post-repair validation fixed additional issues: ${validationResult.fixedIssues.join('; ')}`);
       }
     } else {
-      console.warn(`[size] Post-repair validation passed - tree structure is now consistent.`);
+      // console.warn(`[size] Post-repair validation passed - tree structure is now consistent.`);
     }
   }
 
@@ -1572,7 +1572,7 @@ export function split<T, K extends ValueType>(
         // Insert the new_node's ID into the parent's children array immediately after the original node
         parent.children.splice(nodeIndexInParent + 1, 0, new_node.id);
     } else {
-        console.error(`[split] FATAL Error: Node ${node.id} not found in parent ${parent.id}'s children during split.`);
+        // console.error(`[split] FATAL Error: Node ${node.id} not found in parent ${parent.id}'s children during split.`);
     }
 
     new_node.parent = parent; // Ensure new node's parent is set
