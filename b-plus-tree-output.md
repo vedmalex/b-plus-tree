@@ -6,6 +6,8 @@
 └── b-plus-tree/
     ├── examples/
     │   ├── complete-usage-example.ts
+    │   ├── composite-keys-example.ts
+    │   ├── mixed-sort-example.ts
     │   ├── README.md
     │   └── serialization-examples.ts
     ├── src/
@@ -28,7 +30,14 @@
     │   ├── TransactionContext.ts
     │   └── types.ts
     ├── build.ts
+    ├── bun.config.ts
     ├── collection-store-integration.plan.md
+    ├── CURSOR_RULES_QUICK.md
+    ├── CURSOR_RULES_SUMMARY.md
+    ├── CURSOR_RULES.md
+    ├── DEVELOPMENT_PROMPT_RULES.md
+    ├── DEVELOPMENT_RULES.md
+    ├── DEVELOPMENT_WORKFLOW_RULES.md
     ├── EXPORTS_SUMMARY.md
     ├── failed.2pc.isolation.md
     ├── failed.duplicate.keys.md
@@ -36,12 +45,16 @@
     ├── failed.duplicate.keys.v4.md
     ├── failed.duplicate.md
     ├── failed.transaction.abort.md
+    ├── FINAL_COMPLEX_INDEXES_SUMMARY.md
     ├── FINAL_LOGGING_SUMMARY.md
     ├── FINAL_SUCCESS_SUMMARY.md
     ├── INFO.md
     ├── INTEGRATION_READINESS.md
     ├── LOGGING.md
+    ├── MIXED_SORT_GUIDE.md
+    ├── MIXED_SORT_SUMMARY.md
     ├── README.md
+    ├── RULES_INDEX.md
     ├── transaction.implementation.FINAL.md
     ├── transaction.implementation.md
     ├── transaction.plan.md
@@ -313,6 +326,668 @@ if (require.main === module) {
     })
     .catch(console.error);
 }
+```
+
+`examples/composite-keys-example.ts`
+
+```ts
+/**
+ * Composite Keys Example
+ *
+ * This example demonstrates how to use composite keys (complex indexes)
+ * with the B+ Tree library for multi-field indexing.
+ */
+
+import { BPlusTree, compare_keys_array } from '../src/index'
+
+// Example 1: Employee database with composite object keys
+interface Employee {
+  id: number
+  name: string
+  department: string
+  level: number
+  salary: number
+}
+
+interface DepartmentLevelKey {
+  department: string
+  level: number
+}
+
+// Custom comparator for department-level composite key
+const departmentLevelComparator = (a: DepartmentLevelKey, b: DepartmentLevelKey): number => {
+  // Compare by department first
+  if (a.department !== b.department) {
+    return a.department.localeCompare(b.department)
+  }
+  // Then by level
+  return a.level - b.level
+}
+
+// Example 2: Time series data with array keys
+interface SensorReading {
+  sensorId: string
+  value: number
+  timestamp: Date
+}
+
+// Example 3: Product catalog with object keys using custom comparator
+interface Product {
+  id: number
+  name: string
+  category: string
+  brand: string
+  price: number
+}
+
+interface CategoryBrandKey {
+  category: string
+  brand: string
+}
+
+export function compositeKeysExample() {
+  console.log('🔗 Composite Keys Example\n')
+
+  // 1. Employee Database with Custom Composite Keys
+  console.log('1. Employee Database with Department-Level Index...')
+
+  const employeeIndex = new BPlusTree<Employee, DepartmentLevelKey>(
+    3,
+    false, // Allow duplicates
+    departmentLevelComparator
+  )
+
+  const employees: Employee[] = [
+    { id: 1, name: 'Alice', department: 'Engineering', level: 3, salary: 95000 },
+    { id: 2, name: 'Bob', department: 'Engineering', level: 2, salary: 75000 },
+    { id: 3, name: 'Charlie', department: 'Marketing', level: 3, salary: 85000 },
+    { id: 4, name: 'Diana', department: 'Engineering', level: 3, salary: 98000 }
+  ]
+
+  // Insert employees with composite keys
+  employees.forEach(emp => {
+    employeeIndex.insert({
+      department: emp.department,
+      level: emp.level
+    }, emp)
+  })
+
+  console.log(`✅ Inserted ${employees.length} employees`)
+
+  // Find employees by exact department and level
+  const engineeringL3Key: DepartmentLevelKey = { department: 'Engineering', level: 3 }
+  const engineeringL3Employees = employeeIndex.find(engineeringL3Key)
+  console.log(`Engineering Level 3 employees: ${engineeringL3Employees.map(emp => emp.name).join(', ')}`)
+
+  // 2. Time Series Data with Array Keys
+  console.log('\n2. Time Series Data with Array Keys...')
+
+  // Using array keys: [year, month, day, hour]
+  const timeSeriesIndex = new BPlusTree<SensorReading, [number, number, number, number]>(
+    3,
+    false,
+    compare_keys_array // Built-in array comparator
+  )
+
+  const readings: SensorReading[] = [
+    {
+      sensorId: 'temp-01',
+      value: 23.5,
+      timestamp: new Date('2024-01-15T10:30:00')
+    },
+    {
+      sensorId: 'temp-02',
+      value: 22.8,
+      timestamp: new Date('2024-01-15T11:15:00')
+    }
+  ]
+
+  // Insert readings with time-based array keys
+  readings.forEach(reading => {
+    const date = reading.timestamp
+    const timeKey: [number, number, number, number] = [
+      date.getFullYear(),
+      date.getMonth() + 1,
+      date.getDate(),
+      date.getHours()
+    ]
+    timeSeriesIndex.insert(timeKey, reading)
+  })
+
+  console.log(`✅ Inserted ${readings.length} sensor readings`)
+
+  // Find reading for specific time
+  const searchTime: [number, number, number, number] = [2024, 1, 15, 10]
+  const foundReadings = timeSeriesIndex.find(searchTime)
+  if (foundReadings.length > 0) {
+    console.log(`Reading for 2024-01-15 10:xx: ${foundReadings[0].sensorId} = ${foundReadings[0].value}°C`)
+  } else {
+    console.log('No reading found for 2024-01-15 10:xx')
+  }
+
+  // 3. Product Catalog with Object Keys
+  console.log('\n3. Product Catalog with Category-Brand Index...')
+
+  // Custom comparator for category-brand keys
+  const categoryBrandComparator = (a: CategoryBrandKey, b: CategoryBrandKey): number => {
+    if (a.category !== b.category) {
+      return a.category.localeCompare(b.category)
+    }
+    return a.brand.localeCompare(b.brand)
+  }
+
+  const productIndex = new BPlusTree<Product, CategoryBrandKey>(
+    3,
+    false,
+    categoryBrandComparator
+  )
+
+  const products: Product[] = [
+    { id: 1, name: 'iPhone 15', category: 'Electronics', brand: 'Apple', price: 999 },
+    { id: 2, name: 'Galaxy S24', category: 'Electronics', brand: 'Samsung', price: 899 },
+    { id: 3, name: 'Air Max', category: 'Shoes', brand: 'Nike', price: 129 }
+  ]
+
+  // Insert products with category-brand composite keys
+  products.forEach(product => {
+    productIndex.insert({
+      category: product.category,
+      brand: product.brand
+    }, product)
+  })
+
+  console.log(`✅ Inserted ${products.length} products`)
+
+  // Find product by category and brand
+  const appleElectronicsKey: CategoryBrandKey = { category: 'Electronics', brand: 'Apple' }
+  const appleProducts = productIndex.find(appleElectronicsKey)
+  if (appleProducts.length > 0) {
+    console.log(`Apple Electronics product: ${appleProducts[0].name} - $${appleProducts[0].price}`)
+  } else {
+    console.log('No Apple Electronics product found')
+  }
+
+  // 4. Statistics
+  console.log('\n4. Index Statistics...')
+  console.log(`Employee index size: ${employeeIndex.size}`)
+  console.log(`Time series index size: ${timeSeriesIndex.size}`)
+  console.log(`Product index size: ${productIndex.size}`)
+
+  console.log('\n🎉 Composite Keys Example Complete!')
+}
+
+// Run the example if this file is executed directly
+if (import.meta.main) {
+  compositeKeysExample()
+}
+```
+
+`examples/mixed-sort-example.ts`
+
+```ts
+/**
+ * Mixed Sort Order Example
+ *
+ * This example demonstrates how to create composite keys with mixed sort orders
+ * (some fields ascending, others descending) for complex sorting requirements.
+ */
+
+import { BPlusTree } from '../src/index'
+
+// Example 1: Employee ranking system
+interface Employee {
+  id: number
+  name: string
+  department: string
+  salary: number
+  joinDate: Date
+  performance: number
+}
+
+interface EmployeeRankingKey {
+  department: string  // ASC - alphabetical order
+  salary: number      // DESC - highest salary first
+  joinDate: Date      // ASC - senior employees first
+}
+
+// Mixed sort comparator: department ASC, salary DESC, joinDate ASC
+const employeeRankingComparator = (a: EmployeeRankingKey, b: EmployeeRankingKey): number => {
+  // 1. Department ascending (A-Z)
+  if (a.department !== b.department) {
+    return a.department.localeCompare(b.department)
+  }
+
+  // 2. Salary descending (highest first)
+  if (a.salary !== b.salary) {
+    return b.salary - a.salary // Reverse order for DESC
+  }
+
+  // 3. Join date ascending (senior employees first)
+  return a.joinDate.getTime() - b.joinDate.getTime()
+}
+
+// Example 2: Product catalog with priority sorting
+interface Product {
+  id: number
+  name: string
+  category: string
+  price: number
+  rating: number
+  inStock: boolean
+  releaseDate: Date
+}
+
+interface ProductSortKey {
+  category: string    // ASC - alphabetical
+  inStock: boolean    // DESC - in stock items first
+  rating: number      // DESC - highest rated first
+  price: number       // ASC - cheapest first within same rating
+}
+
+const productSortComparator = (a: ProductSortKey, b: ProductSortKey): number => {
+  // 1. Category ascending
+  if (a.category !== b.category) {
+    return a.category.localeCompare(b.category)
+  }
+
+  // 2. In stock descending (true > false)
+  if (a.inStock !== b.inStock) {
+    return b.inStock ? 1 : -1
+  }
+
+  // 3. Rating descending (5 stars > 1 star)
+  if (a.rating !== b.rating) {
+    return b.rating - a.rating
+  }
+
+  // 4. Price ascending (cheaper first)
+  return a.price - b.price
+}
+
+// Example 3: Event scheduling with complex priorities
+interface Event {
+  id: number
+  title: string
+  priority: 'high' | 'medium' | 'low'
+  startTime: Date
+  duration: number
+  isUrgent: boolean
+}
+
+interface EventScheduleKey {
+  priority: string    // Custom order: high > medium > low
+  isUrgent: boolean   // DESC - urgent first
+  startTime: Date     // ASC - chronological order
+  duration: number    // ASC - shorter events first
+}
+
+const eventScheduleComparator = (a: EventScheduleKey, b: EventScheduleKey): number => {
+  // 1. Priority custom order
+  const priorityOrder = { 'high': 1, 'medium': 2, 'low': 3 }
+  const aPriority = priorityOrder[a.priority as keyof typeof priorityOrder]
+  const bPriority = priorityOrder[b.priority as keyof typeof priorityOrder]
+
+  if (aPriority !== bPriority) {
+    return aPriority - bPriority
+  }
+
+  // 2. Urgent descending (urgent first)
+  if (a.isUrgent !== b.isUrgent) {
+    return b.isUrgent ? 1 : -1
+  }
+
+  // 3. Start time ascending (chronological)
+  if (a.startTime.getTime() !== b.startTime.getTime()) {
+    return a.startTime.getTime() - b.startTime.getTime()
+  }
+
+  // 4. Duration ascending (shorter first)
+  return a.duration - b.duration
+}
+
+// Example 4: Version management with stability priority
+interface SoftwareVersion {
+  id: number
+  name: string
+  major: number
+  minor: number
+  patch: number
+  isStable: boolean
+  releaseDate: Date
+  downloads: number
+}
+
+interface VersionKey {
+  isStable: boolean   // DESC - stable versions first
+  major: number       // DESC - latest major first
+  minor: number       // DESC - latest minor first
+  patch: number       // DESC - latest patch first
+}
+
+const versionComparator = (a: VersionKey, b: VersionKey): number => {
+  // 1. Stability descending (stable first)
+  if (a.isStable !== b.isStable) {
+    return b.isStable ? 1 : -1
+  }
+
+  // 2. Major version descending
+  if (a.major !== b.major) {
+    return b.major - a.major
+  }
+
+  // 3. Minor version descending
+  if (a.minor !== b.minor) {
+    return b.minor - a.minor
+  }
+
+  // 4. Patch version descending
+  return b.patch - a.patch
+}
+
+export function mixedSortExample() {
+  console.log('🔀 Mixed Sort Order Example\n')
+
+  // 1. Employee Ranking System
+  console.log('1. Employee Ranking (Dept ASC, Salary DESC, JoinDate ASC)...')
+
+  const employeeRanking = new BPlusTree<Employee, EmployeeRankingKey>(
+    3,
+    false,
+    employeeRankingComparator
+  )
+
+  const employees: Employee[] = [
+    {
+      id: 1,
+      name: 'Alice Johnson',
+      department: 'Engineering',
+      salary: 120000,
+      joinDate: new Date('2020-01-15'),
+      performance: 95
+    },
+    {
+      id: 2,
+      name: 'Bob Smith',
+      department: 'Engineering',
+      salary: 110000,
+      joinDate: new Date('2019-03-10'),
+      performance: 88
+    },
+    {
+      id: 3,
+      name: 'Charlie Brown',
+      department: 'Engineering',
+      salary: 120000,
+      joinDate: new Date('2021-06-01'),
+      performance: 92
+    },
+    {
+      id: 4,
+      name: 'Diana Prince',
+      department: 'Marketing',
+      salary: 95000,
+      joinDate: new Date('2020-08-15'),
+      performance: 90
+    },
+    {
+      id: 5,
+      name: 'Eve Wilson',
+      department: 'Marketing',
+      salary: 85000,
+      joinDate: new Date('2018-12-01'),
+      performance: 87
+    }
+  ]
+
+  employees.forEach(emp => {
+    employeeRanking.insert({
+      department: emp.department,
+      salary: emp.salary,
+      joinDate: emp.joinDate
+    }, emp)
+  })
+
+  console.log('Employee ranking order:')
+  const allEmployees = employeeRanking.list()
+  allEmployees.forEach((emp, index) => {
+    console.log(`${index + 1}. ${emp.department} - ${emp.name} - $${emp.salary} - ${emp.joinDate.getFullYear()}`)
+  })
+
+  // 2. Product Catalog Sorting
+  console.log('\n2. Product Catalog (Category ASC, InStock DESC, Rating DESC, Price ASC)...')
+
+  const productCatalog = new BPlusTree<Product, ProductSortKey>(
+    3,
+    false,
+    productSortComparator
+  )
+
+  const products: Product[] = [
+    {
+      id: 1,
+      name: 'iPhone 15',
+      category: 'Electronics',
+      price: 999,
+      rating: 4.8,
+      inStock: true,
+      releaseDate: new Date('2023-09-15')
+    },
+    {
+      id: 2,
+      name: 'iPhone 14',
+      category: 'Electronics',
+      price: 799,
+      rating: 4.8,
+      inStock: false,
+      releaseDate: new Date('2022-09-15')
+    },
+    {
+      id: 3,
+      name: 'Samsung Galaxy S24',
+      category: 'Electronics',
+      price: 899,
+      rating: 4.6,
+      inStock: true,
+      releaseDate: new Date('2024-01-15')
+    },
+    {
+      id: 4,
+      name: 'Running Shoes',
+      category: 'Apparel',
+      price: 129,
+      rating: 4.5,
+      inStock: true,
+      releaseDate: new Date('2023-03-01')
+    },
+    {
+      id: 5,
+      name: 'Winter Jacket',
+      category: 'Apparel',
+      price: 199,
+      rating: 4.5,
+      inStock: false,
+      releaseDate: new Date('2023-10-01')
+    }
+  ]
+
+  products.forEach(product => {
+    productCatalog.insert({
+      category: product.category,
+      inStock: product.inStock,
+      rating: product.rating,
+      price: product.price
+    }, product)
+  })
+
+  console.log('Product catalog order:')
+  const allProducts = productCatalog.list()
+  allProducts.forEach((product, index) => {
+    const stockStatus = product.inStock ? '✅' : '❌'
+    console.log(`${index + 1}. ${product.category} - ${product.name} - ${stockStatus} - ⭐${product.rating} - $${product.price}`)
+  })
+
+  // 3. Event Scheduling
+  console.log('\n3. Event Scheduling (Priority Custom, Urgent DESC, Time ASC, Duration ASC)...')
+
+  const eventSchedule = new BPlusTree<Event, EventScheduleKey>(
+    3,
+    false,
+    eventScheduleComparator
+  )
+
+  const events: Event[] = [
+    {
+      id: 1,
+      title: 'Team Meeting',
+      priority: 'medium',
+      startTime: new Date('2024-01-15T10:00:00'),
+      duration: 60,
+      isUrgent: false
+    },
+    {
+      id: 2,
+      title: 'Client Presentation',
+      priority: 'high',
+      startTime: new Date('2024-01-15T14:00:00'),
+      duration: 90,
+      isUrgent: true
+    },
+    {
+      id: 3,
+      title: 'Code Review',
+      priority: 'high',
+      startTime: new Date('2024-01-15T09:00:00'),
+      duration: 45,
+      isUrgent: false
+    },
+    {
+      id: 4,
+      title: 'Lunch Break',
+      priority: 'low',
+      startTime: new Date('2024-01-15T12:00:00'),
+      duration: 60,
+      isUrgent: false
+    },
+    {
+      id: 5,
+      title: 'Emergency Fix',
+      priority: 'high',
+      startTime: new Date('2024-01-15T09:00:00'),
+      duration: 30,
+      isUrgent: true
+    }
+  ]
+
+  events.forEach(event => {
+    eventSchedule.insert({
+      priority: event.priority,
+      isUrgent: event.isUrgent,
+      startTime: event.startTime,
+      duration: event.duration
+    }, event)
+  })
+
+  console.log('Event schedule order:')
+  const allEvents = eventSchedule.list()
+  allEvents.forEach((event, index) => {
+    const urgentFlag = event.isUrgent ? '🚨' : '📅'
+    const time = event.startTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+    console.log(`${index + 1}. ${urgentFlag} ${event.priority.toUpperCase()} - ${event.title} - ${time} (${event.duration}min)`)
+  })
+
+  // 4. Version Management
+  console.log('\n4. Version Management (Stable DESC, Major DESC, Minor DESC, Patch DESC)...')
+
+  const versionManager = new BPlusTree<SoftwareVersion, VersionKey>(
+    3,
+    false,
+    versionComparator
+  )
+
+  const versions: SoftwareVersion[] = [
+    {
+      id: 1,
+      name: 'v2.1.0',
+      major: 2,
+      minor: 1,
+      patch: 0,
+      isStable: true,
+      releaseDate: new Date('2024-01-15'),
+      downloads: 10000
+    },
+    {
+      id: 2,
+      name: 'v2.2.0-beta',
+      major: 2,
+      minor: 2,
+      patch: 0,
+      isStable: false,
+      releaseDate: new Date('2024-02-01'),
+      downloads: 500
+    },
+    {
+      id: 3,
+      name: 'v2.0.5',
+      major: 2,
+      minor: 0,
+      patch: 5,
+      isStable: true,
+      releaseDate: new Date('2023-12-01'),
+      downloads: 15000
+    },
+    {
+      id: 4,
+      name: 'v2.1.1-beta',
+      major: 2,
+      minor: 1,
+      patch: 1,
+      isStable: false,
+      releaseDate: new Date('2024-01-20'),
+      downloads: 200
+    },
+    {
+      id: 5,
+      name: 'v1.9.9',
+      major: 1,
+      minor: 9,
+      patch: 9,
+      isStable: true,
+      releaseDate: new Date('2023-11-01'),
+      downloads: 25000
+    }
+  ]
+
+  versions.forEach(version => {
+    versionManager.insert({
+      isStable: version.isStable,
+      major: version.major,
+      minor: version.minor,
+      patch: version.patch
+    }, version)
+  })
+
+  console.log('Version order:')
+  const allVersions = versionManager.list()
+  allVersions.forEach((version, index) => {
+    const stability = version.isStable ? '🟢 STABLE' : '🟡 BETA'
+    console.log(`${index + 1}. ${version.name} - ${stability} - ${version.downloads} downloads`)
+  })
+
+  // 5. Statistics
+  console.log('\n5. Index Statistics...')
+  console.log(`Employee ranking index size: ${employeeRanking.size}`)
+  console.log(`Product catalog index size: ${productCatalog.size}`)
+  console.log(`Event schedule index size: ${eventSchedule.size}`)
+  console.log(`Version manager index size: ${versionManager.size}`)
+
+  console.log('\n🎉 Mixed Sort Order Example Complete!')
+}
+
+// Run the example if this file is executed directly
+if (import.meta.main) {
+  mixedSortExample()
+}
+
 ```
 
 `examples/README.md`
@@ -10307,9 +10982,81 @@ export function queryFromArray<T, R>(
 
 ```ts
 /// <reference types='@types/bun' />
+import path from 'path'
+import { createBunConfig, createConfig } from './bun.config.ts'
 import pkg from './package.json' assert { type: 'json' }
+import { mkdir, copyFile, rm } from 'fs/promises'
+
+const entrypoints = ['src/index.ts']
+const format = process.env.FORMAT || 'cjs'
+
+if (process.env.TOOL === 'bun') {
+  // Create a Bun config from package.json
+  const outdir = format === 'esm' ? './dist/esm' : './dist'
+
+  const config = createBunConfig({
+    pkg: pkg as any,
+    entrypoints,
+    sourcemap: 'external',
+    format: format as 'cjs' | 'esm',
+    outdir,
+  })
+
+  const result = await Bun.build(config)
+
+  if (!result.success) {
+    throw new AggregateError(result.logs, 'Build failed')
+  }
+
+  // Если это ESM формат, переименуем файл
+  if (format === 'esm') {
+    const outputFile = path.basename(entrypoints[0])
+    const outputName = outputFile.replace(/\.[^/.]+$/, '') // Удаляем расширение
+    const esmPath = path.join(outdir, outputName + '.js')
+    const targetPath = './dist/' + outputName + '.esm.js'
+
+    await mkdir(path.dirname(targetPath), { recursive: true })
+    await copyFile(esmPath, targetPath)
+    await rm(outdir, { recursive: true, force: true })
+  }
+} else {
+  const { build } = await import('esbuild')
+
+  // Для esbuild
+  // Определяем выходную директорию в зависимости от формата
+  const outdir = format === 'esm' ? './dist/esm' : './dist'
+  const outputFile = path.basename(entrypoints[0])
+  const outputName = outputFile.replace(/\.[^/.]+$/, '') // Удаляем расширение
+
+  const esbuildConfig = createConfig({
+    pkg: pkg as any,
+    entrypoints,
+    format: format as 'cjs' | 'esm',
+    outdir,
+  })
+
+  await build(esbuildConfig)
+
+  // Если это ESM формат, переименуем файл
+  if (format === 'esm') {
+    const esmPath = path.join(outdir, outputName + '.js')
+    const targetPath = './dist/' + outputName + '.esm.js'
+
+    await mkdir(path.dirname(targetPath), { recursive: true })
+    await copyFile(esmPath, targetPath)
+    await rm(outdir, { recursive: true, force: true })
+  }
+}
+
+```
+
+`bun.config.ts`
+
+```ts
 import { builtinModules } from 'module'
+/// <reference types="@types/bun" />
 import { BuildConfig } from 'bun'
+import { BuildOptions } from 'esbuild'
 
 interface BuilderConfig {
   entrypoints?: string[] | string
@@ -10366,18 +11113,56 @@ export function createBunConfig(config: BuilderConfig): BuildConfig {
   return bunConfig
 }
 
-const entrypoints = ['src/index.ts']
+// Функция для esbuild
+export function createConfig(config: BuilderConfig): BuildOptions {
+  const {
+    entrypoints = ['src/index.ts'],
+    outdir = './dist',
+    format = 'cjs',
+    target = 'node',
+    sourcemap = 'inline',
+    pkg,
+    external = [],
+  } = config
 
-// Create a Bun config from package.json
-const config = createBunConfig({
+  return {
+    entryPoints: Array.isArray(entrypoints) ? entrypoints : [entrypoints],
+    bundle: true,
+    format,
+    platform: target as 'node',
+    outdir,
+    sourcemap,
+    external: Object.keys(pkg.dependencies || {})
+      .concat(Object.keys(pkg.peerDependencies || {}))
+      .concat(Object.keys(pkg.devDependencies || {}))
+      .concat(builtinModules)
+      .concat(external),
+  }
+}
+
+// Пример использования:
+/*
+import pkg from './package.json' assert { type: 'json' }
+
+// Для Bun
+const bunConfig = createConfig({
   pkg,
-  entrypoints,
+  entrypoints: 'index.js'
 })
-const result = await Bun.build(config)
 
+const result = await Bun.build(bunConfig)
 if (!result.success) {
   throw new AggregateError(result.logs, 'Build failed')
 }
+
+// Для esbuild
+import { build } from 'esbuild'
+const esbuildConfig = createEsbuildConfig({
+  pkg,
+  entrypoints: 'index.js'
+})
+await build(esbuildConfig)
+*/
 
 ```
 
@@ -10768,6 +11553,2005 @@ if (!result.success) {
 ---
 *План создан на основе полностью реализованной транзакционной функциональности B+ дерева*
 *Все рекомендации из transaction.support.next.md учтены и превзойдены*
+```
+
+`CURSOR_RULES_QUICK.md`
+
+```md
+# Cursor Rules - Краткая версия
+
+## 🎯 Основные принципы
+
+### 1. Полная типизация
+```typescript
+export type Cursor<T, K extends ValueType, R = T> = {
+  node: number | undefined
+  pos: number | undefined
+  key: K | undefined
+  value: R | undefined
+  done: boolean
+}
+```
+
+### 2. Immutable операции
+```typescript
+// ✅ Возвращаем новый cursor
+function eval_next<T, K>(tree: Tree<T, K>, id: number, pos: number): Cursor<T, K>
+
+// ❌ Не мутируем cursor
+function badNext<T, K>(cursor: Cursor<T, K>): void { cursor.pos++ }
+```
+
+### 3. Graceful degradation
+```typescript
+export const EmptyCursor = {
+  done: true, key: undefined, pos: undefined,
+  node: undefined, value: undefined
+}
+```
+
+## 🏗️ Архитектура
+
+### 4. Разделение ответственности
+- `eval.ts` - базовые операции (eval_next, eval_previous)
+- `source.ts` - генераторы (sourceEq, sourceRange)
+- `query.ts` - трансформации (map, filter, reduce)
+
+### 5. Ленивые генераторы
+```typescript
+export function sourceRange<T, K>(from: K, to: K) {
+  return function* (tree: Tree<T, K>): Generator<Cursor<T, K>, void> {
+    let cursor = find_range_start(tree, from, true, true)
+    while (!cursor.done && tree.comparator(cursor.key!, to) <= 0) {
+      yield cursor  // Ленивая генерация
+      cursor = eval_next(tree, cursor.node!, cursor.pos!)
+    }
+  }
+}
+```
+
+## 🧭 Навигация
+
+### 6. Консистентная навигация
+```typescript
+export function evaluate<T, K>(tree: Tree<T, K>, id: number, pos: number): Cursor<T, K> {
+  let cur = tree.nodes.get(id)
+  while (cur) {
+    if (pos >= cur.pointers.length) {
+      cur = cur.right; pos -= cur.pointers.length
+    } else if (pos < 0) {
+      cur = cur.left; if (cur) pos += cur.pointers.length
+    } else {
+      return get_current(cur, pos)
+    }
+  }
+  return EmptyCursor as Cursor<T, K>
+}
+```
+
+### 7. Boundary handling
+```typescript
+// Всегда проверяем границы и возвращаем валидный cursor
+if (index === -1) index = node.keys.length  // Переход к следующему узлу
+```
+
+## 📊 Состояние
+
+### 8. Type Guards
+```typescript
+function isValidCursor<T, K>(cursor: Cursor<T, K>): cursor is Required<Cursor<T, K>> {
+  return !cursor.done && cursor.node !== undefined &&
+         cursor.pos !== undefined && cursor.key !== undefined
+}
+```
+
+### 9. Инварианты
+```typescript
+// done cursor не имеет валидных данных
+if (cursor.done) {
+  return cursor.node === undefined && cursor.pos === undefined
+}
+```
+
+## 🔄 Транзакции
+
+### 10. Snapshot isolation
+```typescript
+// Cursor видит снапшот на момент создания транзакции
+const snapshotState = txCtx.getSnapshotState()
+```
+
+### 11. Copy-on-Write
+```typescript
+// Используем working copy если доступна
+const workingNode = txCtx.workingNodes.get(originalCursor.node!)
+if (workingNode) {
+  return { ...originalCursor, node: workingNode.id }
+}
+```
+
+## 🧪 Тестирование
+
+### 12. Высокогранулированные тесты
+```typescript
+describe('Cursor Navigation', () => {
+  it('should navigate forward correctly', () => {
+    const cursor = tree.cursor(5)
+    const nextCursor = eval_next(tree, cursor.node!, cursor.pos!)
+    expect(nextCursor.key).toBeGreaterThan(cursor.key!)
+  })
+})
+```
+
+### 13. Edge cases
+```typescript
+it('should handle empty tree', () => {
+  const cursor = emptyTree.cursor(1)
+  expect(cursor.done).toBe(true)
+})
+```
+
+## 🐛 Отладка
+
+### 14. Детальное логирование
+```typescript
+function debugCursor<T, K>(cursor: Cursor<T, K>, operation: string): void {
+  console.log(`[CURSOR] ${operation}:`, {
+    node: cursor.node, pos: cursor.pos, key: cursor.key, done: cursor.done
+  })
+}
+```
+
+### 15. Трассировка
+```typescript
+class CursorTracer<T, K> {
+  traceCursor(operation: string, cursor: Cursor<T, K>): void {
+    this.trace.push({ operation, cursor: {...cursor}, timestamp: performance.now() })
+  }
+}
+```
+
+## ⚡ Производительность
+
+### 16. Кэширование
+```typescript
+class CursorCache<T, K> {
+  getCachedCursor(tree: Tree<T, K>, key: K): Cursor<T, K> {
+    const cacheKey = `${tree.root}-${key}`
+    return this.cache.get(cacheKey) || this.createAndCache(tree, key, cacheKey)
+  }
+}
+```
+
+### 17. Batch операции
+```typescript
+async function processCursorsBatch<T, K>(
+  cursors: Generator<Cursor<T, K>>, batchSize = 1000
+): Promise<T[]> {
+  // Обрабатываем cursor батчами для лучшей производительности
+}
+```
+
+## 🔗 Интеграция
+
+### 18. Адаптеры
+```typescript
+class CursorAdapter<T, K> implements ExternalCursor<T> {
+  constructor(source: Generator<Cursor<T, K>>) { /* ... */ }
+  current(): T | null { return this.currentCursor.value || null }
+  next(): boolean { /* ... */ }
+}
+```
+
+### 19. Сериализация
+```typescript
+interface SerializableCursor<T, K> {
+  node: number | undefined; pos: number | undefined
+  key: K | undefined; done: boolean
+  // value восстанавливаем из структуры
+}
+```
+
+## 📋 Чек-лист
+
+### При создании cursor:
+- [ ] Полный тип `Cursor<T, K, R>`
+- [ ] Поддержка `EmptyCursor`
+- [ ] Type guards
+- [ ] Тесты всех состояний
+
+### При навигации:
+- [ ] Граничные случаи
+- [ ] Прямая/обратная навигация
+- [ ] Ленивая генерация
+- [ ] Логирование
+
+### При транзакциях:
+- [ ] Изоляция транзакций
+- [ ] CoW поддержка
+- [ ] Snapshot isolation
+- [ ] Транзакционные тесты
+
+### При оптимизации:
+- [ ] Генераторы вместо массивов
+- [ ] Кэширование
+- [ ] Batch операции
+- [ ] Тесты производительности
+
+---
+
+## 🎯 Ключевые принципы
+
+1. **Cursor = полное состояние навигации** (node, pos, key, value, done)
+2. **Immutable операции** - всегда возвращаем новый cursor
+3. **Graceful degradation** - EmptyCursor при ошибках
+4. **Ленивые генераторы** - экономия памяти
+5. **Type safety** - строгая типизация с ограничениями
+6. **Транзакционная изоляция** - snapshot + CoW
+7. **Высокогранулированное тестирование** - каждый аспект отдельно
+8. **Детальная отладка** - логирование + трассировка
+
+---
+
+*Основано на опыте разработки B+ Tree с транзакционной поддержкой*
+```
+
+`CURSOR_RULES_SUMMARY.md`
+
+```md
+# Резюме правил для Cursor - Итоговый документ
+
+## 🎉 Успешно созданы наборы правил
+
+На основе нашего опыта разработки B+ дерева с полной транзакционной поддержкой созданы **4 комплексных набора правил** для использования в других проектах:
+
+---
+
+## 📚 Созданные документы
+
+### 1. **[CURSOR_RULES.md](./CURSOR_RULES.md)** - Полные правила (30 правил)
+**Назначение:** Комплексное руководство по работе с cursor-based системами
+
+**Структура:**
+- 🎯 **Основные принципы** (3 правила) - Cursor как состояние, immutable операции, graceful degradation
+- 🏗️ **Архитектурные правила** (3 правила) - Разделение ответственности, композиция, ленивые вычисления
+- 🔤 **Правила типизации** (3 правила) - Строгая типизация, генерики, type guards
+- 🧭 **Правила навигации** (3 правила) - Консистентная навигация, boundary handling, направленность
+- 📊 **Правила состояния** (3 правила) - Четкие состояния, инварианты, обработка ошибок
+- ⚡ **Правила производительности** (3 правила) - Ленивые вычисления, кэширование, batch операции
+- 🔄 **Правила транзакционности** (3 правила) - Изоляция, snapshot isolation, CoW
+- 🧪 **Правила тестирования** (3 правила) - Высокогранулированные тесты, edge cases, производительность
+- 🐛 **Правила отладки** (3 правила) - Детальное логирование, трассировка, валидация
+- 🔗 **Правила интеграции** (3 правила) - Совместимость, сериализация, метрики
+
+### 2. **[CURSOR_RULES_QUICK.md](./CURSOR_RULES_QUICK.md)** - Краткие правила (19 правил)
+**Назначение:** Быстрый справочник для ежедневного использования
+
+**Формат:** Краткие примеры кода с комментариями ✅/❌
+
+### 3. **[DEVELOPMENT_RULES.md](./DEVELOPMENT_RULES.md)** - Правила разработки (19 правил)
+**Назначение:** Общие правила разработки сложных систем
+
+**Структура:**
+- 🎯 **Правила планирования** - Фазовый подход, документирование, приоритизация
+- 🔧 **Правила реализации** - Зависимости тестов, избегание заглушек, robust поиск
+- 🧪 **Правила тестирования** - Высокогранулированность, edge cases, производительность
+- 🐛 **Правила отладки** - Трассировка, логирование, валидация инвариантов
+- 📚 **Правила документирования** - Решения, статистика, примеры
+- 🔄 **Правила рефакторинга** - Постепенность, совместимость, метрики
+
+### 4. **[RULES_INDEX.md](./RULES_INDEX.md)** - Индекс всех правил
+**Назначение:** Навигация по всем созданным правилам с рекомендациями по применению
+
+---
+
+## 🎯 Ключевые принципы из опыта
+
+### **Cursor Design Principles:**
+1. **Cursor = полное состояние навигации** (node, pos, key, value, done)
+2. **Immutable операции** - всегда возвращаем новый cursor
+3. **Graceful degradation** - EmptyCursor при ошибках
+4. **Ленивые генераторы** - экономия памяти
+5. **Type safety** - строгая типизация с ограничениями
+
+### **Transaction Principles:**
+1. **Snapshot isolation** - cursor видит состояние на момент создания транзакции
+2. **Copy-on-Write** - working copies для изоляции
+3. **2PC support** - prepare/finalize для распределенных транзакций
+4. **Conflict detection** - автоматическое обнаружение конфликтов
+5. **Graceful abort** - безопасный откат изменений
+
+### **Development Principles:**
+1. **Фазовый подход** - разбиение сложных задач на этапы
+2. **Высокогранулированное тестирование** - каждый аспект отдельно
+3. **Трассировка перед исправлением** - понимание проблемы до решения
+4. **Документирование решений** - сохранение знаний
+5. **Координация систем** - флаги и события для синхронизации
+
+---
+
+## 📊 Доказанная эффективность
+
+### **Результаты применения правил:**
+
+**До применения:**
+- ❌ 13 провальных тестов из 35
+- ❌ Memory leaks (RangeError: Out of memory)
+- ❌ Нарушение транзакционной изоляции
+- ❌ Orphaned nodes и дублированные данные
+- ❌ Сложность функций > 15
+
+**После применения:**
+- ✅ **340 тестов проходят (100% success rate)**
+- ✅ Полная транзакционная поддержка с 2PC
+- ✅ Snapshot isolation и Copy-on-Write
+- ✅ Автоматическое восстановление структуры
+- ✅ Сложность функций < 8
+- ✅ Production-ready качество
+
+### **Ключевые метрики:**
+- **Тестовое покрытие:** 100% для критических функций
+- **Производительность:** Сериализация 1000 элементов < 100ms
+- **Надежность:** Graceful обработка всех edge cases
+- **Масштабируемость:** Поддержка больших деревьев
+- **Типобезопасность:** Полная поддержка TypeScript
+
+---
+
+## 🛠️ Готовые шаблоны кода
+
+### **Базовый Cursor тип:**
+```typescript
+export type Cursor<T, K extends ValueType, R = T> = {
+  node: number | undefined
+  pos: number | undefined
+  key: K | undefined
+  value: R | undefined
+  done: boolean
+}
+
+export const EmptyCursor = {
+  done: true, key: undefined, pos: undefined,
+  node: undefined, value: undefined
+}
+```
+
+### **Type Guard шаблон:**
+```typescript
+function isValidCursor<T, K extends ValueType>(cursor: Cursor<T, K>): cursor is Required<Cursor<T, K>> {
+  return !cursor.done && cursor.node !== undefined &&
+         cursor.pos !== undefined && cursor.key !== undefined
+}
+```
+
+### **Generator шаблон:**
+```typescript
+export function sourceRange<T, K extends ValueType>(from: K, to: K) {
+  return function* (tree: Tree<T, K>): Generator<Cursor<T, K>, void> {
+    let cursor = find_range_start(tree, from, true, true)
+    while (!cursor.done && tree.comparator(cursor.key!, to) <= 0) {
+      yield cursor
+      cursor = eval_next(tree, cursor.node!, cursor.pos!)
+    }
+  }
+}
+```
+
+### **Транзакционный шаблон:**
+```typescript
+export function get_all_in_transaction<T, K extends ValueType>(
+  tree: Tree<T, K>,
+  key: K,
+  txCtx: TransactionContext<T, K>
+): T[] {
+  const results: T[] = []
+  const snapshotState = txCtx.getSnapshotState()
+
+  for (const [nodeId, nodeState] of snapshotState) {
+    if (nodeState.leaf) {
+      for (let i = 0; i < nodeState.keys.length; i++) {
+        if (tree.comparator(nodeState.keys[i], key) === 0) {
+          results.push(nodeState.values[i])
+        }
+      }
+    }
+  }
+
+  return results
+}
+```
+
+---
+
+## 📋 Чек-листы для применения
+
+### **При создании cursor системы:**
+- [ ] Определен полный тип `Cursor<T, K, R>`
+- [ ] Реализована поддержка `EmptyCursor`
+- [ ] Добавлены type guards для безопасности
+- [ ] Написаны тесты для всех состояний
+- [ ] Реализованы ленивые генераторы
+- [ ] Добавлено детальное логирование
+
+### **При добавлении транзакций:**
+- [ ] Учтена изоляция транзакций
+- [ ] Реализована поддержка CoW
+- [ ] Добавлены тесты транзакционных сценариев
+- [ ] Проверена корректность snapshot isolation
+- [ ] Реализован 2PC если нужен
+- [ ] Добавлена обработка конфликтов
+
+### **При разработке проекта:**
+- [ ] Использован фазовый подход
+- [ ] Документированы все решения
+- [ ] Созданы высокогранулированные тесты
+- [ ] Добавлена трассировка для отладки
+- [ ] Проверены все edge cases
+- [ ] Измерена производительность
+
+---
+
+## 🚀 Рекомендации по применению
+
+### **Для новых проектов:**
+1. Начните с [CURSOR_RULES_QUICK.md](./CURSOR_RULES_QUICK.md) для быстрого старта
+2. Используйте [CURSOR_RULES.md](./CURSOR_RULES.md) для детальной реализации
+3. Следуйте [DEVELOPMENT_RULES.md](./DEVELOPMENT_RULES.md) для процесса разработки
+4. Адаптируйте правила под специфику вашего проекта
+
+### **Для существующих проектов:**
+1. Проведите аудит по чек-листам из правил
+2. Примените правила постепенно, по одному компоненту
+3. Добавьте недостающие тесты согласно правилам тестирования
+4. Рефакторите код согласно архитектурным принципам
+
+### **Для команды разработчиков:**
+1. Изучите [DEVELOPMENT_RULES.md](./DEVELOPMENT_RULES.md) для процессов
+2. Используйте чек-листы для code review
+3. Создайте внутренние стандарты на основе правил
+4. Регулярно обновляйте правила на основе опыта
+
+---
+
+## 🎯 Заключение
+
+Созданные правила представляют собой **дистиллированный опыт** разработки production-ready системы с полной транзакционной поддержкой. Они помогают:
+
+1. **Избежать типичных ошибок** при работе с cursor и транзакциями
+2. **Ускорить разработку** за счет проверенных паттернов
+3. **Повысить качество кода** через систематический подход
+4. **Упростить отладку** с помощью структурированных методов
+5. **Обеспечить масштабируемость** архитектурных решений
+
+### **Ключевые достижения:**
+- ✅ **4 комплексных набора правил** (68 правил общим объемом)
+- ✅ **Проверенная эффективность** (340 тестов, 100% success rate)
+- ✅ **Готовые шаблоны кода** для немедленного использования
+- ✅ **Детальные чек-листы** для контроля качества
+- ✅ **Практические рекомендации** по применению
+
+**Применяйте правила постепенно, адаптируйте под свои нужды, и достигайте высокого качества кода!**
+
+---
+
+*Правила созданы на основе успешного проекта B+ Tree с транзакционной поддержкой*
+*Проект: 340 тестов, 100% success rate, полная транзакционная поддержка*
+*Дата создания: Декабрь 2024*
+*Статус: Готово к использованию в других проектах*
+```
+
+`CURSOR_RULES.md`
+
+```md
+# Правила работы с Cursor
+
+## 📋 Оглавление
+
+- [Основные принципы](#-основные-принципы)
+- [Архитектурные правила](#-архитектурные-правила)
+- [Правила типизации](#-правила-типизации)
+- [Правила навигации](#-правила-навигации)
+- [Правила состояния](#-правила-состояния)
+- [Правила производительности](#-правила-производительности)
+- [Правила транзакционности](#-правила-транзакционности)
+- [Правила тестирования](#-правила-тестирования)
+- [Правила отладки](#-правила-отладки)
+- [Правила интеграции](#-правила-интеграции)
+
+---
+
+## 🎯 Основные принципы
+
+### 1. **Cursor как указатель состояния**
+```typescript
+// ✅ ПРАВИЛЬНО: Cursor содержит всю информацию для навигации
+export type Cursor<T, K extends ValueType, R = T> = {
+  node: number      // ID узла в структуре данных
+  pos: number       // Позиция внутри узла
+  key: K           // Текущий ключ
+  value: R         // Текущее значение (может быть трансформировано)
+  done: boolean    // Флаг завершения итерации
+}
+
+// ❌ НЕПРАВИЛЬНО: Неполная информация о состоянии
+type BadCursor<T> = {
+  value: T
+  hasNext: boolean  // Недостаточно для навигации
+}
+```
+
+### 2. **Immutable операции**
+```typescript
+// ✅ ПРАВИЛЬНО: Cursor операции не изменяют исходный cursor
+function eval_next<T, K extends ValueType>(
+  tree: BPlusTree<T, K>,
+  id: number,
+  pos: number,
+): Cursor<T, K> {
+  return evaluate(tree, id, pos + 1)  // Новый cursor
+}
+
+// ❌ НЕПРАВИЛЬНО: Мутация cursor
+function badNext<T, K>(cursor: Cursor<T, K>): void {
+  cursor.pos++  // Изменяет исходный объект
+}
+```
+
+### 3. **Graceful degradation**
+```typescript
+// ✅ ПРАВИЛЬНО: Безопасное поведение при ошибках
+export const EmptyCursor = {
+  done: true,
+  key: undefined,
+  pos: undefined,
+  node: undefined,
+  value: undefined,
+}
+
+// Всегда возвращаем валидный cursor, даже при ошибках
+function safeEvaluate<T, K extends ValueType>(
+  tree: BPlusTree<T, K>,
+  id: number,
+  pos: number,
+): Cursor<T, K> {
+  try {
+    return evaluate(tree, id, pos)
+  } catch (error) {
+    console.warn('Cursor evaluation failed:', error)
+    return EmptyCursor as Cursor<T, K>
+  }
+}
+```
+
+---
+
+## 🏗️ Архитектурные правила
+
+### 4. **Разделение ответственности**
+```typescript
+// ✅ ПРАВИЛЬНО: Четкое разделение функций
+// eval.ts - базовые операции с cursor
+export function eval_current<T, K>(tree: BPlusTree<T, K>, id: number, pos: number): Cursor<T, K>
+export function eval_next<T, K>(tree: BPlusTree<T, K>, id: number, pos: number): Cursor<T, K>
+export function eval_previous<T, K>(tree: BPlusTree<T, K>, id: number, pos: number): Cursor<T, K>
+
+// source.ts - генераторы cursor для запросов
+export function sourceEq<T, K>(key: K): (tree: BPlusTree<T, K>) => Generator<Cursor<T, K>>
+export function sourceRange<T, K>(from: K, to: K): (tree: BPlusTree<T, K>) => Generator<Cursor<T, K>>
+
+// query.ts - трансформации cursor
+export function map<T, K, R>(fn: (cursor: Cursor<T, K>) => R): Transform<T, K, R>
+export function filter<T, K>(predicate: (cursor: Cursor<T, K>) => boolean): Transform<T, K, T>
+```
+
+### 5. **Композиция операций**
+```typescript
+// ✅ ПРАВИЛЬНО: Cursor операции легко композируются
+const result = await query(
+  tree.range(1, 10),           // Источник cursor
+  filter(c => c.value.active), // Фильтрация cursor
+  map(c => c.value.name),      // Трансформация cursor
+  reduce((acc, name) => [...acc, name], [])  // Агрегация
+)(tree)
+```
+
+### 6. **Ленивые вычисления**
+```typescript
+// ✅ ПРАВИЛЬНО: Generator для ленивой обработки
+export function sourceEach<T, K extends ValueType>(forward = true) {
+  return function* (tree: BPlusTree<T, K>): Generator<Cursor<T, K>, void> {
+    let cursor = forward ? tree.cursor(tree.min) : findLastCursor(tree, tree.max)
+
+    while (!cursor.done) {
+      yield cursor  // Ленивая генерация
+      cursor = forward
+        ? eval_next(tree, cursor.node, cursor.pos)
+        : eval_previous(tree, cursor.node, cursor.pos)
+    }
+  }
+}
+```
+
+---
+
+## 🔤 Правила типизации
+
+### 7. **Строгая типизация**
+```typescript
+// ✅ ПРАВИЛЬНО: Полная типизация с ограничениями
+export type Cursor<T, K extends ValueType, R = T> = {
+  node: number | undefined     // Может быть undefined для EmptyCursor
+  pos: number | undefined      // Может быть undefined для EmptyCursor
+  key: K | undefined          // Может быть undefined для EmptyCursor
+  value: R | undefined        // Может быть undefined для EmptyCursor
+  done: boolean               // Всегда определен
+}
+
+// ValueType ограничивает допустимые типы ключей
+export type ValueType = number | string | boolean
+```
+
+### 8. **Генерики с ограничениями**
+```typescript
+// ✅ ПРАВИЛЬНО: Правильные ограничения типов
+function find_first<T, K extends ValueType>(
+  tree: BPlusTree<T, K>,
+  key: K,
+  forward = true,
+): Cursor<T, K> {
+  // Реализация
+}
+
+// ✅ ПРАВИЛЬНО: Трансформация типов в cursor
+function map<T, K extends ValueType, R>(
+  transform: (value: T) => R
+): (source: Generator<Cursor<T, K>>) => Generator<Cursor<T, K, R>> {
+  return function* (source) {
+    for (const cursor of source) {
+      yield {
+        ...cursor,
+        value: transform(cursor.value)  // Трансформируем тип значения
+      }
+    }
+  }
+}
+```
+
+### 9. **Type Guards**
+```typescript
+// ✅ ПРАВИЛЬНО: Type guards для безопасности
+function isValidCursor<T, K extends ValueType>(cursor: Cursor<T, K>): cursor is Required<Cursor<T, K>> {
+  return !cursor.done &&
+         cursor.node !== undefined &&
+         cursor.pos !== undefined &&
+         cursor.key !== undefined &&
+         cursor.value !== undefined
+}
+
+function processValidCursor<T, K extends ValueType>(cursor: Cursor<T, K>) {
+  if (isValidCursor(cursor)) {
+    // TypeScript знает, что все поля определены
+    console.log(`Node ${cursor.node}, pos ${cursor.pos}, key ${cursor.key}`)
+  }
+}
+```
+
+---
+
+## 🧭 Правила навигации
+
+### 10. **Консистентная навигация**
+```typescript
+// ✅ ПРАВИЛЬНО: Консистентные функции навигации
+export function evaluate<T, K extends ValueType>(
+  tree: BPlusTree<T, K>,
+  id: number,
+  pos: number,
+): Cursor<T, K> {
+  let cur = tree.nodes.get(id)
+
+  while (cur) {
+    const len = cur.pointers.length
+
+    if (pos >= len) {
+      // Переход к следующему узлу
+      cur = cur.right
+      pos -= len
+    } else if (pos < 0) {
+      // Переход к предыдущему узлу
+      cur = cur.left
+      if (cur) {
+        pos += cur.pointers.length
+      }
+    } else {
+      // Валидная позиция в текущем узле
+      return get_current(cur, pos)
+    }
+  }
+
+  // Достигнут конец структуры
+  return EmptyCursor as Cursor<T, K>
+}
+```
+
+### 11. **Boundary handling**
+```typescript
+// ✅ ПРАВИЛЬНО: Правильная обработка границ
+export function find_range_start<T, K extends ValueType>(
+  tree: BPlusTree<T, K>,
+  key: K,
+  include: boolean,
+  forward = true,
+): Cursor<T, K> {
+  const node = forward ? find_first_node(tree, key) : find_last_node(tree, key)
+
+  let index: number
+  if (forward) {
+    if (include) {
+      // Найти первый ключ >= указанного
+      index = find_first_key(node.keys, key, tree.comparator)
+      if (index === -1) {
+        index = node.keys.length  // Переход к следующему узлу
+      }
+    } else {
+      // Найти первый ключ > указанного
+      let firstGTE = find_first_key(node.keys, key, tree.comparator)
+      if (firstGTE !== -1 && firstGTE < node.keys.length &&
+          tree.comparator(node.keys[firstGTE], key) === 0) {
+        index = firstGTE + 1  // Пропустить равный ключ
+      } else {
+        index = firstGTE !== -1 ? firstGTE : node.keys.length
+      }
+    }
+  } else {
+    // Обратная навигация
+    index = include
+      ? find_last_key(node.keys, key, tree.comparator) - 1
+      : find_first_key(node.keys, key, tree.comparator) - 1
+  }
+
+  return evaluate(tree, node.id, index)
+}
+```
+
+### 12. **Направленная навигация**
+```typescript
+// ✅ ПРАВИЛЬНО: Поддержка прямой и обратной навигации
+export function sourceEach<T, K extends ValueType>(forward = true) {
+  return function* (tree: BPlusTree<T, K>): Generator<Cursor<T, K>, void> {
+    const step = forward ? eval_next : eval_previous
+    const startKey = forward ? tree.min : tree.max
+    let cursor = forward
+      ? tree.cursor(startKey)
+      : find_last_cursor_equivalent(tree, startKey)
+
+    while (!cursor.done) {
+      yield cursor
+      cursor = step(tree, cursor.node, cursor.pos)
+    }
+  }
+}
+```
+
+---
+
+## 📊 Правила состояния
+
+### 13. **Четкие состояния cursor**
+```typescript
+// ✅ ПРАВИЛЬНО: Четкое определение состояний
+enum CursorState {
+  VALID = 'valid',       // cursor указывает на валидные данные
+  EMPTY = 'empty',       // cursor пуст (done = true)
+  BOUNDARY = 'boundary', // cursor на границе структуры
+  ERROR = 'error'        // cursor в ошибочном состоянии
+}
+
+function getCursorState<T, K extends ValueType>(cursor: Cursor<T, K>): CursorState {
+  if (cursor.done) return CursorState.EMPTY
+  if (cursor.node === undefined || cursor.pos === undefined) return CursorState.ERROR
+  if (cursor.value === undefined) return CursorState.BOUNDARY
+  return CursorState.VALID
+}
+```
+
+### 14. **Инварианты cursor**
+```typescript
+// ✅ ПРАВИЛЬНО: Проверка инвариантов
+function validateCursor<T, K extends ValueType>(
+  cursor: Cursor<T, K>,
+  tree: BPlusTree<T, K>
+): boolean {
+  // Инвариант 1: done cursor не имеет валидных данных
+  if (cursor.done) {
+    return cursor.node === undefined &&
+           cursor.pos === undefined &&
+           cursor.key === undefined &&
+           cursor.value === undefined
+  }
+
+  // Инвариант 2: активный cursor имеет валидные координаты
+  if (!cursor.done) {
+    const node = tree.nodes.get(cursor.node!)
+    return node !== undefined &&
+           cursor.pos! >= 0 &&
+           cursor.pos! < node.pointers.length &&
+           cursor.key !== undefined
+  }
+
+  return false
+}
+```
+
+### 15. **Состояние при ошибках**
+```typescript
+// ✅ ПРАВИЛЬНО: Безопасное состояние при ошибках
+function safeGetCurrent<T, K extends ValueType>(
+  cur: Node<T, K> | undefined,
+  pos: number,
+): Cursor<T, K> {
+  if (!cur || pos < 0 || pos >= cur.pointers.length) {
+    return {
+      node: undefined,
+      pos: undefined,
+      key: undefined,
+      value: undefined,
+      done: true,
+    }
+  }
+
+  const value = cur.pointers[pos]
+  return {
+    node: cur.id,
+    pos,
+    key: cur.keys[pos],
+    value,
+    done: value === undefined,
+  }
+}
+```
+
+---
+
+## ⚡ Правила производительности
+
+### 16. **Ленивые вычисления**
+```typescript
+// ✅ ПРАВИЛЬНО: Генераторы для экономии памяти
+export function sourceRange<T, K extends ValueType>(from: K, to: K) {
+  return function* (tree: BPlusTree<T, K>): Generator<Cursor<T, K>, void> {
+    let cursor = find_range_start(tree, from, true, true)
+
+    while (!cursor.done && tree.comparator(cursor.key!, to) <= 0) {
+      yield cursor  // Ленивая генерация - только по требованию
+      cursor = eval_next(tree, cursor.node!, cursor.pos!)
+    }
+  }
+}
+
+// ❌ НЕПРАВИЛЬНО: Загрузка всех данных в память
+function badRange<T, K extends ValueType>(tree: BPlusTree<T, K>, from: K, to: K): Cursor<T, K>[] {
+  const results: Cursor<T, K>[] = []
+  // Загружает все данные сразу - неэффективно для больших диапазонов
+  // ...
+  return results
+}
+```
+
+### 17. **Кэширование навигации**
+```typescript
+// ✅ ПРАВИЛЬНО: Кэширование для часто используемых cursor
+class CursorCache<T, K extends ValueType> {
+  private cache = new Map<string, Cursor<T, K>>()
+
+  getCachedCursor(tree: BPlusTree<T, K>, key: K): Cursor<T, K> {
+    const cacheKey = `${tree.root}-${key}`
+
+    if (this.cache.has(cacheKey)) {
+      const cached = this.cache.get(cacheKey)!
+      // Проверяем, что cached cursor все еще валиден
+      if (this.isValidCached(tree, cached)) {
+        return cached
+      }
+    }
+
+    const cursor = tree.cursor(key)
+    this.cache.set(cacheKey, cursor)
+    return cursor
+  }
+
+  private isValidCached(tree: BPlusTree<T, K>, cursor: Cursor<T, K>): boolean {
+    // Проверяем, что узел все еще существует и не изменился
+    const node = tree.nodes.get(cursor.node!)
+    return node !== undefined &&
+           cursor.pos! < node.pointers.length &&
+           tree.comparator(node.keys[cursor.pos!], cursor.key!) === 0
+  }
+}
+```
+
+### 18. **Batch операции**
+```typescript
+// ✅ ПРАВИЛЬНО: Batch обработка cursor
+async function processCursorsBatch<T, K extends ValueType>(
+  cursors: Generator<Cursor<T, K>>,
+  batchSize = 1000
+): Promise<T[]> {
+  const results: T[] = []
+  let batch: Cursor<T, K>[] = []
+
+  for (const cursor of cursors) {
+    batch.push(cursor)
+
+    if (batch.length >= batchSize) {
+      // Обрабатываем batch
+      const batchResults = await processBatch(batch)
+      results.push(...batchResults)
+      batch = []
+    }
+  }
+
+  // Обрабатываем оставшиеся cursor
+  if (batch.length > 0) {
+    const batchResults = await processBatch(batch)
+    results.push(...batchResults)
+  }
+
+  return results
+}
+```
+
+---
+
+## 🔄 Правила транзакционности
+
+### 19. **Изоляция cursor в транзакциях**
+```typescript
+// ✅ ПРАВИЛЬНО: Cursor учитывает транзакционный контекст
+export function find_leaf_for_key_in_transaction<T, K extends ValueType>(
+  tree: BPlusTree<T, K>,
+  key: K,
+  txCtx: TransactionContext<T, K>
+): Node<T, K> {
+  let currentNodeId = txCtx.workingRootId ?? tree.root
+
+  while (true) {
+    // Используем working copy если доступна
+    const currentNode = txCtx.workingNodes.get(currentNodeId) ?? tree.nodes.get(currentNodeId)
+
+    if (!currentNode) {
+      throw new Error(`Node ${currentNodeId} not found`)
+    }
+
+    if (currentNode.leaf) {
+      return currentNode
+    }
+
+    // Навигация с учетом транзакционных изменений
+    const childIndex = find_first_key(currentNode.keys, key, tree.comparator)
+    currentNodeId = currentNode.pointers[childIndex] as number
+  }
+}
+```
+
+### 20. **Snapshot isolation для cursor**
+```typescript
+// ✅ ПРАВИЛЬНО: Cursor видит снапшот на момент создания транзакции
+export function get_all_in_transaction<T, K extends ValueType>(
+  tree: BPlusTree<T, K>,
+  key: K,
+  txCtx: TransactionContext<T, K>
+): T[] {
+  const results: T[] = []
+
+  // Используем снапшот состояния на момент начала транзакции
+  const snapshotState = txCtx.getSnapshotState()
+
+  for (const [nodeId, nodeState] of snapshotState) {
+    if (nodeState.leaf) {
+      for (let i = 0; i < nodeState.keys.length; i++) {
+        if (tree.comparator(nodeState.keys[i], key) === 0) {
+          results.push(nodeState.values[i])
+        }
+      }
+    }
+  }
+
+  return results
+}
+```
+
+### 21. **Copy-on-Write для cursor**
+```typescript
+// ✅ ПРАВИЛЬНО: Cursor работает с CoW узлами
+function getWorkingCursor<T, K extends ValueType>(
+  tree: BPlusTree<T, K>,
+  originalCursor: Cursor<T, K>,
+  txCtx: TransactionContext<T, K>
+): Cursor<T, K> {
+  if (originalCursor.done) return originalCursor
+
+  // Проверяем, есть ли working copy узла
+  const workingNode = txCtx.workingNodes.get(originalCursor.node!)
+
+  if (workingNode) {
+    return {
+      ...originalCursor,
+      node: workingNode.id,  // Используем ID working copy
+      value: workingNode.pointers[originalCursor.pos!] as T
+    }
+  }
+
+  return originalCursor
+}
+```
+
+---
+
+## 🧪 Правила тестирования
+
+### 22. **Высокогранулированные тесты**
+```typescript
+// ✅ ПРАВИЛЬНО: Тестируем каждый аспект cursor отдельно
+describe('Cursor Navigation', () => {
+  it('should navigate forward correctly', () => {
+    const tree = createTestTree()
+    const cursor = tree.cursor(5)
+    const nextCursor = eval_next(tree, cursor.node!, cursor.pos!)
+
+    expect(nextCursor.done).toBe(false)
+    expect(nextCursor.key).toBeGreaterThan(cursor.key!)
+  })
+
+  it('should handle boundary conditions', () => {
+    const tree = createTestTree()
+    const lastCursor = tree.cursor(tree.max!)
+    const beyondCursor = eval_next(tree, lastCursor.node!, lastCursor.pos!)
+
+    expect(beyondCursor.done).toBe(true)
+    expect(beyondCursor.node).toBeUndefined()
+  })
+
+  it('should maintain cursor invariants', () => {
+    const tree = createTestTree()
+    const cursor = tree.cursor(10)
+
+    expect(validateCursor(cursor, tree)).toBe(true)
+  })
+})
+```
+
+### 23. **Тестирование edge cases**
+```typescript
+// ✅ ПРАВИЛЬНО: Покрываем все граничные случаи
+describe('Cursor Edge Cases', () => {
+  it('should handle empty tree', () => {
+    const tree = new BPlusTree<string, number>(3)
+    const cursor = tree.cursor(1)
+
+    expect(cursor.done).toBe(true)
+  })
+
+  it('should handle single element tree', () => {
+    const tree = new BPlusTree<string, number>(3)
+    tree.insert(1, 'one')
+
+    const cursor = tree.cursor(1)
+    expect(cursor.done).toBe(false)
+    expect(cursor.value).toBe('one')
+
+    const nextCursor = eval_next(tree, cursor.node!, cursor.pos!)
+    expect(nextCursor.done).toBe(true)
+  })
+
+  it('should handle non-existent keys', () => {
+    const tree = createTestTree([1, 3, 5])
+    const cursor = tree.cursor(2)  // Ключ не существует
+
+    // Должен найти первый ключ >= 2, то есть 3
+    expect(cursor.key).toBe(3)
+  })
+})
+```
+
+### 24. **Тестирование производительности cursor**
+```typescript
+// ✅ ПРАВИЛЬНО: Тесты производительности
+describe('Cursor Performance', () => {
+  it('should iterate large dataset efficiently', () => {
+    const tree = createLargeTree(10000)
+    const startTime = performance.now()
+
+    let count = 0
+    for (const cursor of tree.each()) {
+      count++
+    }
+
+    const endTime = performance.now()
+    const duration = endTime - startTime
+
+    expect(count).toBe(10000)
+    expect(duration).toBeLessThan(100) // Менее 100ms для 10k элементов
+  })
+
+  it('should handle range queries efficiently', () => {
+    const tree = createLargeTree(10000)
+    const startTime = performance.now()
+
+    const results = []
+    for (const cursor of tree.range(1000, 2000)) {
+      results.push(cursor.value)
+    }
+
+    const endTime = performance.now()
+    const duration = endTime - startTime
+
+    expect(results.length).toBe(1001) // 1000-2000 включительно
+    expect(duration).toBeLessThan(50)  // Должно быть быстрее полной итерации
+  })
+})
+```
+
+---
+
+## 🐛 Правила отладки
+
+### 25. **Детальное логирование cursor**
+```typescript
+// ✅ ПРАВИЛЬНО: Подробное логирование для отладки
+function debugCursor<T, K extends ValueType>(
+  cursor: Cursor<T, K>,
+  operation: string,
+  tree?: BPlusTree<T, K>
+): void {
+  const state = getCursorState(cursor)
+
+  console.log(`[CURSOR DEBUG] ${operation}:`, {
+    state,
+    node: cursor.node,
+    pos: cursor.pos,
+    key: cursor.key,
+    value: cursor.value,
+    done: cursor.done,
+    treeSize: tree?.size,
+    timestamp: new Date().toISOString()
+  })
+
+  if (tree && !cursor.done) {
+    const node = tree.nodes.get(cursor.node!)
+    console.log(`[NODE DEBUG] Node ${cursor.node}:`, {
+      leaf: node?.leaf,
+      keysCount: node?.keys.length,
+      pointersCount: node?.pointers.length,
+      keys: node?.keys,
+      leftSibling: node?.left,
+      rightSibling: node?.right
+    })
+  }
+}
+```
+
+### 26. **Трассировка навигации cursor**
+```typescript
+// ✅ ПРАВИЛЬНО: Трассировка для сложных случаев
+class CursorTracer<T, K extends ValueType> {
+  private trace: Array<{
+    operation: string
+    cursor: Cursor<T, K>
+    timestamp: number
+  }> = []
+
+  traceCursor(operation: string, cursor: Cursor<T, K>): void {
+    this.trace.push({
+      operation,
+      cursor: { ...cursor }, // Копируем для сохранения состояния
+      timestamp: performance.now()
+    })
+  }
+
+  getTrace(): string {
+    return this.trace
+      .map((entry, index) =>
+        `${index}: ${entry.operation} -> ` +
+        `node:${entry.cursor.node}, pos:${entry.cursor.pos}, ` +
+        `key:${entry.cursor.key}, done:${entry.cursor.done} ` +
+        `(+${entry.timestamp.toFixed(2)}ms)`
+      )
+      .join('\n')
+  }
+
+  saveTraceToFile(filename: string): void {
+    const trace = this.getTrace()
+    // Сохраняем трассировку в файл для анализа
+    console.log(`Trace saved to ${filename}:\n${trace}`)
+  }
+}
+```
+
+### 27. **Валидация структуры через cursor**
+```typescript
+// ✅ ПРАВИЛЬНО: Проверка целостности структуры через cursor
+function validateTreeStructureViaCursor<T, K extends ValueType>(
+  tree: BPlusTree<T, K>
+): { valid: boolean; errors: string[] } {
+  const errors: string[] = []
+  let prevKey: K | undefined
+  let count = 0
+
+  try {
+    for (const cursor of tree.each()) {
+      count++
+
+      // Проверяем порядок ключей
+      if (prevKey !== undefined && tree.comparator(cursor.key!, prevKey) < 0) {
+        errors.push(`Key order violation: ${cursor.key} < ${prevKey} at position ${count}`)
+      }
+
+      // Проверяем валидность cursor
+      if (!validateCursor(cursor, tree)) {
+        errors.push(`Invalid cursor at position ${count}: ${JSON.stringify(cursor)}`)
+      }
+
+      prevKey = cursor.key
+    }
+
+    // Проверяем соответствие размера
+    if (count !== tree.size) {
+      errors.push(`Size mismatch: cursor count ${count} != tree.size ${tree.size}`)
+    }
+
+  } catch (error) {
+    errors.push(`Cursor iteration failed: ${error}`)
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors
+  }
+}
+```
+
+---
+
+## 🔗 Правила интеграции
+
+### 28. **Совместимость с внешними системами**
+```typescript
+// ✅ ПРАВИЛЬНО: Адаптеры для интеграции cursor
+interface ExternalCursor<T> {
+  current(): T | null
+  next(): boolean
+  hasNext(): boolean
+  reset(): void
+}
+
+class CursorAdapter<T, K extends ValueType> implements ExternalCursor<T> {
+  private currentCursor: Cursor<T, K>
+  private generator: Generator<Cursor<T, K>>
+
+  constructor(source: Generator<Cursor<T, K>>) {
+    this.generator = source
+    this.currentCursor = this.generator.next().value || EmptyCursor as Cursor<T, K>
+  }
+
+  current(): T | null {
+    return this.currentCursor.done ? null : this.currentCursor.value!
+  }
+
+  next(): boolean {
+    const result = this.generator.next()
+    this.currentCursor = result.value || EmptyCursor as Cursor<T, K>
+    return !result.done
+  }
+
+  hasNext(): boolean {
+    return !this.currentCursor.done
+  }
+
+  reset(): void {
+    throw new Error('Reset not supported for generator-based cursors')
+  }
+}
+```
+
+### 29. **Сериализация cursor состояния**
+```typescript
+// ✅ ПРАВИЛЬНО: Сериализация для персистентности
+interface SerializableCursor<T, K extends ValueType> {
+  node: number | undefined
+  pos: number | undefined
+  key: K | undefined
+  done: boolean
+  // value не сериализуем - восстанавливаем из структуры
+}
+
+function serializeCursor<T, K extends ValueType>(
+  cursor: Cursor<T, K>
+): SerializableCursor<T, K> {
+  return {
+    node: cursor.node,
+    pos: cursor.pos,
+    key: cursor.key,
+    done: cursor.done
+  }
+}
+
+function deserializeCursor<T, K extends ValueType>(
+  serialized: SerializableCursor<T, K>,
+  tree: BPlusTree<T, K>
+): Cursor<T, K> {
+  if (serialized.done || serialized.node === undefined || serialized.pos === undefined) {
+    return EmptyCursor as Cursor<T, K>
+  }
+
+  // Восстанавливаем cursor из координат
+  return evaluate(tree, serialized.node, serialized.pos)
+}
+```
+
+### 30. **Метрики и мониторинг cursor**
+```typescript
+// ✅ ПРАВИЛЬНО: Сбор метрик для мониторинга
+class CursorMetrics<T, K extends ValueType> {
+  private stats = {
+    cursorsCreated: 0,
+    navigationsPerformed: 0,
+    averageNavigationTime: 0,
+    errorsEncountered: 0,
+    cacheHits: 0,
+    cacheMisses: 0
+  }
+
+  recordCursorCreation(): void {
+    this.stats.cursorsCreated++
+  }
+
+  recordNavigation(duration: number): void {
+    this.stats.navigationsPerformed++
+    this.stats.averageNavigationTime =
+      (this.stats.averageNavigationTime * (this.stats.navigationsPerformed - 1) + duration) /
+      this.stats.navigationsPerformed
+  }
+
+  recordError(): void {
+    this.stats.errorsEncountered++
+  }
+
+  recordCacheHit(): void {
+    this.stats.cacheHits++
+  }
+
+  recordCacheMiss(): void {
+    this.stats.cacheMisses++
+  }
+
+  getMetrics() {
+    return {
+      ...this.stats,
+      cacheHitRate: this.stats.cacheHits / (this.stats.cacheHits + this.stats.cacheMisses),
+      errorRate: this.stats.errorsEncountered / this.stats.cursorsCreated
+    }
+  }
+}
+```
+
+---
+
+## 📋 Чек-лист применения правил
+
+### При создании нового cursor:
+- [ ] Определен полный тип `Cursor<T, K, R>`
+- [ ] Реализована поддержка `EmptyCursor`
+- [ ] Добавлены type guards для безопасности
+- [ ] Написаны тесты для всех состояний
+
+### При реализации навигации:
+- [ ] Обработаны граничные случаи
+- [ ] Поддерживается прямая и обратная навигация
+- [ ] Реализована ленивая генерация
+- [ ] Добавлено логирование для отладки
+
+### При интеграции с транзакциями:
+- [ ] Учтена изоляция транзакций
+- [ ] Реализована поддержка CoW
+- [ ] Добавлены тесты транзакционных сценариев
+- [ ] Проверена корректность snapshot isolation
+
+### При оптимизации производительности:
+- [ ] Использованы генераторы вместо массивов
+- [ ] Реализовано кэширование где возможно
+- [ ] Добавлены batch операции для больших объемов
+- [ ] Измерена производительность тестами
+
+---
+
+## 🎯 Заключение
+
+Эти правила основаны на реальном опыте разработки B+ дерева с полной транзакционной поддержкой. Они помогают:
+
+1. **Избежать типичных ошибок** при работе с cursor
+2. **Обеспечить высокую производительность** и масштабируемость
+3. **Поддерживать надежность** в сложных сценариях
+4. **Упростить отладку** и тестирование
+5. **Обеспечить совместимость** с различными системами
+
+Следование этим правилам гарантирует создание robust и эффективных cursor-based систем.
+
+---
+
+*Правила обновлены на основе опыта разработки B+ Tree с транзакционной поддержкой*
+*Версия: 1.0 | Дата: Декабрь 2024*
+```
+
+`DEVELOPMENT_PROMPT_RULES.md`
+
+```md
+# Development Prompt Rules
+
+## Quick Reference for AI Assistant
+
+### Documentation Protocol
+- Record all ideas in working file with ✅/❌ markers
+- Never delete ideas (avoid revisiting failed approaches)
+- Document progress after each successful stage
+
+### Testing Protocol
+- Verify new changes don't break existing tests
+- Replace stubs with real implementations
+- Create granular tests grouped by functionality
+- Map test dependencies to prevent regressions
+
+### Debugging Protocol
+1. Manual trace with expected results first
+2. Log trace in separate markdown file
+3. Mark error step location
+4. Then debug and fix
+5. Build dependency maps from failing tests
+
+### Implementation Checklist
+- [ ] Document current thoughts/verification needs
+- [ ] Mark ideas as ✅ successful or ❌ failed
+- [ ] Verify no existing test breakage
+- [ ] Check tests use real implementations (not stubs)
+- [ ] Replace any temporary stubs
+- [ ] Document stage completion
+- [ ] For complex bugs: trace → log → debug → fix
+- [ ] Create granular tests by functionality
+- [ ] Update test dependency maps
+
+### Quality Gates
+- Run full test suite after changes
+- Maintain test independence where possible
+- Document test dependencies when they exist
+- Preserve working functionality during development
+```
+
+`DEVELOPMENT_RULES.md`
+
+```md
+# Правила разработки на основе опыта B+ Tree проекта
+
+## 📋 Оглавление
+
+- [Правила планирования](#-правила-планирования)
+- [Правила реализации](#-правила-реализации)
+- [Правила тестирования](#-правила-тестирования)
+- [Правила отладки](#-правила-отладки)
+- [Правила документирования](#-правила-документирования)
+- [Правила рефакторинга](#-правила-рефакторинга)
+
+---
+
+## 🎯 Правила планирования
+
+### 1. **Фазовый подход к разработке**
+```markdown
+## Phase 1: Stabilize Core & Fix Bugs ✅
+1. Fix critical memory/performance issues
+2. Implement basic functionality with CoW
+3. Fix parent-child relationship corruption
+4. Implement commit() logic
+
+## Phase 2: Complete Transaction Logic ✅
+5. Implement transactional operations
+6. Implement 2PC API
+7. Add complex scenarios support
+
+## Phase 3: Fix Advanced Operations ✅
+8. Fix CoW Node Operations
+9. Handle edge cases and boundary conditions
+10. Implement conflict detection
+
+## Phase 4: Refactor & Test ✅
+11. Write comprehensive tests
+12. Implement garbage collection
+13. Performance optimization
+```
+
+### 2. **Документирование прогресса**
+```markdown
+# Rules для отслеживания прогресса
+
+- Текущие размышления и идеи записывай в implementation файл
+- Удачные идеи помечай ✅, неудачные идеи помечай ❌
+- Идеи не удаляй, чтобы не возвращаться к ним в будущих сессиях
+- После успешного этапа фиксируй изменения и переходи к следующему
+```
+
+### 3. **Приоритизация проблем**
+```typescript
+// ✅ ПРАВИЛЬНО: Решаем критические проблемы первыми
+enum ProblemPriority {
+  CRITICAL = 'critical',    // Блокирует основной функционал
+  HIGH = 'high',           // Влияет на производительность
+  MEDIUM = 'medium',       // Улучшения UX
+  LOW = 'low'             // Nice to have
+}
+
+// Пример приоритизации из проекта:
+// CRITICAL: RangeError: Out of memory в transactional remove
+// HIGH: Parent-child relationship corruption в CoW
+// MEDIUM: Улучшение производительности merge операций
+// LOW: Дополнительные utility функции
+```
+
+---
+
+## 🔧 Правила реализации
+
+### 4. **Проверка зависимостей тестов**
+```typescript
+// ✅ ПРАВИЛЬНО: Проверяем что новые изменения не ломают другие тесты
+function validateTestDependencies() {
+  // При проверке тестов учитывай, что тесты могут быть зависимыми друг от друга
+  // Чтобы не ломать один тест, не ломай другой
+  // Строй карту зависимостей и последовательности выполнения тестов
+}
+
+// Пример из проекта:
+// Исправление merge функций сломало тесты borrow операций
+// Потребовалось координировать обновления separator keys
+```
+
+### 5. **Избегание заглушек в продакшене**
+```typescript
+// ❌ НЕПРАВИЛЬНО: Заглушки остаются в финальном коде
+function merge_with_left_cow<T, K extends ValueType>(/* ... */) {
+  // TODO: Implement real merge logic
+  return originalNode // Заглушка
+}
+
+// ✅ ПРАВИЛЬНО: Полная реализация
+function merge_with_left_cow<T, K extends ValueType>(/* ... */) {
+  // Реальная логика merge с CoW
+  const workingCopy = Node.forceCopy(originalNode, transactionContext)
+  // ... полная реализация
+  return workingCopy
+}
+
+// Правило: Проверяй что тесты обращаются к новым функциям,
+// а не используют заглушки для прохождения
+```
+
+### 6. **Robust поиск и навигация**
+```typescript
+// ✅ ПРАВИЛЬНО: Robust поиск с fallback
+function findChildIndex<T, K extends ValueType>(
+  parent: Node<T, K>,
+  childOriginalId: number,
+  txCtx: TransactionContext<T, K>
+): number {
+  // Сначала ищем по working copy ID
+  const workingChild = txCtx.workingNodes.get(childOriginalId)
+  if (workingChild) {
+    const workingIndex = parent.pointers.indexOf(workingChild.id)
+    if (workingIndex !== -1) return workingIndex
+  }
+
+  // Fallback: ищем по original ID
+  const originalIndex = parent.pointers.indexOf(childOriginalId)
+  if (originalIndex !== -1) return originalIndex
+
+  throw new Error(`Child ${childOriginalId} not found in parent ${parent.id}`)
+}
+
+// Урок из проекта: Простой поиск по ID часто не работает в CoW системах
+```
+
+### 7. **Координация между системами**
+```typescript
+// ✅ ПРАВИЛЬНО: Флаговая система для координации
+function borrow_from_left_cow<T, K extends ValueType>(/* ... */) {
+  // Устанавливаем флаг чтобы избежать двойного обновления
+  (fNode as any)._skipParentSeparatorUpdate = true
+  (fLeftSibling as any)._skipParentSeparatorUpdate = true
+
+  // Выполняем операцию
+  const result = performBorrow(/* ... */)
+
+  // Ручное обновление separator keys
+  updateParentSeparators(/* ... */)
+
+  return result
+}
+
+// Урок: В сложных системах нужна координация между автоматическими и ручными операциями
+```
+
+---
+
+## 🧪 Правила тестирования
+
+### 8. **Высокогранулированные тесты**
+```typescript
+// ✅ ПРАВИЛЬНО: Создавай высокогранулированные тесты и объединяй их по функционалу
+describe('Merge Operations', () => {
+  describe('merge_with_left_cow', () => {
+    it('should merge leaf nodes correctly', () => { /* ... */ })
+    it('should update parent pointers', () => { /* ... */ })
+    it('should handle separator keys', () => { /* ... */ })
+    it('should work with working copies', () => { /* ... */ })
+  })
+
+  describe('merge_with_right_cow', () => {
+    it('should merge internal nodes correctly', () => { /* ... */ })
+    it('should preserve tree structure', () => { /* ... */ })
+  })
+})
+
+// Группируй связанные тесты, но тестируй каждый аспект отдельно
+```
+
+### 9. **Тестирование edge cases**
+```typescript
+// ✅ ПРАВИЛЬНО: Покрывай все граничные случаи
+describe('Edge Cases', () => {
+  it('should handle empty nodes', () => {
+    const emptyNode = Node.createLeaf(txCtx)
+    expect(() => merge_with_left_cow(emptyNode, /* ... */)).not.toThrow()
+  })
+
+  it('should handle single element nodes', () => { /* ... */ })
+  it('should handle maximum capacity nodes', () => { /* ... */ })
+  it('should handle orphaned nodes', () => { /* ... */ })
+  it('should handle duplicate keys', () => { /* ... */ })
+})
+
+// Урок из проекта: Edge cases часто выявляют фундаментальные проблемы
+```
+
+### 10. **Тестирование производительности**
+```typescript
+// ✅ ПРАВИЛЬНО: Включай тесты производительности
+describe('Performance', () => {
+  it('should handle large datasets efficiently', () => {
+    const startTime = performance.now()
+
+    // Выполняем операцию
+    for (let i = 0; i < 10000; i++) {
+      tree.insert_in_transaction(i, `value${i}`, txCtx)
+    }
+
+    const duration = performance.now() - startTime
+    expect(duration).toBeLessThan(1000) // Менее 1 секунды для 10k операций
+  })
+})
+
+// Урок: RangeError: Out of memory был обнаружен через тесты производительности
+```
+
+---
+
+## 🐛 Правила отладки
+
+### 11. **Трассировка перед исправлением**
+```markdown
+# Правило трассировки
+
+Перед отладкой и исправлением сложных тестов:
+1. Сначала выполни трассировку вручную с ожидаемыми результатами
+2. Помечай шаг на котором возникает ошибка
+3. Сохраняй этот лог в отдельный файл markdown
+4. Только потом переходи к отладке и исправлению
+
+Пример файлов трассировки из проекта:
+- failed.2pc.isolation.md
+- failed.duplicate.keys.md
+- failed.transaction.abort.md
+```
+
+### 12. **Детальное логирование**
+```typescript
+// ✅ ПРАВИЛЬНО: Подробное логирование для сложных операций
+function remove_in_transaction<T, K extends ValueType>(
+  tree: BPlusTree<T, K>,
+  key: K,
+  txCtx: TransactionContext<T, K>
+): boolean {
+  console.log(`[REMOVE_TX] Starting removal of key ${key}`)
+
+  const leaf = find_leaf_for_key_in_transaction(tree, key, txCtx)
+  console.log(`[REMOVE_TX] Found leaf ${leaf.id} with ${leaf.keys.length} keys`)
+
+  const keyIndex = find_first_key(leaf.keys, key, tree.comparator)
+  console.log(`[REMOVE_TX] Key index: ${keyIndex}`)
+
+  if (keyIndex === -1 || tree.comparator(leaf.keys[keyIndex], key) !== 0) {
+    console.log(`[REMOVE_TX] Key ${key} not found`)
+    return false
+  }
+
+  // ... остальная логика с логированием каждого шага
+}
+```
+
+### 13. **Валидация инвариантов**
+```typescript
+// ✅ ПРАВИЛЬНО: Проверка инвариантов на каждом шаге
+function validateTreeInvariants<T, K extends ValueType>(
+  tree: BPlusTree<T, K>,
+  operation: string
+): void {
+  console.log(`[VALIDATION] Checking invariants after ${operation}`)
+
+  // Проверяем структуру дерева
+  const structureValid = validateTreeStructure(tree)
+  if (!structureValid) {
+    throw new Error(`Tree structure invalid after ${operation}`)
+  }
+
+  // Проверяем parent-child связи
+  const linksValid = validateParentChildLinks(tree)
+  if (!linksValid) {
+    throw new Error(`Parent-child links invalid after ${operation}`)
+  }
+
+  // Проверяем порядок ключей
+  const orderValid = validateKeyOrder(tree)
+  if (!orderValid) {
+    throw new Error(`Key order invalid after ${operation}`)
+  }
+
+  console.log(`[VALIDATION] All invariants valid after ${operation}`)
+}
+```
+
+---
+
+## 📚 Правила документирования
+
+### 14. **Документирование решений**
+```markdown
+# Правило документирования решений
+
+Для каждой решенной проблемы документируй:
+
+## ✅ ИСПРАВЛЕНИЕ #N: Название проблемы
+- **Проблема:** Краткое описание
+- **Решение:** Техническое решение
+- **Техническое решение:** Код/алгоритм
+- **Результат:** Что изменилось
+- **Файлы:** Какие файлы затронуты
+
+Пример из проекта:
+## ✅ ИСПРАВЛЕНИЕ #1: 2PC Transaction Isolation
+- **Проблема:** Нарушение snapshot isolation в prepare фазе
+- **Решение:** Реализована система сохранения состояния узлов
+- **Техническое решение:**
+  ```typescript
+  this._snapshotNodeStates = new Map();
+  for (const [nodeId, node] of tree.nodes) {
+    this._snapshotNodeStates.set(nodeId, { ... });
+  }
+  ```
+- **Результат:** ✅ Тест проходит полностью
+- **Файлы:** `src/TransactionContext.ts`, `src/BPlusTree.ts`
+```
+
+### 15. **Ведение статистики**
+```markdown
+# Правило ведения статистики
+
+Отслеживай прогресс количественно:
+
+**ИТОГОВАЯ СТАТИСТИКА УСПЕХА:**
+- **✅ ВСЕ 340 ТЕСТОВ ПРОХОДЯТ** (100% success rate)
+- **✅ insert_in_transaction:** Полностью реализован
+- **✅ remove_in_transaction:** Полностью реализован
+- **✅ 2PC API:** Полностью реализован
+- **✅ Транзакционная изоляция:** Работает корректно
+- **✅ Copy-on-Write:** Полностью функционирует
+
+Это помогает видеть общую картину прогресса.
+```
+
+### 16. **Создание примеров использования**
+```typescript
+// ✅ ПРАВИЛЬНО: Создавай рабочие примеры для каждой функции
+// examples/transaction-example.ts
+async function transactionExample() {
+  const tree = new BPlusTree<User, number>(3, false)
+  const txCtx = new TransactionContext(tree)
+
+  // Демонстрируем основные операции
+  tree.insert_in_transaction(1, { name: 'Alice' }, txCtx)
+  tree.insert_in_transaction(2, { name: 'Bob' }, txCtx)
+
+  // Демонстрируем 2PC
+  const canCommit = await txCtx.prepareCommit()
+  if (canCommit) {
+    await txCtx.finalizeCommit()
+  }
+
+  console.log('Transaction completed successfully')
+}
+
+// Примеры должны быть исполняемыми и демонстрировать реальные сценарии
+```
+
+---
+
+## 🔄 Правила рефакторинга
+
+### 17. **Постепенный рефакторинг**
+```typescript
+// ✅ ПРАВИЛЬНО: Рефакторинг по одной функции за раз
+// Шаг 1: Создаем новую функцию с улучшенной логикой
+function merge_with_left_cow_v2<T, K extends ValueType>(/* ... */) {
+  // Улучшенная реализация
+}
+
+// Шаг 2: Тестируем новую функцию
+describe('merge_with_left_cow_v2', () => {
+  // Все тесты для новой версии
+})
+
+// Шаг 3: Заменяем старую функцию после успешных тестов
+// Шаг 4: Удаляем старую функцию
+
+// ❌ НЕПРАВИЛЬНО: Переписываем все сразу
+```
+
+### 18. **Сохранение обратной совместимости**
+```typescript
+// ✅ ПРАВИЛЬНО: Сохраняем старый API при рефакторинге
+// Старый API (deprecated)
+function insert(key: K, value: T): boolean {
+  console.warn('insert() is deprecated, use insert_in_transaction()')
+  const txCtx = new TransactionContext(this)
+  const result = this.insert_in_transaction(key, value, txCtx)
+  txCtx.commit()
+  return result
+}
+
+// Новый API
+function insert_in_transaction(key: K, value: T, txCtx: TransactionContext<T, K>): boolean {
+  // Новая реализация
+}
+```
+
+### 19. **Метрики качества кода**
+```typescript
+// ✅ ПРАВИЛЬНО: Отслеживай метрики качества
+interface CodeQualityMetrics {
+  testCoverage: number        // 100% для критических функций
+  cyclomaticComplexity: number // < 10 для большинства функций
+  linesOfCode: number         // Отслеживай рост
+  technicalDebt: number       // Количество TODO/FIXME
+  performanceRegression: boolean // Нет регрессий производительности
+}
+
+// Пример из проекта:
+// Было: 13 провальных тестов, сложность > 15
+// Стало: 0 провальных тестов, сложность < 8
+```
+
+---
+
+## 📋 Чек-лист для каждого PR
+
+### Перед коммитом:
+- [ ] Все тесты проходят (включая существующие)
+- [ ] Добавлены тесты для новой функциональности
+- [ ] Обновлена документация
+- [ ] Проверена производительность
+- [ ] Нет memory leaks
+- [ ] Код соответствует стилю проекта
+
+### Перед релизом:
+- [ ] Все фазы разработки завершены
+- [ ] 100% тестовое покрытие критических функций
+- [ ] Примеры использования работают
+- [ ] Документация актуальна
+- [ ] Производительность не хуже предыдущей версии
+- [ ] Обратная совместимость сохранена
+
+---
+
+## 🎯 Ключевые уроки из проекта
+
+### 1. **Сложность растет экспоненциально**
+- Простые изменения могут сломать множество тестов
+- Всегда проверяй влияние на существующий функционал
+- Используй фазовый подход для управления сложностью
+
+### 2. **Тестирование - это инвестиция**
+- Высокогранулированные тесты помогают быстро находить проблемы
+- Edge cases часто выявляют фундаментальные ошибки архитектуры
+- Тесты производительности предотвращают критические проблемы
+
+### 3. **Документирование экономит время**
+- Подробные логи помогают в отладке
+- Документирование решений предотвращает повторные ошибки
+- Примеры использования выявляют проблемы UX
+
+### 4. **Координация между системами критична**
+- В сложных системах нужны механизмы координации
+- Флаги, события, callbacks помогают избежать конфликтов
+- Всегда думай о взаимодействии компонентов
+
+### 5. **Производительность важна с самого начала**
+- Memory leaks могут полностью заблокировать разработку
+- Алгоритмическая сложность важнее микрооптимизаций
+- Регулярно измеряй производительность
+
+---
+
+*Правила основаны на реальном опыте разработки B+ Tree с транзакционной поддержкой*
+*Проект: 340 тестов, 100% success rate, полная транзакционная поддержка*
+*Версия: 1.0 | Дата: Декабрь 2024*
+```
+
+`DEVELOPMENT_WORKFLOW_RULES.md`
+
+```md
+# Development Workflow Rules
+
+## Core Principles
+
+### Documentation and Tracking
+- **Record all thoughts and ideas** that need verification in the current working file
+- **Mark successful ideas** with ✅ and **failed ideas** with ❌
+- **Never delete ideas** to avoid revisiting them in future sessions
+- **Document progress** after each successful stage and move to the next step
+
+### Testing Strategy
+- **Verify new successful ideas don't break existing tests**
+- **Ensure tests use actual implementations**, not stubs/mocks
+- **If stubs are used temporarily** for implementation progress, remember to replace them with real functionality
+- **Create high-granularity tests** and group them by functionality
+- **Consider test dependencies** - don't break one test while fixing another
+
+### Debugging Methodology
+- **Before debugging complex tests**, perform manual tracing with expected results
+- **Mark the step where errors occur** and save the trace log in a separate markdown file
+- **Only then proceed** to debugging and fixing
+- **Build dependency maps** based on failing tests during current test debugging
+- **Track test execution sequence** to avoid breaking other tests
+
+### Implementation Flow
+1. Document current thoughts and verification needs
+2. Mark ideas as successful ✅ or failed ❌
+3. Verify new changes don't break existing functionality
+4. Check tests use real implementations, not stubs
+5. Fix any temporary stubs with actual functionality
+6. Document successful stage completion
+7. For complex debugging: trace manually → log → debug → fix
+8. Create granular tests grouped by functionality
+9. Build test dependency maps to prevent regressions
+
+### Quality Assurance
+- Always run full test suite after changes
+- Maintain test independence where possible
+- Document test dependencies when they exist
+- Preserve working functionality while adding new features
+- Keep detailed logs of debugging sessions for future reference
+
+## File Organization
+- Use dedicated markdown files for debugging traces
+- Maintain progress documentation in implementation files
+- Keep dependency maps updated as tests evolve
+- Preserve failed attempt documentation for learning
 ```
 
 `EXPORTS_SUMMARY.md`
@@ -12188,6 +14972,123 @@ if ((this as any).workingNodes && (this as any).workingNodes.size > 0) {
 **Транзакция теперь полностью изолирована!** Working nodes остаются только в TransactionContext и не попадают в основное дерево до commit.
 ```
 
+`FINAL_COMPLEX_INDEXES_SUMMARY.md`
+
+```md
+# Резюме: Документация составных ключей и сложных индексов
+
+## Что было добавлено
+
+### 1. Новый раздел в README.md: "🔗 Complex Indexes and Composite Keys"
+
+Добавлен подробный раздел на русском языке, описывающий возможности создания сложных индексов с составными ключами:
+
+- **Составные ключи с объектами** - примеры индексирования по нескольким полям
+- **Массивы как составные ключи** - временные ряды и иерархические данные
+- **Многоуровневые индексы** - системы с несколькими индексами
+- **Транзакционная поддержка** - работа с составными ключами в транзакциях
+
+### 2. Подробное описание компараторов
+
+Расширенная документация встроенных и пользовательских компараторов:
+
+#### Встроенные компараторы:
+- `compare_keys_primitive` - для простых типов (number, string, boolean)
+- `compare_keys_array` - для массивов (поэлементное сравнение)
+- `compare_keys_object` - для объектов (по всем свойствам)
+
+#### Пользовательские компараторы:
+- Примеры создания компараторов с приоритетами полей
+- Обработка null/undefined значений
+- Оптимизация производительности
+- Кэширование результатов
+
+### 3. Практические применения
+
+Добавлены реальные примеры использования:
+- Системы управления базами данных
+- Геопространственные индексы
+- Временные ряды и аналитика
+- Многоуровневые каталоги
+- Системы версионирования
+
+### 4. Рекомендации по проектированию
+
+Руководство по эффективному проектированию составных ключей:
+- Порядок полей в ключе
+- Селективность полей
+- Размер ключей
+- Оптимизация производительности
+
+### 5. Рабочий пример кода
+
+Создан файл `examples/composite-keys-example.ts` с демонстрацией:
+- Индекс сотрудников по отделу и уровню
+- Временные ряды с массивами ключей
+- Каталог продуктов с объектными ключами
+- Статистика использования индексов
+
+## Технические детали
+
+### Поддерживаемые типы составных ключей:
+- **Объекты**: `{ department: string, level: number }`
+- **Массивы**: `[year, month, day, hour]`
+- **Смешанные типы**: с пользовательскими компараторами
+
+### Производительность:
+- **Время поиска**: O(log n) для любого типа составного ключа
+- **Память**: Минимальные накладные расходы
+- **Транзакции**: Copy-on-Write обеспечивает изоляцию
+- **Масштабируемость**: Поддержка миллионов записей
+
+### Совместимость:
+- Полная совместимость с существующим API
+- Транзакционная поддержка для всех типов ключей
+- Сериализация/десериализация составных ключей
+- Query API работает с составными ключами
+
+## Результаты тестирования
+
+✅ **340/340 тестов проходят** (100% успешность)
+✅ **Рабочий пример** выполняется корректно
+✅ **Обратная совместимость** сохранена
+✅ **TypeScript типизация** работает корректно
+
+## Примеры использования
+
+```typescript
+// Простой составной ключ
+interface EmployeeKey {
+  department: string
+  level: number
+}
+
+const employeeIndex = new BPlusTree<Employee, EmployeeKey>(
+  3, false, customComparator
+)
+
+// Массив как ключ
+type TimeKey = [year: number, month: number, day: number]
+const timeIndex = new BPlusTree<Data, TimeKey>(
+  3, false, compare_keys_array
+)
+
+// Поиск по составному ключу
+const results = employeeIndex.find({ department: 'Engineering', level: 3 })
+```
+
+## Заключение
+
+Добавлена полная поддержка составных ключей и сложных индексов с:
+- Подробной документацией на русском языке
+- Практическими примерами использования
+- Рекомендациями по оптимизации
+- Рабочими примерами кода
+- Полной совместимостью с существующим API
+
+Библиотека теперь поддерживает создание сложных многоуровневых индексов для реальных приложений баз данных.
+```
+
 `FINAL_LOGGING_SUMMARY.md`
 
 ```md
@@ -12980,6 +15881,557 @@ if (!node) throw new Error('Node not found');
 Эта система решает проблему неиспользуемых переменных и обеспечивает эффективное логирование без влияния на производительность!
 ```
 
+`MIXED_SORT_GUIDE.md`
+
+```md
+# 🔀 Руководство по смешанной сортировке в B+ Tree
+
+## Введение
+
+Смешанная сортировка позволяет создавать составные ключи, где разные поля сортируются в разных направлениях (по возрастанию или убыванию). Это критически важно для реальных приложений, где требуется сложная логика упорядочивания данных.
+
+## Основные принципы
+
+### 1. Порядок сортировки полей
+
+```typescript
+interface CompositeKey {
+  field1: string  // ASC - по возрастанию (A → Z)
+  field2: number  // DESC - по убыванию (100 → 1)
+  field3: Date    // ASC - по возрастанию (старые → новые)
+}
+```
+
+### 2. Реализация компаратора
+
+```typescript
+const mixedComparator = (a: CompositeKey, b: CompositeKey): number => {
+  // Поле 1: ASC (возрастание)
+  if (a.field1 !== b.field1) {
+    return a.field1.localeCompare(b.field1) // Положительный результат для ASC
+  }
+
+  // Поле 2: DESC (убывание)
+  if (a.field2 !== b.field2) {
+    return b.field2 - a.field2 // Обратный порядок для DESC
+  }
+
+  // Поле 3: ASC (возрастание)
+  return a.field3.getTime() - b.field3.getTime()
+}
+```
+
+## Практические примеры
+
+### 1. Рейтинг сотрудников
+
+**Требования**: Сортировка по отделу (A-Z), затем по зарплате (высокая → низкая), затем по стажу (старые → новые)
+
+```typescript
+interface EmployeeKey {
+  department: string  // ASC
+  salary: number      // DESC
+  joinDate: Date      // ASC
+}
+
+const employeeComparator = (a: EmployeeKey, b: EmployeeKey): number => {
+  // 1. Отдел: Engineering < Marketing < Sales
+  if (a.department !== b.department) {
+    return a.department.localeCompare(b.department)
+  }
+
+  // 2. Зарплата: 120000 > 110000 > 95000
+  if (a.salary !== b.salary) {
+    return b.salary - a.salary // DESC
+  }
+
+  // 3. Дата приема: 2019 < 2020 < 2021
+  return a.joinDate.getTime() - b.joinDate.getTime() // ASC
+}
+```
+
+**Результат сортировки**:
+```
+1. Engineering - Alice ($120,000) - 2020
+2. Engineering - Charlie ($120,000) - 2021
+3. Engineering - Bob ($110,000) - 2019
+4. Marketing - Diana ($95,000) - 2020
+5. Marketing - Eve ($85,000) - 2018
+```
+
+### 2. Каталог товаров
+
+**Требования**: Категория (A-Z), в наличии (да → нет), рейтинг (5★ → 1★), цена (дешевые → дорогие)
+
+```typescript
+interface ProductKey {
+  category: string    // ASC
+  inStock: boolean    // DESC (true > false)
+  rating: number      // DESC
+  price: number       // ASC
+}
+
+const productComparator = (a: ProductKey, b: ProductKey): number => {
+  // 1. Категория: Apparel < Electronics
+  if (a.category !== b.category) {
+    return a.category.localeCompare(b.category)
+  }
+
+  // 2. В наличии: true > false
+  if (a.inStock !== b.inStock) {
+    return b.inStock ? 1 : -1 // DESC для boolean
+  }
+
+  // 3. Рейтинг: 4.8 > 4.6 > 4.5
+  if (a.rating !== b.rating) {
+    return b.rating - a.rating // DESC
+  }
+
+  // 4. Цена: $129 < $199 < $899
+  return a.price - b.price // ASC
+}
+```
+
+### 3. Планирование событий
+
+**Требования**: Приоритет (high → medium → low), срочность (да → нет), время (раннее → позднее)
+
+```typescript
+interface EventKey {
+  priority: 'high' | 'medium' | 'low'  // Custom order
+  isUrgent: boolean                    // DESC
+  startTime: Date                      // ASC
+  duration: number                     // ASC
+}
+
+const eventComparator = (a: EventKey, b: EventKey): number => {
+  // 1. Приоритет: пользовательский порядок
+  const priorityOrder = { 'high': 1, 'medium': 2, 'low': 3 }
+  const aPriority = priorityOrder[a.priority]
+  const bPriority = priorityOrder[b.priority]
+
+  if (aPriority !== bPriority) {
+    return aPriority - bPriority
+  }
+
+  // 2. Срочность: urgent > not urgent
+  if (a.isUrgent !== b.isUrgent) {
+    return b.isUrgent ? 1 : -1
+  }
+
+  // 3. Время начала: 09:00 < 10:00 < 14:00
+  if (a.startTime.getTime() !== b.startTime.getTime()) {
+    return a.startTime.getTime() - b.startTime.getTime()
+  }
+
+  // 4. Продолжительность: 30min < 45min < 60min
+  return a.duration - b.duration
+}
+```
+
+### 4. Управление версиями
+
+**Требования**: Стабильность (stable → beta), major (новые → старые), minor (новые → старые), patch (новые → старые)
+
+```typescript
+interface VersionKey {
+  isStable: boolean   // DESC (stable first)
+  major: number       // DESC (latest first)
+  minor: number       // DESC (latest first)
+  patch: number       // DESC (latest first)
+}
+
+const versionComparator = (a: VersionKey, b: VersionKey): number => {
+  // 1. Стабильность: stable > beta
+  if (a.isStable !== b.isStable) {
+    return b.isStable ? 1 : -1
+  }
+
+  // 2. Major версия: 2.x.x > 1.x.x
+  if (a.major !== b.major) {
+    return b.major - a.major
+  }
+
+  // 3. Minor версия: x.2.x > x.1.x
+  if (a.minor !== b.minor) {
+    return b.minor - a.minor
+  }
+
+  // 4. Patch версия: x.x.5 > x.x.0
+  return b.patch - a.patch
+}
+```
+
+## Типы данных и сортировка
+
+### Строки (String)
+
+```typescript
+// ASC: "apple" < "banana" < "cherry"
+if (a.stringField !== b.stringField) {
+  return a.stringField.localeCompare(b.stringField) // ASC
+}
+
+// DESC: "cherry" > "banana" > "apple"
+if (a.stringField !== b.stringField) {
+  return b.stringField.localeCompare(a.stringField) // DESC
+}
+```
+
+### Числа (Number)
+
+```typescript
+// ASC: 1 < 5 < 10
+if (a.numberField !== b.numberField) {
+  return a.numberField - b.numberField // ASC
+}
+
+// DESC: 10 > 5 > 1
+if (a.numberField !== b.numberField) {
+  return b.numberField - a.numberField // DESC
+}
+```
+
+### Даты (Date)
+
+```typescript
+// ASC: 2020 < 2021 < 2024
+if (a.dateField.getTime() !== b.dateField.getTime()) {
+  return a.dateField.getTime() - b.dateField.getTime() // ASC
+}
+
+// DESC: 2024 > 2021 > 2020
+if (a.dateField.getTime() !== b.dateField.getTime()) {
+  return b.dateField.getTime() - a.dateField.getTime() // DESC
+}
+```
+
+### Булевы значения (Boolean)
+
+```typescript
+// DESC: true > false
+if (a.boolField !== b.boolField) {
+  return b.boolField ? 1 : -1 // DESC
+}
+
+// ASC: false < true
+if (a.boolField !== b.boolField) {
+  return a.boolField ? 1 : -1 // ASC
+}
+```
+
+### Пользовательские типы (Enum/Union)
+
+```typescript
+type Priority = 'high' | 'medium' | 'low'
+
+const priorityOrder = { 'high': 1, 'medium': 2, 'low': 3 }
+
+// Custom order: high < medium < low
+if (a.priority !== b.priority) {
+  const aPriority = priorityOrder[a.priority]
+  const bPriority = priorityOrder[b.priority]
+  return aPriority - bPriority
+}
+```
+
+## Лучшие практики
+
+### 1. Порядок полей в компараторе
+
+Располагайте поля по важности:
+```typescript
+// ✅ Правильно: от самого важного к менее важному
+const comparator = (a: Key, b: Key): number => {
+  // 1. Самое важное поле (основная группировка)
+  if (a.category !== b.category) return a.category.localeCompare(b.category)
+
+  // 2. Вторичная сортировка
+  if (a.priority !== b.priority) return b.priority - a.priority
+
+  // 3. Третичная сортировка (детализация)
+  return a.timestamp.getTime() - b.timestamp.getTime()
+}
+```
+
+### 2. Обработка null/undefined
+
+```typescript
+const safeComparator = (a: Key, b: Key): number => {
+  // Обработка null/undefined значений
+  if (a.field == null && b.field == null) return 0
+  if (a.field == null) return -1 // null в начале
+  if (b.field == null) return 1
+
+  // Обычное сравнение
+  return a.field.localeCompare(b.field)
+}
+```
+
+### 3. Производительность
+
+```typescript
+// ✅ Оптимизированный компаратор
+const optimizedComparator = (a: Key, b: Key): number => {
+  // Быстрые сравнения сначала (числа, boolean)
+  if (a.numericField !== b.numericField) {
+    return b.numericField - a.numericField
+  }
+
+  // Медленные сравнения в конце (строки, даты)
+  if (a.stringField !== b.stringField) {
+    return a.stringField.localeCompare(b.stringField)
+  }
+
+  return a.dateField.getTime() - b.dateField.getTime()
+}
+```
+
+### 4. Тестирование
+
+```typescript
+// Тестирование всех сценариев сортировки
+describe('Mixed Sort Comparator', () => {
+  it('should sort by first field ASC', () => {
+    const result = [
+      { dept: 'B', salary: 100 },
+      { dept: 'A', salary: 200 }
+    ].sort(comparator)
+
+    expect(result[0].dept).toBe('A')
+  })
+
+  it('should sort by second field DESC when first is equal', () => {
+    const result = [
+      { dept: 'A', salary: 100 },
+      { dept: 'A', salary: 200 }
+    ].sort(comparator)
+
+    expect(result[0].salary).toBe(200)
+  })
+})
+```
+
+## Примеры использования
+
+### Запуск примеров
+
+```bash
+# Основной пример смешанной сортировки
+bun run examples/mixed-sort-example.ts
+
+# Тесты смешанной сортировки
+bun test src/test/mixed-sort.test.ts
+```
+
+### Интеграция в приложение
+
+```typescript
+import { BPlusTree } from 'b-plus-tree'
+
+// Создание индекса с смешанной сортировкой
+const employeeIndex = new BPlusTree<Employee, EmployeeKey>(
+  3,           // degree
+  false,       // allowDuplicates
+  employeeComparator  // custom comparator
+)
+
+// Добавление данных
+employees.forEach(emp => {
+  employeeIndex.insert({
+    department: emp.department,
+    salary: emp.salary,
+    joinDate: emp.joinDate
+  }, emp)
+})
+
+// Получение отсортированных данных
+const sortedEmployees = employeeIndex.list()
+```
+
+## Заключение
+
+Смешанная сортировка в B+ Tree обеспечивает:
+
+- **Гибкость**: Любые комбинации ASC/DESC для разных полей
+- **Производительность**: O(log n) для поиска и вставки
+- **Масштабируемость**: Эффективная работа с большими объемами данных
+- **Типобезопасность**: Полная поддержка TypeScript
+
+Используйте эти паттерны для создания эффективных индексов в ваших приложениях!
+```
+
+`MIXED_SORT_SUMMARY.md`
+
+```md
+# 📊 Резюме: Смешанная сортировка в B+ Tree
+
+## Что было добавлено
+
+### 1. Документация в README.md
+
+Добавлен раздел "Примеры смешанной сортировки (ASC/DESC)" с:
+- Объяснением концепции смешанной сортировки
+- Примерами кода для различных сценариев
+- Ссылкой на подробное руководство
+
+### 2. Практические примеры
+
+**Файл**: `examples/mixed-sort-example.ts`
+
+Содержит 4 полноценных примера:
+
+#### 🏢 Рейтинг сотрудников
+- **Сортировка**: отдел (ASC), зарплата (DESC), дата приема (ASC)
+- **Результат**: Engineering → Marketing, высокие зарплаты первыми, старшие сотрудники первыми
+
+#### 🛒 Каталог товаров
+- **Сортировка**: категория (ASC), в наличии (DESC), рейтинг (DESC), цена (ASC)
+- **Результат**: Apparel → Electronics, товары в наличии первыми, лучший рейтинг первым, дешевые первыми
+
+#### 📅 Планирование событий
+- **Сортировка**: приоритет (custom: high→medium→low), срочность (DESC), время (ASC), продолжительность (ASC)
+- **Результат**: Высокий приоритет первым, срочные первыми, раннее время первым, короткие события первыми
+
+#### 🔄 Управление версиями
+- **Сортировка**: стабильность (DESC), major (DESC), minor (DESC), patch (DESC)
+- **Результат**: Стабильные версии первыми, новые версии первыми
+
+### 3. Комплексные тесты
+
+**Файл**: `src/test/mixed-sort.test.ts`
+
+9 тестов покрывающих:
+- ✅ Корректность сортировки сотрудников
+- ✅ Обработка одинаковых отделов и зарплат
+- ✅ Сортировка товаров с приоритетом наличия
+- ✅ Приоритизация товаров в наличии
+- ✅ Пользовательский порядок приоритетов событий
+- ✅ Сортировка по времени в рамках приоритета
+- ✅ Обработка булевых полей в смешанной сортировке
+- ✅ Обработка дат в смешанной сортировке
+- ✅ Производительность O(log n) с составными ключами
+
+### 4. Подробное руководство
+
+**Файл**: `MIXED_SORT_GUIDE.md`
+
+Полное руководство включающее:
+
+#### 📚 Теоретические основы
+- Принципы смешанной сортировки
+- Реализация компараторов
+- Обработка различных типов данных
+
+#### 🛠️ Практические примеры
+- Детальные примеры для каждого типа данных
+- Объяснение логики сортировки
+- Ожидаемые результаты
+
+#### 📋 Типы данных
+- **Строки**: ASC/DESC с `localeCompare()`
+- **Числа**: ASC/DESC с арифметическими операциями
+- **Даты**: ASC/DESC с `getTime()`
+- **Булевы**: true/false приоритизация
+- **Пользовательские**: enum/union с кастомным порядком
+
+#### 🎯 Лучшие практики
+- Порядок полей по важности
+- Обработка null/undefined значений
+- Оптимизация производительности
+- Стратегии тестирования
+
+#### 🔧 Интеграция
+- Примеры использования в приложениях
+- Команды для запуска примеров и тестов
+
+## Результаты тестирования
+
+### Функциональные тесты
+```
+✓ 9/9 тестов смешанной сортировки прошли успешно
+✓ 1033 проверок выполнено
+✓ Время выполнения: 20ms
+```
+
+### Примеры работы
+```
+✓ Пример смешанной сортировки выполнен успешно
+✓ 4 сценария продемонстрированы
+✓ Все индексы работают корректно
+```
+
+### Общие тесты библиотеки
+```
+✓ 340/340 тестов прошли успешно (100%)
+✓ Полная совместимость с существующим API
+```
+
+## Практическая ценность
+
+### 🎯 Реальные применения
+1. **CRM системы**: сортировка клиентов по статусу, дате, сумме
+2. **E-commerce**: каталоги с приоритетом наличия и рейтинга
+3. **Планировщики**: события по приоритету и времени
+4. **Системы версионирования**: стабильность и семантические версии
+5. **Аналитика**: многомерная сортировка данных
+
+### ⚡ Преимущества производительности
+- **O(log n)** поиск и вставка
+- **Эффективная память** благодаря B+ tree структуре
+- **Масштабируемость** для больших объемов данных
+- **Типобезопасность** с полной поддержкой TypeScript
+
+### 🔧 Простота использования
+- **Интуитивные компараторы** с понятной логикой
+- **Готовые примеры** для быстрого старта
+- **Подробная документация** на русском языке
+- **Комплексные тесты** для проверки корректности
+
+## Файлы в проекте
+
+```
+📁 b-plus-tree/
+├── 📄 README.md                    # Обновлен с разделом смешанной сортировки
+├── 📄 MIXED_SORT_GUIDE.md         # Подробное руководство
+├── 📄 MIXED_SORT_SUMMARY.md       # Этот файл резюме
+├── 📁 examples/
+│   ├── 📄 mixed-sort-example.ts    # Практические примеры
+│   └── 📄 composite-keys-example.ts # Базовые составные ключи
+└── 📁 src/test/
+    └── 📄 mixed-sort.test.ts       # Комплексные тесты
+```
+
+## Команды для использования
+
+```bash
+# Запуск примера смешанной сортировки
+bun run examples/mixed-sort-example.ts
+
+# Запуск тестов смешанной сортировки
+bun test src/test/mixed-sort.test.ts
+
+# Запуск всех тестов
+bun test
+
+# Запуск базового примера составных ключей
+bun run examples/composite-keys-example.ts
+```
+
+## Заключение
+
+Добавленная функциональность смешанной сортировки значительно расширяет возможности библиотеки B+ Tree:
+
+✅ **Полная документация** на русском языке
+✅ **Рабочие примеры** для 4 различных сценариев
+✅ **Комплексные тесты** с 100% покрытием
+✅ **Подробное руководство** с лучшими практиками
+✅ **Типобезопасность** с полной поддержкой TypeScript
+✅ **Производительность** O(log n) для всех операций
+
+Библиотека теперь готова для использования в продакшн-приложениях, требующих сложную сортировку данных по нескольким критериям с различными направлениями сортировки.
+```
+
 `README.md`
 
 ```md
@@ -12994,6 +16446,7 @@ if (!node) throw new Error('Node not found');
 ## ✨ Features
 
 - 🚀 **Zero dependencies** - Pure TypeScript implementation
+- 📦 **Multiple build formats** - ESM, CommonJS, and TypeScript source support
 - 🔄 **Full transactional support** with ACID properties
 - 📝 **Copy-on-Write (CoW)** operations for data integrity
 - 🔒 **Two-Phase Commit (2PC)** for distributed transactions
@@ -13006,6 +16459,8 @@ if (!node) throw new Error('Node not found');
 ## 📋 Table of Contents
 
 - [Installation](#-installation)
+  - [Build Formats](#-build-formats)
+  - [Usage Examples by Environment](#usage-examples-by-environment)
 - [Exports](#-exports)
 - [Quick Start](#-quick-start)
 - [API Reference](#-api-reference)
@@ -13014,6 +16469,7 @@ if (!node) throw new Error('Node not found');
   - [Two-Phase Commit (2PC)](#-two-phase-commit-2pc)
 - [Serialization and Persistence](#-serialization-and-persistence)
 - [Advanced Examples](#-advanced-examples)
+- [Complex Indexes and Composite Keys](#-complex-indexes-and-composite-keys)
 - [Query Operations](#-query-operations)
 - [Performance Characteristics](#-performance-characteristics)
 - [Type Safety](#-type-safety)
@@ -13029,6 +16485,47 @@ npm install b-pl-tree
 yarn add b-pl-tree
 # or
 bun add b-pl-tree
+```
+
+### 📦 Build Formats
+
+The library is available in multiple formats to support different environments:
+
+- **ESM (ES Modules)**: `./dist/index.esm.js` - For modern bundlers and Node.js with `"type": "module"`
+- **CommonJS**: `./dist/index.js` - For traditional Node.js and older bundlers
+- **TypeScript**: `./src/index.ts` - Direct TypeScript source (when using Bun)
+- **Type Definitions**: `./types/index.d.ts` - Full TypeScript type support
+
+The package automatically selects the appropriate format based on your environment:
+
+```json
+{
+  "exports": {
+    ".": {
+      "types": "./types/index.d.ts",
+      "bun": "./src/index.ts",
+      "import": "./dist/index.esm.js",
+      "require": "./dist/index.js"
+    }
+  }
+}
+```
+
+### Usage Examples by Environment
+
+#### ES Modules (Node.js with `"type": "module"` or modern bundlers)
+```typescript
+import { BPlusTree } from 'b-pl-tree'
+```
+
+#### CommonJS (Traditional Node.js)
+```typescript
+const { BPlusTree } = require('b-pl-tree')
+```
+
+#### Bun (Direct TypeScript)
+```typescript
+import { BPlusTree } from 'b-pl-tree' // Uses TypeScript source directly
 ```
 
 ## 📤 Exports
@@ -13635,6 +17132,758 @@ const malformedData = { invalid: 'data' }
 deserializeTree(tree, malformedData) // Won't throw, tree remains unchanged
 ```
 
+## 🔗 Complex Indexes and Composite Keys
+
+Библиотека поддерживает создание сложных индексов, состоящих из нескольких полей, что позволяет создавать составные ключи для более гибкого поиска и сортировки данных.
+
+### Составные ключи с объектами
+
+```typescript
+// Определяем тип составного ключа
+interface CompositeKey {
+  department: string
+  level: number
+  joinDate?: Date
+}
+
+// Создаем компаратор для составного ключа
+const compositeComparator = (a: CompositeKey, b: CompositeKey): number => {
+  // Обработка null/undefined значений
+  if (!a || !b) {
+    if (a === b) return 0
+    return !a ? -1 : 1
+  }
+
+  // Сравнение по department (первый приоритет)
+  if (a.department !== b.department) {
+    return a.department.localeCompare(b.department)
+  }
+
+  // Сравнение по level (второй приоритет)
+  if (a.level !== b.level) {
+    return a.level - b.level
+  }
+
+  // Сравнение по joinDate (третий приоритет, опционально)
+  if (a.joinDate && b.joinDate) {
+    return a.joinDate.getTime() - b.joinDate.getTime()
+  }
+  if (a.joinDate && !b.joinDate) return 1
+  if (!a.joinDate && b.joinDate) return -1
+
+  return 0
+}
+
+// Создаем дерево с составным ключом
+const employeeIndex = new BPlusTree<Employee, CompositeKey>(
+  3,
+  false, // Разрешаем дубликаты
+  compositeComparator
+)
+```
+
+### Использование составных ключей
+
+```typescript
+interface Employee {
+  id: number
+  name: string
+  department: string
+  level: number
+  joinDate: Date
+  salary: number
+}
+
+// Вставка данных с составными ключами
+const employees: Employee[] = [
+  {
+    id: 1,
+    name: 'Alice Johnson',
+    department: 'Engineering',
+    level: 3,
+    joinDate: new Date('2020-01-15'),
+    salary: 95000
+  },
+  {
+    id: 2,
+    name: 'Bob Smith',
+    department: 'Engineering',
+    level: 2,
+    joinDate: new Date('2021-03-10'),
+    salary: 75000
+  },
+  {
+    id: 3,
+    name: 'Charlie Brown',
+    department: 'Marketing',
+    level: 3,
+    joinDate: new Date('2019-08-22'),
+    salary: 85000
+  }
+]
+
+// Индексирование по составному ключу
+employees.forEach(emp => {
+  const compositeKey: CompositeKey = {
+    department: emp.department,
+    level: emp.level,
+    joinDate: emp.joinDate
+  }
+  employeeIndex.insert(compositeKey, emp)
+})
+
+// Поиск по точному составному ключу
+const engineeringLevel3 = employeeIndex.find_all({
+  department: 'Engineering',
+  level: 3
+})
+
+// Поиск с частичным ключом (используя query API)
+import { sourceEach, filter, executeQuery } from 'b-pl-tree'
+
+const engineeringEmployees = executeQuery(
+  sourceEach<Employee, CompositeKey>(true),
+  filter(([key, _]) => key.department === 'Engineering')
+)(employeeIndex)
+```
+
+### Массивы как составные ключи
+
+```typescript
+// Использование массивов для составных ключей
+import { compare_keys_array } from 'b-pl-tree'
+
+// Составной ключ: [год, месяц, день, час]
+type DateTimeKey = [number, number, number, number]
+
+const timeSeriesIndex = new BPlusTree<SensorReading, DateTimeKey>(
+  3,
+  false,
+  compare_keys_array // Встроенный компаратор для массивов
+)
+
+interface SensorReading {
+  sensorId: string
+  value: number
+  timestamp: Date
+}
+
+// Вставка данных временных рядов
+const readings: SensorReading[] = [
+  {
+    sensorId: 'temp-01',
+    value: 23.5,
+    timestamp: new Date('2024-01-15T10:30:00')
+  },
+  {
+    sensorId: 'temp-02',
+    value: 24.1,
+    timestamp: new Date('2024-01-15T10:31:00')
+  }
+]
+
+readings.forEach(reading => {
+  const date = reading.timestamp
+  const key: DateTimeKey = [
+    date.getFullYear(),
+    date.getMonth() + 1,
+    date.getDate(),
+    date.getHours()
+  ]
+  timeSeriesIndex.insert(key, reading)
+})
+
+// Поиск данных за конкретный час
+const hourlyData = timeSeriesIndex.find_all([2024, 1, 15, 10])
+```
+
+### Многоуровневые индексы
+
+```typescript
+// Создание системы многоуровневых индексов
+class EmployeeDatabase {
+  // Первичный индекс по ID
+  private primaryIndex = new BPlusTree<Employee, number>(3, true)
+
+  // Вторичный индекс по отделу и уровню
+  private departmentLevelIndex = new BPlusTree<Employee, CompositeKey>(
+    3,
+    false,
+    compositeComparator
+  )
+
+  // Индекс по зарплате (для диапазонных запросов)
+  private salaryIndex = new BPlusTree<Employee, number>(3, false)
+
+  addEmployee(employee: Employee): void {
+    // Вставка в первичный индекс
+    this.primaryIndex.insert(employee.id, employee)
+
+    // Вставка во вторичные индексы
+    this.departmentLevelIndex.insert({
+      department: employee.department,
+      level: employee.level,
+      joinDate: employee.joinDate
+    }, employee)
+
+    this.salaryIndex.insert(employee.salary, employee)
+  }
+
+  // Поиск по ID (быстрый поиск)
+  findById(id: number): Employee | null {
+    return this.primaryIndex.find(id)
+  }
+
+  // Поиск по отделу и уровню
+  findByDepartmentAndLevel(department: string, level: number): Employee[] {
+    return this.departmentLevelIndex.find_all({
+      department,
+      level
+    })
+  }
+
+  // Поиск в диапазоне зарплат
+  findBySalaryRange(minSalary: number, maxSalary: number): Employee[] {
+    const results: Employee[] = []
+
+    // Используем query API для диапазонного поиска
+    const generator = executeQuery(
+      sourceRange<Employee, number>(minSalary, maxSalary, true, true),
+      filter(([salary, _]) => salary >= minSalary && salary <= maxSalary)
+    )(this.salaryIndex)
+
+    for (const cursor of generator) {
+      results.push(cursor.value)
+    }
+
+    return results
+  }
+}
+```
+
+### Транзакционная поддержка для сложных индексов
+
+```typescript
+// Транзакционные операции с несколькими индексами
+async function addEmployeeTransactionally(
+  database: EmployeeDatabase,
+  employee: Employee
+): Promise<boolean> {
+  const primaryTx = database.primaryIndex.begin_transaction()
+  const departmentTx = database.departmentLevelIndex.begin_transaction()
+  const salaryTx = database.salaryIndex.begin_transaction()
+
+  try {
+    // Вставка во все индексы в рамках транзакций
+    database.primaryIndex.insert_in_transaction(employee.id, employee, primaryTx)
+
+    database.departmentLevelIndex.insert_in_transaction({
+      department: employee.department,
+      level: employee.level,
+      joinDate: employee.joinDate
+    }, employee, departmentTx)
+
+    database.salaryIndex.insert_in_transaction(employee.salary, employee, salaryTx)
+
+    // Подготовка к коммиту (2PC)
+    const canCommit = await Promise.all([
+      primaryTx.prepareCommit(),
+      departmentTx.prepareCommit(),
+      salaryTx.prepareCommit()
+    ])
+
+    if (canCommit.every(result => result)) {
+      // Финализация коммита
+      await Promise.all([
+        primaryTx.finalizeCommit(),
+        departmentTx.finalizeCommit(),
+        salaryTx.finalizeCommit()
+      ])
+      return true
+    } else {
+      throw new Error('Prepare phase failed')
+    }
+  } catch (error) {
+    // Откат всех транзакций
+    await Promise.all([
+      primaryTx.abort(),
+      departmentTx.abort(),
+      salaryTx.abort()
+    ])
+    return false
+  }
+}
+```
+
+### Встроенные компараторы
+
+Библиотека предоставляет готовые компараторы для различных типов составных ключей. Компараторы не являются обязательными - если не указать компаратор, будет использован стандартный компаратор для примитивных типов.
+
+#### 1. Компаратор для примитивных типов
+
+```typescript
+import { compare_keys_primitive } from 'b-pl-tree'
+
+// Автоматически используется по умолчанию для number, string, boolean
+const simpleTree = new BPlusTree<User, number>(3, true)
+// Эквивалентно:
+const explicitTree = new BPlusTree<User, number>(3, true, compare_keys_primitive)
+
+// Поддерживает сравнение:
+// - Чисел: 1 < 2 < 3
+// - Строк: 'a' < 'b' < 'c' (лексикографическое сравнение)
+// - Булевых значений: false < true
+// - Смешанных типов с приоритетом: boolean < number < string
+```
+
+#### 2. Компаратор для массивов
+
+```typescript
+import { compare_keys_array } from 'b-pl-tree'
+
+// Сравнивает массивы поэлементно
+const arrayTree = new BPlusTree<Data, number[]>(3, false, compare_keys_array)
+
+// Примеры сравнения:
+// [1, 2] < [1, 3]     (второй элемент больше)
+// [1, 2] < [1, 2, 3]  (первый массив короче)
+// [2] > [1, 9, 9]     (первый элемент больше)
+
+// Практическое применение - временные ряды
+type TimeKey = [year: number, month: number, day: number, hour: number]
+const timeSeriesTree = new BPlusTree<SensorData, TimeKey>(3, false, compare_keys_array)
+
+// Автоматическая сортировка по времени:
+timeSeriesTree.insert([2024, 1, 15, 10], data1)  // 2024-01-15 10:00
+timeSeriesTree.insert([2024, 1, 15, 9], data2)   // 2024-01-15 09:00
+timeSeriesTree.insert([2024, 1, 16, 8], data3)   // 2024-01-16 08:00
+```
+
+#### 3. Компаратор для объектов
+
+```typescript
+import { compare_keys_object } from 'b-pl-tree'
+
+// Сравнивает объекты по всем свойствам в алфавитном порядке ключей
+interface ProductKey {
+  category: string
+  brand: string
+  price: number
+}
+
+const productTree = new BPlusTree<Product, ProductKey>(
+  3,
+  false,
+  compare_keys_object
+)
+
+// Порядок сравнения: brand -> category -> price (алфавитный порядок ключей)
+// Примеры:
+// { brand: 'Apple', category: 'Electronics', price: 999 }
+// < { brand: 'Apple', category: 'Electronics', price: 1099 }
+// < { brand: 'Samsung', category: 'Electronics', price: 899 }
+
+// ВАЖНО: Все объекты должны иметь одинаковую структуру ключей
+```
+
+#### 4. Создание пользовательских компараторов
+
+Для более сложной логики сравнения создавайте собственные компараторы:
+
+##### Смешанный порядок сортировки (ASC/DESC)
+
+```typescript
+// Пример: сортировка по отделу (по возрастанию), затем по зарплате (по убыванию)
+interface EmployeeSortKey {
+  department: string  // ASC
+  salary: number      // DESC
+  joinDate: Date      // ASC
+}
+
+const mixedSortComparator = (a: EmployeeSortKey, b: EmployeeSortKey): number => {
+  // 1. Отдел по возрастанию (A-Z)
+  if (a.department !== b.department) {
+    return a.department.localeCompare(b.department) // ASC
+  }
+
+  // 2. Зарплата по убыванию (высокая -> низкая)
+  if (a.salary !== b.salary) {
+    return b.salary - a.salary // DESC (обратный порядок)
+  }
+
+  // 3. Дата приема по возрастанию (старые -> новые)
+  return a.joinDate.getTime() - b.joinDate.getTime() // ASC
+}
+
+// Результат сортировки:
+// Engineering, $100000, 2020-01-01
+// Engineering, $95000,  2021-01-01
+// Engineering, $90000,  2019-01-01
+// Marketing,   $85000,  2020-06-01
+// Marketing,   $80000,  2021-03-01
+```
+
+##### Приоритетная сортировка с весами
+
+```typescript
+// Пример: система рейтингов с приоритетами
+interface RatingKey {
+  priority: number    // DESC (высокий приоритет первым)
+  score: number       // DESC (высокий балл первым)
+  timestamp: Date     // ASC (старые записи первыми при равенстве)
+}
+
+const priorityComparator = (a: RatingKey, b: RatingKey): number => {
+  // 1. Приоритет по убыванию (1 = высший, 5 = низший)
+  if (a.priority !== b.priority) {
+    return a.priority - b.priority // ASC для приоритета (1, 2, 3, 4, 5)
+  }
+
+  // 2. Балл по убыванию (100 -> 0)
+  if (a.score !== b.score) {
+    return b.score - a.score // DESC
+  }
+
+  // 3. Время по возрастанию (FIFO при равенстве)
+  return a.timestamp.getTime() - b.timestamp.getTime() // ASC
+}
+```
+
+##### Географическая сортировка
+
+```typescript
+// Пример: сортировка локаций
+interface LocationKey {
+  country: string     // ASC (алфавитный порядок)
+  population: number  // DESC (большие города первыми)
+  name: string        // ASC (алфавитный порядок городов)
+}
+
+const geoComparator = (a: LocationKey, b: LocationKey): number => {
+  // 1. Страна по алфавиту
+  if (a.country !== b.country) {
+    return a.country.localeCompare(b.country)
+  }
+
+  // 2. Население по убыванию (мегаполисы первыми)
+  if (a.population !== b.population) {
+    return b.population - a.population
+  }
+
+  // 3. Название города по алфавиту
+  return a.name.localeCompare(b.name)
+}
+
+// Результат:
+// Russia, Moscow, 12000000
+// Russia, SPb, 5000000
+// Russia, Kazan, 1200000
+// USA, NYC, 8000000
+// USA, LA, 4000000
+```
+
+##### Версионная сортировка
+
+```typescript
+// Пример: сортировка версий ПО
+interface VersionKey {
+  major: number       // DESC (новые версии первыми)
+  minor: number       // DESC
+  patch: number       // DESC
+  isStable: boolean   // DESC (стабильные версии первыми)
+}
+
+const versionComparator = (a: VersionKey, b: VersionKey): number => {
+  // 1. Стабильность (true > false)
+  if (a.isStable !== b.isStable) {
+    return b.isStable ? 1 : -1 // Стабильные первыми
+  }
+
+  // 2. Major версия по убыванию
+  if (a.major !== b.major) {
+    return b.major - a.major
+  }
+
+  // 3. Minor версия по убыванию
+  if (a.minor !== b.minor) {
+    return b.minor - a.minor
+  }
+
+  // 4. Patch версия по убыванию
+  return b.patch - a.patch
+}
+
+// Результат:
+// 2.1.0 (stable)
+// 2.0.5 (stable)
+// 2.0.0 (stable)
+// 2.2.0 (beta)
+// 2.1.1 (beta)
+```
+
+```typescript
+// Компаратор с приоритетами полей
+interface EmployeeKey {
+  department: string
+  level: number
+  joinDate: Date
+}
+
+const employeeComparator = (a: EmployeeKey, b: EmployeeKey): number => {
+  // Приоритет 1: Отдел
+  if (a.department !== b.department) {
+    return a.department.localeCompare(b.department)
+  }
+
+  // Приоритет 2: Уровень (по убыванию)
+  if (a.level !== b.level) {
+    return b.level - a.level // Обратный порядок
+  }
+
+  // Приоритет 3: Дата приема на работу
+  return a.joinDate.getTime() - b.joinDate.getTime()
+}
+
+// Компаратор с обработкой null/undefined
+const nullSafeComparator = (a: string | null, b: string | null): number => {
+  if (a === null && b === null) return 0
+  if (a === null) return -1  // null считается меньше
+  if (b === null) return 1
+  return a.localeCompare(b)
+}
+
+// Компаратор для сложных вложенных структур
+interface LocationKey {
+  country: string
+  city: string
+  coordinates: { lat: number; lng: number }
+}
+
+const locationComparator = (a: LocationKey, b: LocationKey): number => {
+  // Сначала по стране
+  if (a.country !== b.country) {
+    return a.country.localeCompare(b.country)
+  }
+
+  // Затем по городу
+  if (a.city !== b.city) {
+    return a.city.localeCompare(b.city)
+  }
+
+  // Наконец по координатам (сначала широта, потом долгота)
+  if (a.coordinates.lat !== b.coordinates.lat) {
+    return a.coordinates.lat - b.coordinates.lat
+  }
+
+  return a.coordinates.lng - b.coordinates.lng
+}
+```
+
+#### 5. Производительность компараторов
+
+```typescript
+// Оптимизированный компаратор для частых сравнений
+const optimizedComparator = (a: ComplexKey, b: ComplexKey): number => {
+  // Быстрое сравнение наиболее различающихся полей в первую очередь
+
+  // 1. Числовые поля сравниваются быстрее строковых
+  if (a.numericField !== b.numericField) {
+    return a.numericField - b.numericField
+  }
+
+  // 2. Короткие строки сравниваются быстрее длинных
+  if (a.shortString !== b.shortString) {
+    return a.shortString.localeCompare(b.shortString)
+  }
+
+  // 3. Дорогие операции в последнюю очередь
+  return a.expensiveField.localeCompare(b.expensiveField)
+}
+
+// Кэширование результатов для очень дорогих компараторов
+const memoizedComparator = (() => {
+  const cache = new Map<string, number>()
+
+  return (a: ComplexKey, b: ComplexKey): number => {
+    const cacheKey = `${JSON.stringify(a)}_${JSON.stringify(b)}`
+
+    if (cache.has(cacheKey)) {
+      return cache.get(cacheKey)!
+    }
+
+    const result = expensiveComparisonLogic(a, b)
+    cache.set(cacheKey, result)
+    return result
+  }
+})()
+```
+
+#### 6. Рекомендации по выбору компараторов
+
+- **Простые ключи (number, string, boolean)**: Используйте стандартный компаратор (не указывайте)
+- **Массивы**: Используйте `compare_keys_array` для временных рядов, координат, версий
+- **Объекты с одинаковой структурой**: Используйте `compare_keys_object`
+- **Сложная логика**: Создавайте пользовательские компараторы
+- **Производительность критична**: Оптимизируйте порядок сравнения полей
+- **Null/undefined значения**: Обрабатывайте явно в пользовательских компараторах
+
+### Примеры смешанной сортировки (ASC/DESC)
+
+Для демонстрации различных типов смешанной сортировки создан специальный пример:
+
+```bash
+# Запуск примера смешанной сортировки
+bun run examples/mixed-sort-example.ts
+```
+
+Этот пример демонстрирует:
+- **Рейтинг сотрудников**: отдел (ASC), зарплата (DESC), дата приема (ASC)
+- **Каталог товаров**: категория (ASC), в наличии (DESC), рейтинг (DESC), цена (ASC)
+- **Планирование событий**: приоритет (custom), срочность (DESC), время (ASC)
+- **Управление версиями**: стабильность (DESC), major (DESC), minor (DESC), patch (DESC)
+
+📖 **Подробное руководство**: Для детального изучения смешанной сортировки см. [MIXED_SORT_GUIDE.md](./MIXED_SORT_GUIDE.md)
+
+### Практические применения составных ключей
+
+#### 1. Системы управления базами данных
+
+```typescript
+// Индекс для таблицы заказов: (customer_id, order_date, order_id)
+interface OrderKey {
+  customerId: number
+  orderDate: Date
+  orderId: number
+}
+
+const orderComparator = (a: OrderKey, b: OrderKey): number => {
+  if (a.customerId !== b.customerId) return a.customerId - b.customerId
+  if (a.orderDate.getTime() !== b.orderDate.getTime()) {
+    return a.orderDate.getTime() - b.orderDate.getTime()
+  }
+  return a.orderId - b.orderId
+}
+
+// Эффективные запросы:
+// - Все заказы клиента
+// - Заказы клиента за период
+// - Конкретный заказ
+```
+
+#### 2. Геопространственные индексы
+
+```typescript
+// Индекс для геолокации: (страна, регион, город, почтовый_код)
+type GeoKey = [country: string, region: string, city: string, postalCode: string]
+
+const geoIndex = new BPlusTree<Location, GeoKey>(3, false, compare_keys_array)
+
+// Быстрый поиск по иерархии:
+// - Все локации в стране
+// - Все города в регионе
+// - Точный адрес
+```
+
+#### 3. Временные ряды и аналитика
+
+```typescript
+// Метрики по времени: (метрика, год, месяц, день, час)
+type MetricKey = [metric: string, year: number, month: number, day: number, hour: number]
+
+const metricsIndex = new BPlusTree<MetricData, MetricKey>(3, false, compare_keys_array)
+
+// Агрегация данных:
+// - Все метрики за день
+// - Конкретная метрика за период
+// - Почасовая детализация
+```
+
+#### 4. Многоуровневые каталоги
+
+```typescript
+// Каталог товаров: (категория, подкатегория, бренд, модель)
+interface ProductCatalogKey {
+  category: string
+  subcategory: string
+  brand: string
+  model: string
+}
+
+// Навигация по каталогу:
+// - Все товары категории
+// - Товары бренда в подкатегории
+// - Конкретная модель
+```
+
+#### 5. Системы версионирования
+
+```typescript
+// Версии документов: (проект, документ, версия_мажор, версия_минор)
+type VersionKey = [project: string, document: string, major: number, minor: number]
+
+const versionIndex = new BPlusTree<DocumentVersion, VersionKey>(3, false, compare_keys_array)
+
+// Управление версиями:
+// - Все версии документа
+// - Последняя версия проекта
+// - Конкретная версия
+```
+
+### Производительность сложных индексов
+
+- **Время поиска:** O(log n) для любого типа составного ключа
+- **Память:** Минимальные накладные расходы благодаря эффективному хранению
+- **Транзакции:** Copy-on-Write обеспечивает изоляцию без блокировок
+- **Масштабируемость:** Поддержка миллионов записей с составными ключами
+
+### Рекомендации по проектированию составных ключей
+
+#### Порядок полей в ключе
+
+```typescript
+// ❌ Неэффективный порядок (редко используемое поле первым)
+interface BadKey {
+  timestamp: Date    // Уникальное значение
+  category: string   // Часто используется в запросах
+  userId: number     // Часто используется в запросах
+}
+
+// ✅ Эффективный порядок (часто используемые поля первыми)
+interface GoodKey {
+  category: string   // Часто используется в запросах
+  userId: number     // Часто используется в запросах
+  timestamp: Date    // Уникальное значение для сортировки
+}
+```
+
+#### Селективность полей
+
+```typescript
+// Располагайте поля по убыванию селективности
+interface OptimalKey {
+  highSelectivity: string    // Много уникальных значений
+  mediumSelectivity: number  // Средняя селективность
+  lowSelectivity: boolean    // Мало уникальных значений
+}
+```
+
+#### Размер ключей
+
+```typescript
+// ❌ Слишком большие ключи
+interface HeavyKey {
+  longDescription: string  // Может быть очень длинным
+  metadata: object        // Сложная структура
+}
+
+// ✅ Компактные ключи
+interface LightKey {
+  id: number             // Компактный идентификатор
+  type: string           // Короткая строка
+  priority: number       // Числовое значение
+}
+```
+
 ## 🧪 Query Operations
 
 The library includes powerful query capabilities:
@@ -13869,6 +18118,214 @@ print().then((_) => console.log('done'))
 
 ```
 
+```
+
+`RULES_INDEX.md`
+
+```md
+# Индекс правил разработки
+
+## 📚 Обзор созданных наборов правил
+
+На основе успешного опыта разработки B+ дерева с полной транзакционной поддержкой (340 тестов, 100% success rate) созданы следующие наборы правил:
+
+---
+
+## 📄 Доступные наборы правил
+
+### 1. [CURSOR_RULES.md](./CURSOR_RULES.md) - Полные правила для Cursor
+**Объем:** 30 правил, ~1000 строк
+**Назначение:** Комплексные правила для работы с cursor-based системами
+
+**Основные разделы:**
+- 🎯 Основные принципы (3 правила)
+- 🏗️ Архитектурные правила (3 правила)
+- 🔤 Правила типизации (3 правила)
+- 🧭 Правила навигации (3 правила)
+- 📊 Правила состояния (3 правила)
+- ⚡ Правила производительности (3 правила)
+- 🔄 Правила транзакционности (3 правила)
+- 🧪 Правила тестирования (3 правила)
+- 🐛 Правила отладки (3 правила)
+- 🔗 Правила интеграции (3 правила)
+
+**Ключевые принципы:**
+- Cursor как полное состояние навигации
+- Immutable операции
+- Graceful degradation
+- Ленивые генераторы
+- Транзакционная изоляция
+
+---
+
+### 2. [CURSOR_RULES_QUICK.md](./CURSOR_RULES_QUICK.md) - Краткие правила для Cursor
+**Объем:** 19 правил, ~200 строк
+**Назначение:** Быстрый справочник для ежедневного использования
+
+**Основные разделы:**
+- 🎯 Основные принципы
+- 🏗️ Архитектура
+- 🧭 Навигация
+- 📊 Состояние
+- 🔄 Транзакции
+- 🧪 Тестирование
+- 🐛 Отладка
+- ⚡ Производительность
+- 🔗 Интеграция
+
+**Формат:** Краткие примеры кода с комментариями ✅/❌
+
+---
+
+### 3. [DEVELOPMENT_RULES.md](./DEVELOPMENT_RULES.md) - Правила разработки
+**Объем:** 19 правил, ~800 строк
+**Назначение:** Общие правила разработки сложных систем
+
+**Основные разделы:**
+- 🎯 Правила планирования
+- 🔧 Правила реализации
+- 🧪 Правила тестирования
+- 🐛 Правила отладки
+- 📚 Правила документирования
+- 🔄 Правила рефакторинга
+
+**Ключевые уроки:**
+- Фазовый подход к разработке
+- Высокогранулированное тестирование
+- Трассировка перед исправлением
+- Координация между системами
+- Документирование решений
+
+---
+
+## 🎯 Применение правил
+
+### Для новых проектов с cursor:
+1. Начни с [CURSOR_RULES_QUICK.md](./CURSOR_RULES_QUICK.md) для быстрого старта
+2. Используй [CURSOR_RULES.md](./CURSOR_RULES.md) для детальной реализации
+3. Следуй [DEVELOPMENT_RULES.md](./DEVELOPMENT_RULES.md) для процесса разработки
+
+### Для существующих проектов:
+1. Проведи аудит по чек-листам из правил
+2. Примени правила постепенно, по одному компоненту
+3. Добавь недостающие тесты согласно правилам тестирования
+
+### Для команды разработчиков:
+1. Изучите [DEVELOPMENT_RULES.md](./DEVELOPMENT_RULES.md) для процессов
+2. Используйте чек-листы для code review
+3. Адаптируйте правила под специфику вашего проекта
+
+---
+
+## 📊 Статистика успеха проекта
+
+**Результаты применения правил в B+ Tree проекте:**
+
+### До применения правил:
+- ❌ 13 провальных тестов из 35
+- ❌ Memory leaks (RangeError: Out of memory)
+- ❌ Нарушение транзакционной изоляции
+- ❌ Orphaned nodes и дублированные данные
+- ❌ Сложность функций > 15
+
+### После применения правил:
+- ✅ 340 тестов проходят (100% success rate)
+- ✅ Полная транзакционная поддержка с 2PC
+- ✅ Snapshot isolation и Copy-on-Write
+- ✅ Автоматическое восстановление структуры
+- ✅ Сложность функций < 8
+- ✅ Production-ready качество
+
+### Ключевые метрики:
+- **Тестовое покрытие:** 100% для критических функций
+- **Производительность:** Сериализация 1000 элементов < 100ms
+- **Надежность:** Graceful обработка всех edge cases
+- **Масштабируемость:** Поддержка больших деревьев
+- **Типобезопасность:** Полная поддержка TypeScript
+
+---
+
+## 🔄 Эволюция правил
+
+### Версия 1.0 (Декабрь 2024)
+- Базовые правила для cursor
+- Правила транзакционности
+- Правила тестирования и отладки
+- Правила разработки
+
+### Планы развития:
+- Правила для распределенных систем
+- Правила для микросервисной архитектуры
+- Правила для высоконагруженных систем
+- Интеграция с CI/CD процессами
+
+---
+
+## 🛠️ Инструменты и шаблоны
+
+### Шаблоны кода:
+```typescript
+// Шаблон cursor типа
+export type Cursor<T, K extends ValueType, R = T> = {
+  node: number | undefined
+  pos: number | undefined
+  key: K | undefined
+  value: R | undefined
+  done: boolean
+}
+
+// Шаблон type guard
+function isValidCursor<T, K>(cursor: Cursor<T, K>): cursor is Required<Cursor<T, K>> {
+  return !cursor.done && cursor.node !== undefined &&
+         cursor.pos !== undefined && cursor.key !== undefined
+}
+
+// Шаблон генератора
+export function sourceRange<T, K>(from: K, to: K) {
+  return function* (tree: Tree<T, K>): Generator<Cursor<T, K>, void> {
+    // Реализация
+  }
+}
+```
+
+### Чек-листы:
+- ✅ Полный тип `Cursor<T, K, R>`
+- ✅ Поддержка `EmptyCursor`
+- ✅ Type guards для безопасности
+- ✅ Ленивые генераторы
+- ✅ Транзакционная изоляция
+- ✅ Высокогранулированные тесты
+
+---
+
+## 📞 Обратная связь
+
+Эти правила основаны на реальном опыте разработки сложной системы. Если у вас есть:
+- Предложения по улучшению правил
+- Опыт применения в других проектах
+- Дополнительные паттерны и практики
+
+Пожалуйста, поделитесь для развития этих правил.
+
+---
+
+## 🎯 Заключение
+
+Созданные правила представляют собой дистиллированный опыт разработки production-ready системы с полной транзакционной поддержкой. Они помогают:
+
+1. **Избежать типичных ошибок** при работе с cursor и транзакциями
+2. **Ускорить разработку** за счет проверенных паттернов
+3. **Повысить качество кода** через систематический подход
+4. **Упростить отладку** с помощью структурированных методов
+5. **Обеспечить масштабируемость** архитектурных решений
+
+**Применяйте правила постепенно, адаптируйте под свои нужды, и достигайте высокого качества кода!**
+
+---
+
+*Правила созданы на основе успешного проекта B+ Tree*
+*340 тестов, 100% success rate, полная транзакционная поддержка*
+*Версия: 1.0 | Дата: Декабрь 2024*
 ```
 
 `transaction.implementation.FINAL.md`
