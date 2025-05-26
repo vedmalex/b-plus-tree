@@ -1,6 +1,11 @@
 import type { ValueType } from './Node'
+import type { ITransactionContext } from './TransactionContext'
+import type { BPlusTree } from './BPlusTree'
 
 export type Comparator<K extends ValueType> = (a?: K, b?: K) => number
+
+export type Transaction<T, K extends ValueType, R> =
+  (transactionContext: ITransactionContext<T, K>, tree: BPlusTree<T, K>) => Promise<R> | R
 
 export type UnaryFunction<T, R> = (source: T) => R
 
