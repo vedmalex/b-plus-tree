@@ -1,14 +1,28 @@
 {
 	"name": "b-pl-tree",
-	"version": "1.2.2",
+	"version": "1.2.3",
 	"description": "Production-ready B+ Tree with full transactional support, Copy-on-Write operations, and 2PC (Two-Phase Commit)",
-	"main": "./dist/index.js",
-	"types": "./types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./types/index.d.ts",
+      "bun": "./src/index.ts",
+      "import": "./dist/index.esm.js",
+      "require": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./types/index.d.ts",
 	"scripts": {
-		"prepublish": "npm run clean && npm run build",
-		"build": "bun build.ts && tsc -p tsconfig.json",
-		"watch": "tsc -w -p tsconfig.json",
-		"clean": "git clean -dfqX -- {types,dist}/** && rm -rf tsconfig.tsbuildinfo dist types",
+    "prepublish": "npm run clean && npm run build",
+    "build": "npm run build:all",
+    "watch": "tsc -w -p tsconfig.json",
+    "clean": "git clean -dfqX -- {types,dist,node_modules}/** && rm -rf tsconfig.tsbuildinfo dist types",
+    "build:esm": "TOOL=esbuild FORMAT=esm bun build.ts",
+    "build:cjs": "TOOL=esbuild FORMAT=cjs bun build.ts",
+    "build:bun:esm": "TOOL=bun FORMAT=esm bun build.ts",
+    "build:bun:cjs": "TOOL=bun FORMAT=cjs bun build.ts",
+    "build:bun": "npm run build:bun:cjs && npm run build:bun:esm",
+    "build:all": "npm run build:bun && tsc -p tsconfig.build.json",
 		"test": "vitest",
 		"test:debug": "DEBUG_BTREE=true vitest",
 		"test:verbose": "VERBOSE_BTREE=true vitest",

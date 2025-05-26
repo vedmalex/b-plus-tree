@@ -9,6 +9,7 @@
 ## ✨ Features
 
 - 🚀 **Zero dependencies** - Pure TypeScript implementation
+- 📦 **Multiple build formats** - ESM, CommonJS, and TypeScript source support
 - 🔄 **Full transactional support** with ACID properties
 - 📝 **Copy-on-Write (CoW)** operations for data integrity
 - 🔒 **Two-Phase Commit (2PC)** for distributed transactions
@@ -21,6 +22,8 @@
 ## 📋 Table of Contents
 
 - [Installation](#-installation)
+  - [Build Formats](#-build-formats)
+  - [Usage Examples by Environment](#usage-examples-by-environment)
 - [Exports](#-exports)
 - [Quick Start](#-quick-start)
 - [API Reference](#-api-reference)
@@ -44,6 +47,47 @@ npm install b-pl-tree
 yarn add b-pl-tree
 # or
 bun add b-pl-tree
+```
+
+### 📦 Build Formats
+
+The library is available in multiple formats to support different environments:
+
+- **ESM (ES Modules)**: `./dist/index.esm.js` - For modern bundlers and Node.js with `"type": "module"`
+- **CommonJS**: `./dist/index.js` - For traditional Node.js and older bundlers
+- **TypeScript**: `./src/index.ts` - Direct TypeScript source (when using Bun)
+- **Type Definitions**: `./types/index.d.ts` - Full TypeScript type support
+
+The package automatically selects the appropriate format based on your environment:
+
+```json
+{
+  "exports": {
+    ".": {
+      "types": "./types/index.d.ts",
+      "bun": "./src/index.ts",
+      "import": "./dist/index.esm.js",
+      "require": "./dist/index.js"
+    }
+  }
+}
+```
+
+### Usage Examples by Environment
+
+#### ES Modules (Node.js with `"type": "module"` or modern bundlers)
+```typescript
+import { BPlusTree } from 'b-pl-tree'
+```
+
+#### CommonJS (Traditional Node.js)
+```typescript
+const { BPlusTree } = require('b-pl-tree')
+```
+
+#### Bun (Direct TypeScript)
+```typescript
+import { BPlusTree } from 'b-pl-tree' // Uses TypeScript source directly
 ```
 
 ## 📤 Exports

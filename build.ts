@@ -1,72 +1,66 @@
 /// <reference types='@types/bun' />
+import path from 'path'
+import { createBunConfig, createConfig } from './bun.config.ts'
 import pkg from './package.json' assert { type: 'json' }
-import { builtinModules } from 'module'
-import { BuildConfig } from 'bun'
-
-interface BuilderConfig {
-  entrypoints?: string[] | string
-  outdir?: string
-  format?: 'esm' | 'cjs'
-  target?: 'node' | 'bun'
-  external?: string[]
-  sourcemap?: 'inline' | 'external' | boolean
-  splitting?: boolean
-  pkg: {
-    dependencies?: Record<string, string>
-    peerDependencies?: Record<string, string>
-    devDependencies?: Record<string, string>
-  }
-  define?: Record<string, string>
-}
-
-// Функция для Bun
-export function createBunConfig(config: BuilderConfig): BuildConfig {
-  const {
-    pkg,
-    entrypoints = ['src/index.ts'],
-    outdir = './dist',
-    target = 'node',
-    format = 'cjs',
-    external = [],
-    define = {
-      PRODUCTION: JSON.stringify(process.env.NODE_ENV === 'production'),
-    },
-    splitting = true,
-    sourcemap = 'inline',
-  } = config
-
-  const bunConfig: BuildConfig = {
-    entrypoints: Array.isArray(entrypoints) ? entrypoints : [entrypoints],
-    target,
-    define,
-    external: Object.keys(pkg.dependencies || {})
-      .concat(Object.keys(pkg.peerDependencies || {}))
-      .concat(Object.keys(pkg.devDependencies || {}))
-      .concat(builtinModules)
-      .concat(external),
-    outdir,
-    format,
-    splitting,
-    sourcemap,
-    minify: {
-      whitespace: false,
-      syntax: false,
-      identifiers: false,
-    },
-  }
-
-  return bunConfig
-}
+import { mkdir, copyFile, rm } from 'fs/promises'
 
 const entrypoints = ['src/index.ts']
+const format = process.env.FORMAT || 'cjs'
 
-// Create a Bun config from package.json
-const config = createBunConfig({
-  pkg,
-  entrypoints,
-})
-const result = await Bun.build(config)
+if (process.env.TOOL === 'bun') {
+  // Create a Bun config from package.json
+  const outdir = format === 'esm' ? './dist/esm' : './dist'
 
-if (!result.success) {
-  throw new AggregateError(result.logs, 'Build failed')
+  const config = createBunConfig({
+    pkg: pkg as any,
+    entrypoints,
+    sourcemap: 'external',
+    format: format as 'cjs' | 'esm',
+    outdir,
+  })
+
+  const result = await Bun.build(config)
+
+  if (!result.success) {
+    throw new AggregateError(result.logs, 'Build failed')
+  }
+
+  // Если это ESM формат, переименуем файл
+  if (format === 'esm') {
+    const outputFile = path.basename(entrypoints[0])
+    const outputName = outputFile.replace(/\.[^/.]+$/, '') // Удаляем расширение
+    const esmPath = path.join(outdir, outputName + '.js')
+    const targetPath = './dist/' + outputName + '.esm.js'
+
+    await mkdir(path.dirname(targetPath), { recursive: true })
+    await copyFile(esmPath, targetPath)
+    await rm(outdir, { recursive: true, force: true })
+  }
+} else {
+  const { build } = await import('esbuild')
+
+  // Для esbuild
+  // Определяем выходную директорию в зависимости от формата
+  const outdir = format === 'esm' ? './dist/esm' : './dist'
+  const outputFile = path.basename(entrypoints[0])
+  const outputName = outputFile.replace(/\.[^/.]+$/, '') // Удаляем расширение
+
+  const esbuildConfig = createConfig({
+    pkg: pkg as any,
+    entrypoints,
+    format: format as 'cjs' | 'esm',
+    outdir,
+  })
+
+  await build(esbuildConfig)
+
+  // Если это ESM формат, переименуем файл
+  if (format === 'esm') {
+    const esmPath = path.join(outdir, outputName + '.js')
+    const targetPath = './dist/' + outputName + '.esm.js'
+
+    await mkdir(path.dirname(targetPath), { recursive: true })
+    await copyFile(esmPath, targetPath)
+    await rm(outdir, { recursive: true, force: true })
+  }
 }

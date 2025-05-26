@@ -7,5 +7,5 @@
     "types": ["@types/bun"]
   },
   "include": ["src/**/*"],
-  "exclude": ["src/**/*.test.*", "**/node_modules/**"]
+  "exclude": ["**/demo/**", "**/*.test.ts", "**/node_modules/**"]
 }
