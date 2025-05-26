@@ -1,7 +1,7 @@
 {
 	"name": "b-pl-tree",
 	"version": "1.1.0",
-	"description": "Pretty simple b+ tree implementation on typescript",
+	"description": "Production-ready B+ Tree with full transactional support, Copy-on-Write operations, and 2PC (Two-Phase Commit)",
 	"main": "./dist/index.js",
 	"types": "./types/index.d.ts",
 	"scripts": {
