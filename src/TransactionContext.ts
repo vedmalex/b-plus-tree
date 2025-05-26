@@ -1,5 +1,6 @@
 import { Node, ValueType } from './Node';
 import type { BPlusTree } from './BPlusTree';
+import { transaction, debug, warn } from './logger';
 
 // Export ITransactionContext interface
 export interface ITransactionContext<T, K extends ValueType> {
@@ -127,47 +128,47 @@ export class TransactionContext<T, K extends ValueType> implements ITransactionC
       if (originalId !== undefined) {
         // If it's a working copy of an existing node, mark the original for deletion
         this._deletedNodes.add(originalId);
-        // console.log(`[markNodeForDeletion] Marking original node ${originalId} (from working copy ${nodeId}) for deletion.`);
+        transaction(`[markNodeForDeletion] Marking original node ${originalId} (from working copy ${nodeId}) for deletion.`);
       } else {
         // If it's a new node created within this transaction (no originalId),
         // mark the working copy ID for deletion. It won't be in treeSnapshot anyway.
         this._deletedNodes.add(nodeId);
-        // console.log(`[markNodeForDeletion] Marking new node ${nodeId} for deletion.`);
+        transaction(`[markNodeForDeletion] Marking new node ${nodeId} for deletion.`);
       }
 
       // Always remove the working copy from working nodes
       this._workingNodes.delete(nodeId);
-      // console.log(`[markNodeForDeletion] Removed working copy ${nodeId} from working nodes.`);
+      transaction(`[markNodeForDeletion] Removed working copy ${nodeId} from working nodes.`);
     } else {
       // The nodeId is not in working nodes, might be an original node ID
       // In this case, just mark it for deletion (assuming it exists in committed state)
       this._deletedNodes.add(nodeId);
-      // console.log(`[markNodeForDeletion] Marking node ${nodeId} (assumed original) for deletion.`);
+      transaction(`[markNodeForDeletion] Marking node ${nodeId} (assumed original) for deletion.`);
     }
 
     // If the node being marked for deletion was the working root, clear the working root.
     // We need to check against both nodeId (if it was a new root) and originalId (if root was a copy).
     if (this.workingRootId === nodeId ||
         (workingNode && (workingNode as any)._originalNodeId !== undefined && this.workingRootId === (workingNode as any)._originalNodeId)) {
-      // console.log(`[markNodeForDeletion] Working root ${this.workingRootId} is being deleted. Setting workingRootId to undefined.`);
+      transaction(`[markNodeForDeletion] Working root ${this.workingRootId} is being deleted. Setting workingRootId to undefined.`);
       this.workingRootId = undefined;
     }
   }
 
   public getNode(requestedId: number): Node<T, K> | undefined {
-    // console.log(`[getNode] Requested ID: ${requestedId}`);
+    debug(`[getNode] Requested ID: ${requestedId}`);
 
     // 1. Check working nodes by temporary ID
     const byTempId = this._workingNodes.get(requestedId);
     if (byTempId) {
-      // console.log(`[getNode] Found in workingNodes by temp ID ${requestedId}`);
+      debug(`[getNode] Found in workingNodes by temp ID ${requestedId}`);
       return byTempId;
     }
 
     // 2. Check working nodes by original ID if requestedId might be an original ID
     for (const workingNode of this._workingNodes.values()) {
       if ((workingNode as any)._originalNodeId === requestedId) {
-        // console.log(`[getNode] Found in workingNodes (temp ID: ${workingNode.id}) by original ID ${requestedId}`);
+        debug(`[getNode] Found in workingNodes (temp ID: ${workingNode.id}) by original ID ${requestedId}`);
         return workingNode;
       }
     }
@@ -175,18 +176,18 @@ export class TransactionContext<T, K extends ValueType> implements ITransactionC
     // 3. Check if the original node was marked for deletion
     // _deletedNodes is expected to store original IDs
     if (this._deletedNodes.has(requestedId)) {
-      // console.log(`[getNode] Node with original ID ${requestedId} is in _deletedNodes.`);
+      debug(`[getNode] Node with original ID ${requestedId} is in _deletedNodes.`);
       return undefined;
     }
 
     // 4. Check committed nodes in the tree snapshot by original ID
     const committedNode = this.treeSnapshot.nodes.get(requestedId);
     if (committedNode) {
-      // console.log(`[getNode] Found in treeSnapshot.nodes by original ID ${requestedId}`);
+      debug(`[getNode] Found in treeSnapshot.nodes by original ID ${requestedId}`);
       return committedNode;
     }
 
-    // console.log(`[getNode] Node ${requestedId} not found.`);
+    debug(`[getNode] Node ${requestedId} not found.`);
     return undefined;
   }
 

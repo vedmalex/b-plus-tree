@@ -749,7 +749,7 @@ describe('BPlusTree Transactional Operations', () => {
 
       tree.insert_in_transaction(null as unknown as number, 'A', txCtx)
 
-      expect(consoleWarnSpy).toHaveBeenCalledWith("[insert_in_transaction] Attempted to insert null key without a defaultEmpty set.")
+      expect(consoleWarnSpy).toHaveBeenCalledWith("[WARN] [insert_in_transaction] Attempted to insert null key without a defaultEmpty set.")
       expect(txCtx.workingNodes.size).toBe(0) // No nodes should be created or modified
       consoleWarnSpy.mockRestore()
     })

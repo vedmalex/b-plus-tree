@@ -1,6 +1,6 @@
 {
 	"name": "b-pl-tree",
-	"version": "1.1.0",
+	"version": "1.2.0",
 	"description": "Production-ready B+ Tree with full transactional support, Copy-on-Write operations, and 2PC (Two-Phase Commit)",
 	"main": "./dist/index.js",
 	"types": "./types/index.d.ts",
@@ -10,6 +10,9 @@
 		"watch": "tsc -w -p tsconfig.json",
 		"clean": "git clean -dfqX -- {types,dist}/** && rm -rf tsconfig.tsbuildinfo dist types",
 		"test": "vitest",
+		"test:debug": "DEBUG_BTREE=true vitest",
+		"test:verbose": "VERBOSE_BTREE=true vitest",
+		"test:silent": "NODE_ENV=production vitest",
     "test:ui": "vitest --ui",
     "coverage": "vitest run --coverage"
 	},

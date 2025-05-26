@@ -13,6 +13,7 @@ import { evaluate } from './eval'
 import { IBPlusTree } from './IBPlusTree'
 import { TransactionContext, ITransactionContext } from './TransactionContext'
 import type { Transaction } from './types'
+import { warn } from './logger'
 
 // Moved CowInsertResult type definition outside the class
 type CowInsertResult<T, K extends ValueType> = {
@@ -475,7 +476,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
 
   public insert_in_transaction(key: K, value: T, txCtx: ITransactionContext<T, K>): void {
     if (key === null && Object.is(this.defaultEmpty, Number.NEGATIVE_INFINITY as unknown as K)) {
-      // console.warn("[insert_in_transaction] Attempted to insert null key without a defaultEmpty set.");
+      warn("[insert_in_transaction] Attempted to insert null key without a defaultEmpty set.");
       return;
     }
 
