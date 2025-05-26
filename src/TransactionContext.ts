@@ -1,6 +1,6 @@
 import { Node, ValueType } from './Node';
 import type { BPlusTree } from './BPlusTree';
-import { transaction, debug, warn } from './logger';
+import { transaction, debug } from './logger';
 
 // Export ITransactionContext interface
 export interface ITransactionContext<T, K extends ValueType> {
@@ -289,7 +289,7 @@ export class TransactionContext<T, K extends ValueType> implements ITransactionC
 
     // Remove deleted nodes
     for (const deletedNodeId of this._deletedNodes) {
-      const existedBefore = finalNodeMap.has(deletedNodeId);
+      finalNodeMap.has(deletedNodeId);
       finalNodeMap.delete(deletedNodeId);
       // console.log(`[commit] Deleted node ${deletedNodeId} (existed before: ${existedBefore})`);
     }
@@ -563,11 +563,11 @@ export class TransactionContext<T, K extends ValueType> implements ITransactionC
   }
 }
 
-function getKeyByValue<K, V>(map: Map<K, V>, searchValue: V): K | undefined {
-  for (const [key, value] of map.entries()) {
-    if (value === searchValue) {
-      return key;
-    }
-  }
-  return undefined;
-}
+// function getKeyByValue<K, V>(map: Map<K, V>, searchValue: V): K | undefined {
+//   for (const [key, value] of map.entries()) {
+//     if (value === searchValue) {
+//       return key;
+//     }
+//   }
+//   return undefined;
+// }

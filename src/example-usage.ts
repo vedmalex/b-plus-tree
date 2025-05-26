@@ -1,7 +1,7 @@
 // Example of how to use the new logging systems
 
-import { Logger, debug, warn, transaction } from './logger';
-import { DEBUG, log, ifDev, trace, debugAssert, dumpTree } from './debug';
+import { debug, warn, transaction } from './logger';
+import { log, ifDev, trace, debugAssert, dumpTree } from './debug';
 
 // Example function showing different logging approaches
 export function exampleFunction() {

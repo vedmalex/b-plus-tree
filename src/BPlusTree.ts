@@ -1,5 +1,5 @@
 import { Cursor, find, list } from './eval'
-import { compare_keys_primitive, find_first_node, find_first_item, find_last_node, find_last_item, find_first_key, size, insert, remove_specific, remove, count, find_last_key } from './methods'
+import { compare_keys_primitive, find_first_node, find_first_item, find_last_node, find_last_item, find_first_key, size, insert, remove_specific, remove, count } from './methods'
 import { Node, PortableNode, ValueType, insert_key_immutable,split_leaf_cow, split_internal_node_cow, insert_into_parent_cow, update_state_immutable, update_min_max_immutable, remove_key_immutable,
   // CoW Sibling operations
   borrow_from_left_cow,
@@ -695,7 +695,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
           // console.warn(`[find_all_in_transaction] Node ${nodeId} not found in main tree either`);
 
           // FINAL FALLBACK: Try to find any working node that might be a replacement for this node
-          for (const [workingNodeId, workingNode] of txCtx.workingNodes) {
+          for (const [, workingNode] of txCtx.workingNodes) {
             const originalId = (workingNode as any)._originalNodeId;
             if (originalId === nodeId) {
               // console.warn(`[find_all_in_transaction] Found working node ${workingNodeId} as replacement for missing node ${nodeId}`);
@@ -1052,7 +1052,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
 
         // Update the leaf state after cleanup
         const updatedAdditionalLeaf = update_state_immutable(additionalLeaf, txCtx);
-        const finalAdditionalLeaf = update_min_max_immutable(updatedAdditionalLeaf, txCtx);
+        update_min_max_immutable(updatedAdditionalLeaf, txCtx);
         // console.log(`[remove_in_transaction] Additional leaf ${finalAdditionalLeaf.id} after cleanup: keys=[${finalAdditionalLeaf.keys.join(',')}], key_num=${finalAdditionalLeaf.key_num}`);
       }
 
@@ -1474,7 +1474,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
           }
 
           const updatedParent = update_state_immutable(parentWC, txCtx);
-          const finalParent = update_min_max_immutable(updatedParent, txCtx);
+          update_min_max_immutable(updatedParent, txCtx);
 
           // Mark empty node for deletion
           txCtx.markNodeForDeletion(emptyNodeId);
@@ -1855,17 +1855,16 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
       }
 
       // Remove duplicate nodes (keep the one with the lowest ID, which is likely the original)
-      for (const [signature, nodeIds] of nodeSignatures) {
+      for (const [, nodeIds] of nodeSignatures) {
         if (nodeIds.length > 1) {
           // console.warn(`[remove_in_transaction] ENHANCED CLEANUP: Found ${nodeIds.length} duplicate nodes with signature ${signature}: [${nodeIds.join(',')}]`);
 
           // Sort by ID and keep the first (lowest ID), remove the rest
           nodeIds.sort((a, b) => a - b);
-          const nodeToKeep = nodeIds[0];
           const nodesToRemove = nodeIds.slice(1);
 
           for (const duplicateNodeId of nodesToRemove) {
-            const isReachableFromRoot = this.isNodeReachableFromRoot(duplicateNodeId);
+            this.isNodeReachableFromRoot(duplicateNodeId);
             // console.warn(`[remove_in_transaction] ENHANCED CLEANUP: Removing duplicate node ${duplicateNodeId} (reachable=${isReachableFromRoot}), keeping node ${nodeToKeep}`);
             this.nodes.delete(duplicateNodeId);
           }
@@ -1958,15 +1957,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
     return { finalNodeId: currentWorkingNode.id, keyWasFound, newRootId: undefined, parentUpdatedToId: parentWasUpdatedDueToUnderflow, replacementNodeId: undefined, debug_leafRemoveResult };
   }
 
-  // Helper function to find working copy by original ID
-  private findWorkingCopyByOriginalId(originalId: number, txCtx: ITransactionContext<T, K>): Node<T, K> | undefined {
-    for (const workingNode of txCtx.workingNodes.values()) {
-      if ((workingNode as any)._originalNodeId === originalId) {
-        return workingNode;
-      }
-    }
-    return undefined;
-  }
+
 
   // Enhanced helper function to robustly find sibling nodes even after parent structure changes
   private findSiblingNode(parentNode: Node<T, K>, childIndex: number, direction: 'left' | 'right', txCtx: ITransactionContext<T, K>): Node<T, K> | undefined {
@@ -2067,7 +2058,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
     // Approach 3: Logical positioning based on key ranges (for cases where ID mapping is completely broken)
     if (childIndex === -1 && updatedChild.keys.length > 0) {
       const childMinKey = updatedChild.keys[0];
-      const childMaxKey = updatedChild.keys[updatedChild.keys.length - 1];
+      updatedChild.keys[updatedChild.keys.length - 1];
 
       // console.warn(`[ensureParentChildSync] Child ${updatedChild.id} not found in parent ${updatedParent.id} children: [${updatedParent.children.join(',')}]. Attempting logical positioning based on keys.`);
       // console.warn(`[ensureParentChildSync] Child key range: [${childMinKey}, ${childMaxKey}], Parent keys: [${updatedParent.keys.join(',')}]`);
@@ -3375,7 +3366,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
 
     // DEBUG: Show leafNodes details
     // console.warn(`[findValidRoot] leafNodes details:`);
-    for (const leaf of leafNodes) {
+    for (const _ of leafNodes) {
       // console.warn(`[findValidRoot] Leaf ${leaf.id}: keys=[${leaf.keys.join(',')}]`);
     }
 
@@ -3445,7 +3436,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
       }
     }
 
-    for (const [nodeId, node] of allNodesToCheck) {
+    for (const [, node] of allNodesToCheck) {
       if (!node.leaf && node.children) {
         const validChildren: number[] = [];
         const orphanedChildren: number[] = [];
@@ -3510,7 +3501,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
     }
 
     // Only remove duplicates if there are MANY instances (3+) and they are clearly orphaned
-    for (const [signature, nodeIds] of allLeafNodes) {
+    for (const [, nodeIds] of allLeafNodes) {
       if (nodeIds.length > 2) {
         // console.log(`[removeDuplicateNodes] Found ${nodeIds.length} potential duplicate nodes with signature: ${signature}`);
 
@@ -3542,7 +3533,7 @@ export class BPlusTree<T, K extends ValueType> implements IBPlusTree<T, K> {
    * Helper function to remove a node from its parent references.
    */
   private removeNodeFromParents(nodeId: number): void {
-    for (const [parentId, parentNode] of this.nodes) {
+    for (const [, parentNode] of this.nodes) {
       if (!parentNode.leaf && parentNode.children.includes(nodeId)) {
         const childIndex = parentNode.children.indexOf(nodeId);
         parentNode.children.splice(childIndex, 1);

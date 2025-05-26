@@ -229,7 +229,7 @@ async function batchOperationsExample() {
   ]
 
   const sizeBefore = catalog.size
-  const success = await safeBatchInsert(newProducts)
+  await safeBatchInsert(newProducts)
   const sizeAfter = catalog.size
 
   console.log(`Catalog size before: ${sizeBefore}`)

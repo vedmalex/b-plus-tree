@@ -874,7 +874,7 @@ export function update_min_max_immutable<T, K extends ValueType>(
 ): Node<T, K> {
   // Always create a copy for CoW behavior, even if no changes are needed
   let workingNode = Node.copy(originalNode, transactionContext);
-  let madeCopyForThisUpdate = true; // We always make a copy now
+  // We always make a copy now
 
   // console.log(`[update_min_max_immutable] Called for node ${originalNode.id} (isLeaf: ${originalNode.leaf}, keys: [${originalNode.keys.join(',')}], current min: ${originalNode.min}, max: ${originalNode.max})`); // LOG REMOVED
 
@@ -1242,7 +1242,7 @@ export function insert_into_parent_cow<T, K extends ValueType>(
   // The original left child (now potentially a new copy due to split) also needs its _parent updated
   // if parentWorkingCopy itself is a new copy. This is implicitly handled if parentWorkingCopy.id is new.
   // And its _right pointer should point to newRightChildId.
-  const leftChild = transactionContext.getNode(parentWorkingCopy.children[childIndex]); // This might be an old ID if left child was split
+  transactionContext.getNode(parentWorkingCopy.children[childIndex]); // This might be an old ID if left child was split
                                                                   // We need the *updated* left child from the split.
                                                                   // This part needs careful handling of IDs.
                                                                   // For now, assume the calling context handles the left child's pointers correctly before this call,
@@ -1449,10 +1449,10 @@ export function merge_with_left_cow<T, K extends ValueType>(
         const childOriginal = transactionContext.getNode(childId);
         if (childOriginal) {
             let childWorkingCopy = transactionContext.getWorkingNode(childId);
-            let isNewCopy = false;
+            // let isNewCopy = false;
             if (!childWorkingCopy || childWorkingCopy.id === childOriginal.id) {
                 childWorkingCopy = Node.copy(childOriginal, transactionContext);
-                isNewCopy = true;
+                // isNewCopy = true;
             }
             childWorkingCopy._parent = finalNode.id;
             finalChildrenIds.push(childWorkingCopy.id); // Add the ID of the working copy
@@ -1609,10 +1609,10 @@ export function merge_with_right_cow<T, K extends ValueType>(
         const childOriginal = transactionContext.getNode(childId);
         if (childOriginal) {
             let childWorkingCopy = transactionContext.getWorkingNode(childId);
-            let isNewCopy = false;
+            // let isNewCopy = false;
             if (!childWorkingCopy || childWorkingCopy.id === childOriginal.id) {
                 childWorkingCopy = Node.copy(childOriginal, transactionContext);
-                isNewCopy = true;
+                // isNewCopy = true;
             }
             childWorkingCopy._parent = finalRightSibling.id;
             finalChildrenIds.push(childWorkingCopy.id);

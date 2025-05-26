@@ -9,8 +9,7 @@ import {
   update_min_max,
   update_state,
   ValueType,
-  merge_with_left_cow,
-  merge_with_right_cow,
+
   // unregister_node
 } from './Node'
 import { Comparator } from './types'
