@@ -21,6 +21,7 @@
 ## 📋 Table of Contents
 
 - [Installation](#-installation)
+- [Exports](#-exports)
 - [Quick Start](#-quick-start)
 - [API Reference](#-api-reference)
   - [Basic Operations](#basic-operations)
@@ -43,6 +44,98 @@ npm install b-pl-tree
 yarn add b-pl-tree
 # or
 bun add b-pl-tree
+```
+
+## 📤 Exports
+
+The library provides comprehensive exports for all functionality:
+
+### Core Classes and Types
+
+```typescript
+import {
+  BPlusTree,           // Main B+ tree class
+  Node,                // Node class for tree structure
+  TransactionContext,  // Transaction management
+
+  // Type definitions
+  PortableBPlusTree,   // Serializable tree format
+  ValueType,           // Supported key types (number | string | boolean)
+  PortableNode,        // Serializable node format
+  ITransactionContext, // Transaction interface
+  Comparator,          // Comparator function type
+  Transaction,         // Transaction function type
+  Cursor               // Query cursor type
+} from 'b-pl-tree'
+```
+
+### Serialization Utilities
+
+```typescript
+import {
+  serializeTree,       // Convert tree to portable format
+  deserializeTree,     // Load data into existing tree
+  createTreeFrom       // Create new tree from data
+} from 'b-pl-tree'
+```
+
+### Query System
+
+```typescript
+import {
+  query,               // Main query function
+
+  // Query operators
+  map,                 // Transform data
+  filter,              // Filter data
+  reduce,              // Aggregate data
+  forEach,             // Execute side effects
+
+  // Source functions
+  sourceEach,          // Iterate all items
+  sourceEq,            // Find exact matches
+  sourceGt,            // Find greater than
+  sourceLt,            // Find less than
+  sourceRange,         // Find within range
+
+  // Action functions
+  remove,              // Remove operations
+
+  // Evaluation utilities
+  executeQuery         // Execute query pipeline
+} from 'b-pl-tree'
+```
+
+### Utility Functions
+
+```typescript
+import {
+  print_node,                    // Debug tree structure
+  compare_keys_primitive,        // Compare primitive keys
+  compare_keys_array,           // Compare array keys
+  compare_keys_object           // Compare object keys
+} from 'b-pl-tree'
+```
+
+### Complete Import Example
+
+```typescript
+// Import everything you need
+import {
+  BPlusTree,
+  TransactionContext,
+  serializeTree,
+  deserializeTree,
+  query,
+  filter,
+  map,
+  type ValueType,
+  type Comparator
+} from 'b-pl-tree'
+
+// Ready to use!
+const tree = new BPlusTree<User, number>(3, false)
+const txCtx = new TransactionContext(tree)
 ```
 
 ## 🚀 Quick Start
