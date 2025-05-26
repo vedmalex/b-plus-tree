@@ -1,6 +1,6 @@
 {
 	"name": "b-pl-tree",
-	"version": "1.2.0",
+	"version": "1.2.1",
 	"description": "Production-ready B+ Tree with full transactional support, Copy-on-Write operations, and 2PC (Two-Phase Commit)",
 	"main": "./dist/index.js",
 	"types": "./types/index.d.ts",
