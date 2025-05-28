@@ -8,7 +8,7 @@ export { serializeTree, deserializeTree, createTreeFrom } from './BPlusTreeUtils
 
 // Transaction support
 export { TransactionContext } from './TransactionContext'
-export type { ITransactionContext } from './TransactionContext'
+export type { ITransactionContext, SavepointInfo, SavepointSnapshot } from './TransactionContext'
 
 // Query system
 export { query } from './types'

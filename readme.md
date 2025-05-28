@@ -2,7 +2,7 @@
 
 🎉 **Production-ready B+ Tree implementation with full transactional support, Copy-on-Write operations, and 2PC (Two-Phase Commit)**
 
-[![Tests](https://img.shields.io/badge/tests-340%2F340%20passing-brightgreen)](./src/test/)
+[![Tests](https://img.shields.io/badge/tests-373%2F373%20passing-brightgreen)](./src/test/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue)](https://www.typescriptlang.org/)
 [![Zero Dependencies](https://img.shields.io/badge/dependencies-zero-green)](./package.json)
 
@@ -13,11 +13,12 @@
 - 🔄 **Full transactional support** with ACID properties
 - 📝 **Copy-on-Write (CoW)** operations for data integrity
 - 🔒 **Two-Phase Commit (2PC)** for distributed transactions
+- 💾 **Savepoint support** for fine-grained transaction control
 - 🔍 **Snapshot isolation** between concurrent transactions
 - 📊 **Duplicate keys support** for non-unique indexes
 - ⚡ **High performance** with optimized B+ tree operations
 - 🛡️ **Type-safe** with full TypeScript support
-- 🧪 **100% test coverage** (340/340 tests passing)
+- 🧪 **100% test coverage** (373/373 tests passing)
 
 ## 📋 Table of Contents
 
@@ -30,6 +31,7 @@
   - [Basic Operations](#basic-operations)
   - [Transactional Operations](#-transactional-operations)
   - [Two-Phase Commit (2PC)](#-two-phase-commit-2pc)
+- [Savepoint Support](#-savepoint-support)
 - [Serialization and Persistence](#-serialization-and-persistence)
 - [Advanced Examples](#-advanced-examples)
 - [Complex Indexes and Composite Keys](#-complex-indexes-and-composite-keys)
@@ -108,6 +110,8 @@ import {
   ValueType,           // Supported key types (number | string | boolean)
   PortableNode,        // Serializable node format
   ITransactionContext, // Transaction interface
+  SavepointInfo,       // Savepoint information interface
+  SavepointSnapshot,   // Savepoint snapshot interface
   Comparator,          // Comparator function type
   Transaction,         // Transaction function type
   Cursor               // Query cursor type
@@ -175,12 +179,32 @@ import {
   filter,
   map,
   type ValueType,
-  type Comparator
+  type Comparator,
+  type SavepointInfo
 } from 'b-pl-tree'
 
 // Ready to use!
 const tree = new BPlusTree<User, number>(3, false)
 const txCtx = new TransactionContext(tree)
+
+// Example with savepoints
+async function exampleWithSavepoints() {
+  // Create savepoint
+  const savepointId = await txCtx.createSavepoint('checkpoint')
+
+  // Make changes
+  tree.insert_in_transaction(1, { id: 1, name: 'Alice' }, txCtx)
+
+  // Get savepoint info
+  const info: SavepointInfo | undefined = txCtx.getSavepointInfo(savepointId)
+  console.log('Savepoint info:', info)
+
+  // Rollback if needed
+  await txCtx.rollbackToSavepoint(savepointId)
+
+  // Commit transaction
+  await txCtx.commit()
+}
 ```
 
 ## 🚀 Quick Start
@@ -372,7 +396,356 @@ txCtx.finalizeCommit(): Promise<void>
 txCtx.abort(): Promise<void>
 ```
 
-## 🔍 Advanced Examples
+## 💾 Savepoint Support
+
+Savepoints provide fine-grained transaction control, allowing you to create named checkpoints within a transaction and rollback to specific points without aborting the entire transaction.
+
+### Basic Savepoint Usage
+
+```typescript
+import { TransactionContext } from 'b-pl-tree'
+
+// Create a transaction context
+const txCtx = new TransactionContext(tree)
+
+// Make some changes
+tree.insert_in_transaction(10, 'ten', txCtx)
+tree.insert_in_transaction(20, 'twenty', txCtx)
+
+// Create a savepoint
+const savepointId = await txCtx.createSavepoint('checkpoint-1')
+
+// Make more changes
+tree.insert_in_transaction(30, 'thirty', txCtx)
+tree.remove_in_transaction(10, txCtx)
+
+// Rollback to savepoint (reverts changes made after savepoint creation)
+await txCtx.rollbackToSavepoint(savepointId)
+
+// Now: 10='ten', 20='twenty' exist, but 30 and removal of 10 are reverted
+console.log(tree.find_in_transaction(10, txCtx)) // ['ten'] - restored
+console.log(tree.find_in_transaction(20, txCtx)) // ['twenty'] - remains
+console.log(tree.find_in_transaction(30, txCtx)) // undefined - reverted
+
+// Commit the transaction
+await txCtx.commit()
+```
+
+### Savepoint API
+
+#### Create Savepoint
+
+```typescript
+// Create a named savepoint
+const savepointId = await txCtx.createSavepoint(name: string): Promise<string>
+
+// Returns unique savepoint ID for later reference
+console.log(savepointId) // "sp-tx-1234567890-abc123-1-1234567890"
+```
+
+#### Rollback to Savepoint
+
+```typescript
+// Rollback to a specific savepoint
+await txCtx.rollbackToSavepoint(savepointId: string): Promise<void>
+
+// Reverts all changes made after the savepoint was created
+// Automatically removes any newer savepoints
+```
+
+#### Release Savepoint
+
+```typescript
+// Release a savepoint to free memory
+await txCtx.releaseSavepoint(savepointId: string): Promise<void>
+
+// Savepoint data is cleaned up, but transaction state remains unchanged
+```
+
+#### List and Inspect Savepoints
+
+```typescript
+// Get list of all savepoints (sorted by name)
+const savepoints = txCtx.listSavepoints(): string[]
+console.log(savepoints)
+// ["checkpoint-1 (sp-tx-...) - 2024-01-15T10:30:00.000Z"]
+
+// Get detailed information about a savepoint
+const info = txCtx.getSavepointInfo(savepointId: string): SavepointInfo | undefined
+console.log(info)
+// {
+//   savepointId: "sp-tx-1234567890-abc123-1-1234567890",
+//   name: "checkpoint-1",
+//   timestamp: 1705315800000,
+//   workingNodesCount: 2,
+//   deletedNodesCount: 0
+// }
+```
+
+### Nested Savepoints
+
+Savepoints support nesting - you can create multiple savepoints and rollback to any of them:
+
+```typescript
+const txCtx = new TransactionContext(tree)
+
+// Initial state
+tree.insert_in_transaction(1, 'one', txCtx)
+
+// First savepoint
+const sp1 = await txCtx.createSavepoint('level-1')
+tree.insert_in_transaction(2, 'two', txCtx)
+
+// Second savepoint (nested)
+const sp2 = await txCtx.createSavepoint('level-2')
+tree.insert_in_transaction(3, 'three', txCtx)
+
+// Third savepoint (nested deeper)
+const sp3 = await txCtx.createSavepoint('level-3')
+tree.insert_in_transaction(4, 'four', txCtx)
+
+// Rollback to level-2 (removes level-3 savepoint automatically)
+await txCtx.rollbackToSavepoint(sp2)
+
+// State: 1='one', 2='two', 3='three' (4 is reverted)
+// Available savepoints: level-1, level-2 (level-3 is removed)
+
+console.log(txCtx.listSavepoints().length) // 2
+```
+
+### Advanced Savepoint Examples
+
+#### Error Recovery with Savepoints
+
+```typescript
+async function complexOperation(txCtx: TransactionContext<string, number>) {
+  // Create savepoint before risky operation
+  const safepointId = await txCtx.createSavepoint('before-risky-operation')
+
+  try {
+    // Perform risky operations
+    tree.insert_in_transaction(100, 'hundred', txCtx)
+    tree.remove_in_transaction(50, txCtx) // Might fail
+
+    // Validate results
+    if (tree.find_in_transaction(100, txCtx) === undefined) {
+      throw new Error('Validation failed')
+    }
+
+    // Success - release savepoint
+    await txCtx.releaseSavepoint(safepointId)
+    return true
+
+  } catch (error) {
+    // Error - rollback to savepoint
+    console.log('Operation failed, rolling back:', error.message)
+    await txCtx.rollbackToSavepoint(safepointId)
+    return false
+  }
+}
+
+// Usage
+const txCtx = new TransactionContext(tree)
+const success = await complexOperation(txCtx)
+
+if (success) {
+  await txCtx.commit()
+} else {
+  await txCtx.abort()
+}
+```
+
+#### Batch Processing with Checkpoints
+
+```typescript
+async function batchProcessWithCheckpoints(
+  items: Array<[number, string]>,
+  checkpointInterval: number = 100
+) {
+  const txCtx = new TransactionContext(tree)
+  let lastCheckpoint: string | undefined
+
+  try {
+    for (let i = 0; i < items.length; i++) {
+      const [key, value] = items[i]
+
+      // Create checkpoint every N items
+      if (i % checkpointInterval === 0) {
+        if (lastCheckpoint) {
+          await txCtx.releaseSavepoint(lastCheckpoint)
+        }
+        lastCheckpoint = await txCtx.createSavepoint(`checkpoint-${i}`)
+      }
+
+      // Process item
+      tree.insert_in_transaction(key, value, txCtx)
+
+      // Validate item (example)
+      if (key < 0) {
+        throw new Error(`Invalid key: ${key}`)
+      }
+    }
+
+    // Success - commit all changes
+    await txCtx.commit()
+    return { success: true, processed: items.length }
+
+  } catch (error) {
+    // Error - rollback to last checkpoint
+    if (lastCheckpoint) {
+      console.log('Rolling back to last checkpoint')
+      await txCtx.rollbackToSavepoint(lastCheckpoint)
+
+      // Could continue processing from checkpoint or abort
+      await txCtx.abort()
+    } else {
+      await txCtx.abort()
+    }
+
+    return { success: false, error: error.message }
+  }
+}
+
+// Usage
+const result = await batchProcessWithCheckpoints([
+  [1, 'one'],
+  [2, 'two'],
+  [3, 'three']
+])
+```
+
+#### Multi-Stage Transaction with Savepoints
+
+```typescript
+async function multiStageTransaction() {
+  const txCtx = new TransactionContext(tree)
+
+  try {
+    // Stage 1: Data preparation
+    const stage1 = await txCtx.createSavepoint('stage-1-complete')
+    tree.insert_in_transaction(10, 'prepared-data', txCtx)
+
+    // Stage 2: Data transformation
+    const stage2 = await txCtx.createSavepoint('stage-2-complete')
+    tree.insert_in_transaction(20, 'transformed-data', txCtx)
+
+    // Stage 3: Data validation (might fail)
+    const stage3 = await txCtx.createSavepoint('stage-3-complete')
+    tree.insert_in_transaction(30, 'validated-data', txCtx)
+
+    // Simulate validation failure
+    const isValid = Math.random() > 0.5
+    if (!isValid) {
+      // Rollback to stage 2 and try alternative approach
+      await txCtx.rollbackToSavepoint(stage2)
+      tree.insert_in_transaction(31, 'alternative-data', txCtx)
+    }
+
+    // Final commit
+    await txCtx.commit()
+    console.log('Multi-stage transaction completed successfully')
+
+  } catch (error) {
+    console.log('Transaction failed:', error.message)
+    await txCtx.abort()
+  }
+}
+```
+
+### Savepoint Best Practices
+
+#### Memory Management
+
+```typescript
+// ✅ Good: Release savepoints when no longer needed
+const sp1 = await txCtx.createSavepoint('temp-checkpoint')
+// ... do work ...
+await txCtx.releaseSavepoint(sp1) // Free memory
+
+// ✅ Good: Savepoints are automatically cleaned up on commit/abort
+await txCtx.commit() // All savepoints are released
+
+// ❌ Avoid: Creating too many savepoints without cleanup
+for (let i = 0; i < 1000; i++) {
+  await txCtx.createSavepoint(`sp-${i}`) // Memory leak!
+}
+```
+
+#### Naming Conventions
+
+```typescript
+// ✅ Good: Descriptive names
+await txCtx.createSavepoint('before-user-validation')
+await txCtx.createSavepoint('after-data-import')
+await txCtx.createSavepoint('pre-calculation-phase')
+
+// ❌ Avoid: Generic names
+await txCtx.createSavepoint('sp1')
+await txCtx.createSavepoint('temp')
+```
+
+#### Error Handling
+
+```typescript
+// ✅ Good: Handle savepoint errors
+try {
+  await txCtx.rollbackToSavepoint('non-existent')
+} catch (error) {
+  console.log('Savepoint not found:', error.message)
+  // Handle gracefully
+}
+
+// ✅ Good: Check savepoint existence
+const info = txCtx.getSavepointInfo(savepointId)
+if (info) {
+  await txCtx.rollbackToSavepoint(savepointId)
+} else {
+  console.log('Savepoint no longer exists')
+}
+```
+
+### Savepoint Types and Interfaces
+
+```typescript
+import { SavepointInfo, SavepointSnapshot } from 'b-pl-tree'
+
+// Savepoint information
+interface SavepointInfo {
+  savepointId: string      // Unique identifier
+  name: string             // User-provided name
+  timestamp: number        // Creation timestamp
+  workingNodesCount: number // Number of modified nodes
+  deletedNodesCount: number // Number of deleted nodes
+}
+
+// Internal snapshot structure (for advanced use)
+interface SavepointSnapshot<T, K> {
+  savepointId: string
+  name: string
+  timestamp: number
+  workingRootId: number | undefined
+  workingNodesSnapshot: Map<number, Node<T, K>>
+  deletedNodesSnapshot: Set<number>
+}
+```
+
+### 📚 Complete Savepoint Example
+
+For a comprehensive demonstration of savepoint functionality, see the complete example:
+
+```bash
+# Run the savepoint example
+bun run examples/savepoint-example.ts
+```
+
+This example demonstrates:
+- **Multi-phase transactions** with savepoints at each stage
+- **Nested savepoint management** and rollback behavior
+- **Error recovery** using savepoints as safety checkpoints
+- **Batch processing** with checkpoint intervals
+- **Best practices** for savepoint naming and memory management
+
+## �� Advanced Examples
 
 ### Working with Complex Data
 
@@ -1574,109 +1947,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **📊 Status: Production Ready**
-**🧪 Tests: 340/340 Passing**
+**🧪 Tests: 373/373 Passing**
 **🔧 TypeScript: Full Support**
 **📦 Dependencies: Zero**
-
-```js
-import { BPlusTree } from '../types/BPlusTree'
-import { query } from '../types/types'
-import { map } from '../types/query/map'
-import { reduce } from '../types/query/reduce'
-import { filter } from '../types/query/filter'
-import { remove } from '../types/actions/remove'
-import { print_node } from '../types/print_node'
-import axios from 'axios'
-
-type Person = {
-  id?: number
-  name: string
-  age: number
-  ssn: string
-  page?: string
-}
-
-const tree = new BPlusTree<Person, number>(2, false)
-
-const addPerson = (inp: Person) => tree.insert(inp.id, inp)
-
-addPerson({
-  id: 0,
-  name: 'alex',
-  age: 42,
-  ssn: '000-0000-000001',
-  page: 'https://ya.ru/',
-})
-addPerson({
-  id: 1,
-  name: 'jame',
-  age: 45,
-  ssn: '000-0000-000002',
-  page: 'https://ya.ru/',
-})
-addPerson({
-  // id: 2,
-  name: 'mark',
-  age: 30,
-  ssn: '000-0000-000003',
-  page: 'https://ya.ru/',
-})
-addPerson({
-  id: 3,
-  name: 'simon',
-  age: 24,
-  ssn: '000-0000-00004',
-  page: 'https://ya.ru/',
-})
-addPerson({
-  id: 4,
-  name: 'jason',
-  age: 19,
-  ssn: '000-0000-000005',
-  page: 'https://ya.ru/',
-})
-addPerson({
-  id: 5,
-  name: 'jim',
-  age: 18,
-  ssn: '000-0000-000006',
-  page: 'https://ya.ru/',
-})
-addPerson({
-  id: 6,
-  name: 'jach',
-  age: 29,
-  ssn: '000-0000-000007',
-  page: 'https://ya.ru/',
-})
-addPerson({
-  id: 7,
-  name: 'monika',
-  age: 30,
-  ssn: '000-0000-000008',
-  page: 'https://ya.ru/',
-})
-
-async function print() {
-  const result = await query(
-    tree.includes([1, 3, 5]),
-    filter((v) => v[1].age > 20),
-    map(async ([, person]) => ({
-      age: person.age,
-      name: person.name,
-      page: await axios.get(person.page),
-    })),
-    reduce((res, cur) => {
-      res.set(cur.name, cur)
-      return res
-    }, new Map<string, unknown>()),
-  )(tree)
-
-  for await (const p of result) {
-    console.log(p)
-  }
-}
-
-print().then((_) => console.log('done'))
-
-```

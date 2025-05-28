@@ -2,6 +2,30 @@ import { Node, ValueType } from './Node';
 import type { BPlusTree } from './BPlusTree';
 import { transaction, debug } from './logger';
 
+// Savepoint support interfaces
+export interface SavepointInfo {
+  savepointId: string;
+  name: string;
+  timestamp: number;
+  workingNodesCount: number;
+  deletedNodesCount: number;
+}
+
+export interface SavepointSnapshot<T, K extends ValueType> {
+  savepointId: string;
+  name: string;
+  timestamp: number;
+  workingRootId: number | undefined;
+  workingNodesSnapshot: Map<number, Node<T, K>>;
+  deletedNodesSnapshot: Set<number>;
+  // For optimization - store only changes from previous savepoint
+  incrementalChanges?: {
+    addedNodes: Map<number, Node<T, K>>;
+    modifiedNodes: Map<number, Node<T, K>>;
+    removedNodes: Set<number>;
+  };
+}
+
 // Export ITransactionContext interface
 export interface ITransactionContext<T, K extends ValueType> {
   readonly transactionId: string;
@@ -26,6 +50,13 @@ export interface ITransactionContext<T, K extends ValueType> {
   // 2PC (Two-Phase Commit) methods
   prepareCommit(): Promise<void>; // Phase 1: Prepare for commit without applying changes
   finalizeCommit(): Promise<void>; // Phase 2: Finalize the prepared commit
+
+  // Savepoint support methods
+  createSavepoint(name: string): Promise<string>;
+  rollbackToSavepoint(savepointId: string): Promise<void>;
+  releaseSavepoint(savepointId: string): Promise<void>;
+  listSavepoints(): string[];
+  getSavepointInfo(savepointId: string): SavepointInfo | undefined;
 }
 
 export class TransactionContext<T, K extends ValueType> implements ITransactionContext<T, K> {
@@ -47,6 +78,11 @@ export class TransactionContext<T, K extends ValueType> implements ITransactionC
     deletedNodeIds: Set<number>;
   } | undefined;
 
+  // Savepoint support fields
+  private _savepoints: Map<string, SavepointSnapshot<T, K>>;
+  private _savepointCounter: number = 0;
+  private _savepointNameToId: Map<string, string>;
+
   constructor(tree: BPlusTree<T, K>) {
     this.transactionId = TransactionContext.generateTransactionId();
     this.treeSnapshot = tree;
@@ -54,6 +90,10 @@ export class TransactionContext<T, K extends ValueType> implements ITransactionC
     this.workingRootId = tree.root;
     this._workingNodes = new Map<number, Node<T, K>>();
     this._deletedNodes = new Set<number>();
+
+    // Initialize savepoint support
+    this._savepoints = new Map<string, SavepointSnapshot<T, K>>();
+    this._savepointNameToId = new Map<string, string>();
 
     // Create snapshot of current node states for isolation
     this._snapshotNodeStates = new Map();
@@ -394,14 +434,35 @@ export class TransactionContext<T, K extends ValueType> implements ITransactionC
     // Clear transaction state
     this.workingRootId = finalRootId;
 
+    // Clear all savepoints before commit
+    transaction(`[commit] Clearing ${this._savepoints.size} savepoints before commit`);
+    for (const snapshot of this._savepoints.values()) {
+      snapshot.workingNodesSnapshot.clear();
+      snapshot.deletedNodesSnapshot.clear();
+    }
+    this._savepoints.clear();
+    this._savepointNameToId.clear();
+
     // console.log(`Committed transaction ${this.transactionId}. Final root: ${this.treeSnapshot.root}, Nodes count: ${this.treeSnapshot.nodes.size}`);
   }
 
   public async abort(): Promise<void> {
-    // console.log(`Aborting transaction ${this.transactionId}`);
+    transaction(`[abort] Aborting transaction ${this.transactionId}, clearing ${this._savepoints.size} savepoints`);
+
+    // Clear all savepoints
+    for (const snapshot of this._savepoints.values()) {
+      snapshot.workingNodesSnapshot.clear();
+      snapshot.deletedNodesSnapshot.clear();
+    }
+    this._savepoints.clear();
+    this._savepointNameToId.clear();
+
+    // Clear transaction state
     this._workingNodes.clear();
     this._deletedNodes.clear();
     this.workingRootId = this.snapshotRootId;
+
+    transaction(`[abort] Transaction ${this.transactionId} aborted successfully`);
   }
 
   // 2PC (Two-Phase Commit) methods
@@ -559,7 +620,217 @@ export class TransactionContext<T, K extends ValueType> implements ITransactionC
     this._isPrepared = false;
     this._preparedChanges = undefined;
 
+    // Clear all savepoints after successful finalize
+    transaction(`[finalizeCommit] Clearing ${this._savepoints.size} savepoints after finalize`);
+    for (const snapshot of this._savepoints.values()) {
+      snapshot.workingNodesSnapshot.clear();
+      snapshot.deletedNodesSnapshot.clear();
+    }
+    this._savepoints.clear();
+    this._savepointNameToId.clear();
+
     // console.log(`Finalized transaction ${this.transactionId}. Final root: ${this.treeSnapshot.root}, Nodes count: ${this.treeSnapshot.nodes.size}`);
+  }
+
+  // Savepoint support methods
+  public async createSavepoint(name: string): Promise<string> {
+    // Check for duplicate savepoint names
+    if (this._savepointNameToId.has(name)) {
+      throw new Error(`Savepoint with name '${name}' already exists in transaction ${this.transactionId}`);
+    }
+
+    // Generate unique savepoint ID
+    const savepointId = `sp-${this.transactionId}-${++this._savepointCounter}-${Date.now()}`;
+
+    // Create deep copy of current working nodes state
+    const workingNodesSnapshot = new Map<number, Node<T, K>>();
+    for (const [nodeId, node] of this._workingNodes) {
+      // Create full copy of the node to avoid shared references
+      // Don't use Node.copy() as it registers the node in transaction context
+      const nodeCopy = this.createDeepCopyForSnapshot(node);
+      workingNodesSnapshot.set(nodeId, nodeCopy);
+      transaction(`[createSavepoint] Copying node ${nodeId}: keys=[${node.keys.join(',')}] -> snapshot keys=[${nodeCopy.keys.join(',')}]`);
+    }
+
+    // Create copy of deleted nodes set
+    const deletedNodesSnapshot = new Set<number>(this._deletedNodes);
+
+    // Create savepoint snapshot
+    const snapshot: SavepointSnapshot<T, K> = {
+      savepointId,
+      name,
+      timestamp: Date.now(),
+      workingRootId: this.workingRootId,
+      workingNodesSnapshot,
+      deletedNodesSnapshot
+    };
+
+    // Store the savepoint
+    this._savepoints.set(savepointId, snapshot);
+    this._savepointNameToId.set(name, savepointId);
+
+    transaction(`[createSavepoint] Created savepoint '${name}' (${savepointId}) with ${workingNodesSnapshot.size} working nodes and ${deletedNodesSnapshot.size} deleted nodes`);
+    return savepointId;
+  }
+
+  public async rollbackToSavepoint(savepointId: string): Promise<void> {
+    const snapshot = this._savepoints.get(savepointId);
+    if (!snapshot) {
+      throw new Error(`Savepoint ${savepointId} not found in transaction ${this.transactionId}`);
+    }
+
+    transaction(`[rollbackToSavepoint] Rolling back to savepoint '${snapshot.name}' (${savepointId})`);
+
+    // Restore working root ID
+    this.workingRootId = snapshot.workingRootId;
+
+    // Clear current working nodes
+    this._workingNodes.clear();
+
+    // Restore working nodes from snapshot - create exact copies with same IDs
+    for (const [nodeId, snapshotNode] of snapshot.workingNodesSnapshot) {
+      // Create a deep copy of the snapshot node without using Node.copy
+      // to avoid creating new IDs and registering in transaction context
+      const restoredNode = this.createExactCopyFromSnapshot(snapshotNode);
+      this._workingNodes.set(nodeId, restoredNode);
+    }
+
+    // Restore deleted nodes set
+    this._deletedNodes.clear();
+    for (const deletedNodeId of snapshot.deletedNodesSnapshot) {
+      this._deletedNodes.add(deletedNodeId);
+    }
+
+    // Remove all savepoints created after this one (nested rollback)
+    const savePointsToRemove: string[] = [];
+    for (const [spId, sp] of this._savepoints) {
+      if (sp.timestamp > snapshot.timestamp) {
+        savePointsToRemove.push(spId);
+      }
+    }
+
+    transaction(`[rollbackToSavepoint] Found ${savePointsToRemove.length} savepoints to remove after timestamp ${snapshot.timestamp}`);
+
+    // Clean up newer savepoints
+    for (const spId of savePointsToRemove) {
+      const sp = this._savepoints.get(spId);
+      if (sp) {
+        this._savepointNameToId.delete(sp.name);
+        this._savepoints.delete(spId);
+        // Clean up memory from snapshot data
+        sp.workingNodesSnapshot.clear();
+        sp.deletedNodesSnapshot.clear();
+        transaction(`[rollbackToSavepoint] Removed savepoint '${sp.name}' (${spId}) created after rollback point`);
+      }
+    }
+
+    transaction(`[rollbackToSavepoint] Rollback completed. Working nodes: ${this._workingNodes.size}, deleted nodes: ${this._deletedNodes.size}`);
+  }
+
+  // Helper method to create exact copy from snapshot without new IDs
+  private createExactCopyFromSnapshot(snapshotNode: Node<T, K>): Node<T, K> {
+    // Create a working node without registering it
+    const newNode = snapshotNode.leaf
+      ? Node.createWorkingLeaf(this.treeSnapshot)
+      : Node.createWorkingNode(this.treeSnapshot);
+
+    // Copy all properties exactly as they were in the snapshot
+    newNode.keys = [...snapshotNode.keys];
+    newNode.pointers = [...snapshotNode.pointers];
+    newNode.children = [...snapshotNode.children];
+    newNode._parent = snapshotNode._parent;
+    newNode._left = snapshotNode._left;
+    newNode._right = snapshotNode._right;
+    newNode.key_num = snapshotNode.key_num;
+    newNode.size = snapshotNode.size;
+    newNode.min = snapshotNode.min;
+    newNode.max = snapshotNode.max;
+    newNode.isFull = snapshotNode.isFull;
+    newNode.isEmpty = snapshotNode.isEmpty;
+
+    // Restore the exact ID from snapshot
+    (newNode as any).id = snapshotNode.id;
+
+    // Restore the original node ID if it exists
+    if ((snapshotNode as any)._originalNodeId !== undefined) {
+      (newNode as any)._originalNodeId = (snapshotNode as any)._originalNodeId;
+    }
+
+    return newNode;
+  }
+
+  public async releaseSavepoint(savepointId: string): Promise<void> {
+    const snapshot = this._savepoints.get(savepointId);
+    if (!snapshot) {
+      throw new Error(`Savepoint ${savepointId} not found in transaction ${this.transactionId}`);
+    }
+
+    transaction(`[releaseSavepoint] Releasing savepoint '${snapshot.name}' (${savepointId})`);
+
+    // Remove savepoint from maps
+    this._savepoints.delete(savepointId);
+    this._savepointNameToId.delete(snapshot.name);
+
+    // Clean up memory from snapshot data
+    snapshot.workingNodesSnapshot.clear();
+    snapshot.deletedNodesSnapshot.clear();
+
+    transaction(`[releaseSavepoint] Savepoint '${snapshot.name}' (${savepointId}) released successfully`);
+  }
+
+  public listSavepoints(): string[] {
+    const savepoints: string[] = [];
+    for (const snapshot of this._savepoints.values()) {
+      savepoints.push(`${snapshot.name} (${snapshot.savepointId}) - ${new Date(snapshot.timestamp).toISOString()}`);
+    }
+    return savepoints.sort();
+  }
+
+  public getSavepointInfo(savepointId: string): SavepointInfo | undefined {
+    const snapshot = this._savepoints.get(savepointId);
+    if (!snapshot) {
+      return undefined;
+    }
+
+    return {
+      savepointId: snapshot.savepointId,
+      name: snapshot.name,
+      timestamp: snapshot.timestamp,
+      workingNodesCount: snapshot.workingNodesSnapshot.size,
+      deletedNodesCount: snapshot.deletedNodesSnapshot.size
+    };
+  }
+
+  private createDeepCopyForSnapshot(node: Node<T, K>): Node<T, K> {
+    // Create a plain object copy without registering in any tree or transaction
+    const copy = Object.create(Object.getPrototypeOf(node));
+
+    // Copy all properties
+    copy.id = node.id;
+    copy.leaf = node.leaf;
+    copy.key_num = node.key_num;
+    copy.size = node.size;
+    copy.min = node.min;
+    copy.max = node.max;
+    copy.isFull = node.isFull;
+    copy.isEmpty = node.isEmpty;
+    copy._parent = node._parent;
+    copy._left = node._left;
+    copy._right = node._right;
+    copy.tree = node.tree;
+    copy.length = node.length;
+
+    // Deep copy arrays
+    copy.keys = [...node.keys];
+    copy.pointers = [...node.pointers];
+    copy.children = [...node.children];
+
+    // Copy original node ID if it exists
+    if ((node as any)._originalNodeId !== undefined) {
+      (copy as any)._originalNodeId = (node as any)._originalNodeId;
+    }
+
+    return copy;
   }
 }
 
