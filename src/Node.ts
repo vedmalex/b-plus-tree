@@ -119,10 +119,10 @@ export class Node<T, K extends ValueType> {
       max,
       min,
       size,
-      keys: node.tree.keySerializer(keys),
+      keys: node.tree.keySerializer([...keys]), // Create a deep copy of keys array
       key_num,
-      pointers,
-      children,
+      pointers: [...pointers], // Create a deep copy of pointers array
+      children: [...children], // Create a deep copy of children array
     }
   }
   static deserialize<T, K extends ValueType>(
@@ -142,10 +142,10 @@ export class Node<T, K extends ValueType> {
     node.max = stored.max
     node.min = stored.min
     node.size = stored.size
-    node.keys = tree.keyDeserializer(stored.keys)
+    node.keys = [...tree.keyDeserializer(stored.keys)] // Create a deep copy of keys array
     node.key_num = stored.key_num
-    node.pointers = stored.pointers
-    node.children = stored.children
+    node.pointers = [...stored.pointers] // Create a deep copy of pointers array
+    node.children = [...stored.children] // Create a deep copy of children array
     return node
   }
 
@@ -170,10 +170,10 @@ export class Node<T, K extends ValueType> {
 
     // console.log(`[Node.forceCopy] Creating new ${newNode.leaf ? 'leaf' : 'internal'} working node ${newNode.id} from original ${originalNode.id} with keys: [${originalNode.keys.join(',')}], pointers: [${originalNode.pointers?.length || 0}]`); // LOG REMOVED
 
-    // Copy all properties from the original node
-    newNode.keys = [...originalNode.keys];
-    newNode.pointers = [...originalNode.pointers];
-    newNode.children = [...originalNode.children];
+    // Deep copy all properties from the original node to ensure complete isolation
+    newNode.keys = [...originalNode.keys]; // Deep copy keys array
+    newNode.pointers = originalNode.pointers ? [...originalNode.pointers] : []; // Deep copy pointers array
+    newNode.children = originalNode.children ? [...originalNode.children] : []; // Deep copy children array
     newNode._parent = originalNode._parent; // Will be updated by the calling context if needed
     newNode._left = originalNode._left;
     newNode._right = originalNode._right;

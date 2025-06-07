@@ -373,90 +373,78 @@ describe('BPlusTree', () => {
         });
 
         it('should find keys within a given range using range() method', () => {
-            if (!bpt || sortedKeys.length < 5) return; // Need enough keys for a range
+            if (!bpt) return;
 
-            const from = sortedKeys[2]; // e.g., 3rd element
-            const to = sortedKeys[sortedKeys.length - 3]; // e.g., 3rd last element
+            const from = sortedKeys[1]; // Second key
+            const to = sortedKeys[sortedKeys.length - 2]; // Second-to-last key
+
             // Expected result structure: { key, data }
             const expectedResult = sortedKeys
                 .filter(k => k >= from && k <= to)
                 .map(k => ({ key: k, data: k * 10 }));
 
-             // Check if bpt.range exists and use it correctly
-            if (typeof bpt.range === 'function') {
-                // Call range to get function, call function to get generator, then Array.from
-                const rangeFn = bpt.range(from, to);
-                const rangeGenerator = rangeFn(bpt) as unknown as Iterable<any>; // Assert type
-                const resultCursors = Array.from(rangeGenerator);
-                // Range yields Cursor objects. Map them to { key, value } for comparison.
-                const result = resultCursors.map(c => ({ key: c.key, data: c.value }));
-                expect(result).toEqual(expectedResult);
-            } else {
-                // Fallback or skip if range method is not implemented
-                // console.warn("bpt.range() method not found, skipping range test.");
-            }
+            // Check if bpt.range exists and use the new array-based implementation
+            const rangeResult = bpt.range(from, to);
+
+            // Transform the array of [key, value] pairs to match expected format
+            const formattedResult = rangeResult.map(([key, value]) => ({ key, data: value }));
+
+            expect(formattedResult).toEqual(expectedResult);
         });
 
          it('should handle range edge cases', () => {
-             if (!bpt || typeof bpt.range !== 'function') return;
+             if (!bpt) return;
 
              // Range covering all elements
-             const rangeFnAll = bpt.range(sortedKeys[0], sortedKeys[sortedKeys.length - 1]);
-             const allResultGenerator = rangeFnAll(bpt) as unknown as Iterable<any>; // Assert type
-             const allResult = Array.from(allResultGenerator);
+             const allResult = bpt.range(sortedKeys[0], sortedKeys[sortedKeys.length - 1]);
+
              // Full range should be correct now
              expect(allResult).toHaveLength(sortedKeys.length); // Expect N unique keys
-             // Optionally check first/last key/value from Cursors
+
+             // Check first/last key/value from result
              if (allResult.length > 0) {
-                 expect(allResult[0]?.key).toBe(sortedKeys[0]);
-                 expect(allResult[allResult.length - 1]?.key).toBe(sortedKeys[sortedKeys.length - 1]);
+                 expect(allResult[0][0]).toBe(sortedKeys[0]);
+                 expect(allResult[allResult.length - 1][0]).toBe(sortedKeys[sortedKeys.length - 1]);
              }
 
              // Range with single element
-             const rangeFnSingle = bpt.range(sortedKeys[1], sortedKeys[1]);
-             const singleGen = rangeFnSingle(bpt) as unknown as Iterable<any>; // Assert type
-             const singleResult = Array.from(singleGen);
-              expect(singleResult).toHaveLength(1);
+             const singleResult = bpt.range(sortedKeys[1], sortedKeys[1]);
+             expect(singleResult).toHaveLength(1);
+
              if (singleResult.length === 1) {
-                 expect(singleResult[0]?.key).toBe(sortedKeys[1]);
-                 expect(singleResult[0]?.value).toBe(sortedKeys[1] * 10);
-              }
+                 expect(singleResult[0][0]).toBe(sortedKeys[1]);
+                 expect(singleResult[0][1]).toBe(sortedKeys[1] * 10);
+             }
 
              // Range outside elements (low)
-             const rangeFnLow = bpt.range(sortedKeys[0] - 10, sortedKeys[0] - 5);
-             const lowGen = rangeFnLow(bpt) as unknown as Iterable<any>; // Assert type
-             const lowResult = Array.from(lowGen);
-             // Range function should now handle this correctly
-             expect(lowResult).toHaveLength(0); // Keep expected 0
+             const lowResult = bpt.range(sortedKeys[0] - 10, sortedKeys[0] - 5);
+             expect(lowResult).toHaveLength(0); // Expect empty array
 
              // Range outside elements (high)
-             const rangeFnHigh = bpt.range(sortedKeys[sortedKeys.length - 1] + 5, sortedKeys[sortedKeys.length - 1] + 10);
-             const highGen = rangeFnHigh(bpt) as unknown as Iterable<any>; // Assert type
-             const highResult = Array.from(highGen);
-             // Range function should handle this
-             expect(highResult).toHaveLength(0);
+             const highResult = bpt.range(sortedKeys[sortedKeys.length - 1] + 5, sortedKeys[sortedKeys.length - 1] + 10);
+             expect(highResult).toHaveLength(0); // Expect empty array
 
-              // Range starting before first element
-              const rangeFnStart = bpt.range(sortedKeys[0] - 5, sortedKeys[1]);
-              const startBeforeGen = rangeFnStart(bpt) as unknown as Iterable<any>; // Assert type
-              const startBeforeResult = Array.from(startBeforeGen);
-              // Range should include first two keys
-              expect(startBeforeResult).toHaveLength(2);
-              if (startBeforeResult.length === 2) {
-                  expect(startBeforeResult[0]?.key).toBe(sortedKeys[0]);
-                  expect(startBeforeResult[1]?.key).toBe(sortedKeys[1]);
-              }
+             // Range starting before first element
+             const startBeforeResult = bpt.range(sortedKeys[0] - 5, sortedKeys[1]);
 
-              // Range ending after last element
-              const rangeFnEnd = bpt.range(sortedKeys[sortedKeys.length - 2], sortedKeys[sortedKeys.length - 1] + 5);
-              const endAfterGen = rangeFnEnd(bpt) as unknown as Iterable<any>; // Assert type
-              const endAfterResult = Array.from(endAfterGen);
-              // Range should include last 2 keys
-               expect(endAfterResult).toHaveLength(2);
-               if (endAfterResult.length === 2) {
-                   expect(endAfterResult[0]?.key).toBe(sortedKeys[sortedKeys.length - 2]);
-                   expect(endAfterResult[1]?.key).toBe(sortedKeys[sortedKeys.length - 1]);
-               }
+             // Range should include first two keys
+             expect(startBeforeResult).toHaveLength(2);
+
+             if (startBeforeResult.length === 2) {
+                 expect(startBeforeResult[0][0]).toBe(sortedKeys[0]);
+                 expect(startBeforeResult[1][0]).toBe(sortedKeys[1]);
+             }
+
+             // Range ending after last element
+             const endAfterResult = bpt.range(sortedKeys[sortedKeys.length - 2], sortedKeys[sortedKeys.length - 1] + 5);
+
+             // Range should include last 2 keys
+             expect(endAfterResult).toHaveLength(2);
+
+             if (endAfterResult.length === 2) {
+                 expect(endAfterResult[0][0]).toBe(sortedKeys[sortedKeys.length - 2]);
+                 expect(endAfterResult[1][0]).toBe(sortedKeys[sortedKeys.length - 1]);
+             }
         });
 
          // Manual range finding requires significant changes due to find being direct array return

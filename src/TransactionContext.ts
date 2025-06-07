@@ -1,5 +1,5 @@
 import { Node, ValueType } from './Node';
-import type { BPlusTree } from './BPlusTree';
+import { BPlusTree } from './BPlusTree';
 import { transaction, debug } from './logger';
 
 // Savepoint support interfaces
@@ -85,9 +85,19 @@ export class TransactionContext<T, K extends ValueType> implements ITransactionC
 
   constructor(tree: BPlusTree<T, K>) {
     this.transactionId = TransactionContext.generateTransactionId();
-    this.treeSnapshot = tree;
-    this.snapshotRootId = tree.root;
-    this.workingRootId = tree.root;
+
+    // Create a deep copy of the tree for true snapshot isolation
+    const newTree = new BPlusTree<T, K>(tree.t, tree.unique, tree.comparator, tree.defaultEmpty, tree.keySerializer, tree.keyDeserializer);
+    newTree.next_node_id = tree.next_node_id;
+    newTree.nodes = new Map();
+    for (const [nodeId, node] of tree.nodes) {
+      newTree.nodes.set(nodeId, this._cloneNode(node, newTree));
+    }
+    newTree.root = tree.root;
+    this.treeSnapshot = newTree;
+
+    this.snapshotRootId = this.treeSnapshot.root;
+    this.workingRootId = this.treeSnapshot.root;
     this._workingNodes = new Map<number, Node<T, K>>();
     this._deletedNodes = new Set<number>();
 
@@ -96,14 +106,29 @@ export class TransactionContext<T, K extends ValueType> implements ITransactionC
     this._savepointNameToId = new Map<string, string>();
 
     // Create snapshot of current node states for isolation
+    // Use deep copying to prevent shared references
     this._snapshotNodeStates = new Map();
     for (const [nodeId, node] of tree.nodes) {
       this._snapshotNodeStates.set(nodeId, {
-        keys: [...node.keys],
-        values: node.leaf ? [...(node.pointers as T[])] : [],
+        keys: [...node.keys], // Deep copy keys array
+        values: node.leaf ? [...(node.pointers as T[])] : [], // Deep copy values/pointers array
         leaf: node.leaf
       });
     }
+  }
+
+  private _cloneNode(node: Node<T, K>, ownerTree: BPlusTree<T, K>): Node<T, K> {
+    const clonedNode = new (Node as any)(ownerTree, node.leaf, node.id);
+    clonedNode.keys = [...node.keys];
+    clonedNode.pointers = [...node.pointers];
+    clonedNode.children = [...node.children];
+    clonedNode._parent = node._parent;
+    clonedNode._left = node._left;
+    clonedNode._right = node._right;
+    clonedNode.min = node.min;
+    clonedNode.max = node.max;
+    clonedNode.key_num = node.key_num;
+    return clonedNode;
   }
 
   static generateTransactionId(): string {
@@ -831,6 +856,39 @@ export class TransactionContext<T, K extends ValueType> implements ITransactionC
     }
 
     return copy;
+  }
+
+  static forceCopy<T, K extends ValueType>(originalNode: Node<T, K>, transactionContext: ITransactionContext<T, K>): Node<T, K> {
+    // Create a working node WITHOUT adding it to tree.nodes (transaction isolation)
+    const newNode = originalNode.leaf
+      ? Node.createWorkingLeaf(transactionContext.treeSnapshot)
+      : Node.createWorkingNode(transactionContext.treeSnapshot);
+
+    // console.log(`[Node.forceCopy] Creating new ${newNode.leaf ? 'leaf' : 'internal'} working node ${newNode.id} from original ${originalNode.id} with keys: [${originalNode.keys.join(',')}], pointers: [${originalNode.pointers?.length || 0}]`); // LOG REMOVED
+
+    // Deep copy all properties from the original node to ensure complete isolation
+    newNode.keys = [...originalNode.keys]; // Deep copy keys array
+    newNode.pointers = originalNode.pointers ? [...originalNode.pointers] : []; // Deep copy pointers array
+    newNode.children = originalNode.children ? [...originalNode.children] : []; // Deep copy children array
+    newNode._parent = originalNode._parent; // Will be updated by the calling context if needed
+    newNode._left = originalNode._left;
+    newNode._right = originalNode._right;
+    newNode.key_num = originalNode.key_num;
+    newNode.size = originalNode.size;
+    newNode.min = originalNode.min;
+    newNode.max = originalNode.max;
+    newNode.isFull = originalNode.isFull;
+    newNode.isEmpty = originalNode.isEmpty;
+
+    // console.log(`[Node.forceCopy] Copied working node ${newNode.id}: leaf=${newNode.leaf}, keys=[${newNode.keys.join(',')}], pointers count=${newNode.pointers?.length || 0}, key_num=${newNode.key_num}`); // LOG REMOVED
+
+    // Store the original node ID for debugging and potential reference
+    (newNode as any)._originalNodeId = originalNode.id;
+
+    // Register the new node in the transaction context ONLY
+    transactionContext.addWorkingNode(newNode);
+
+    return newNode;
   }
 }
 

@@ -23,8 +23,8 @@ export interface IBPlusTree<T, K extends ValueType> {
     equals(key: K): (tree: this) => Generator<Cursor<T, K>, void>;
     /** Creates a source generator for items matching the key, handling nulls specifically. */
     equalsNulls(key: K): (tree: this) => Generator<Cursor<T, K>, void>;
-    /** Creates a source generator for items within a key range. */
-    range(from: K, to: K, fromIncl?: boolean, toIncl?: boolean): (tree: this) => Generator<Cursor<T, K>, void>;
+    /** Returns an array of key-value pairs within the specified key range. */
+    range(from?: K, to?: K, fromIncl?: boolean, toIncl?: boolean): Array<[K, T]>;
     /** Creates a source generator to iterate over all items. */
     each(forward?: boolean): (tree: this) => Generator<Cursor<T, K>, void>;
     /** Creates a source generator for items with keys greater than the specified key. */
