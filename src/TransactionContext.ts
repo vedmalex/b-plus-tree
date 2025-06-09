@@ -1,5 +1,5 @@
 import { Node, ValueType } from './Node';
-import { BPlusTree } from './BPlusTree';
+import type { BPlusTree } from './BPlusTree';
 import { transaction, debug } from './logger';
 
 // Savepoint support interfaces
@@ -85,19 +85,9 @@ export class TransactionContext<T, K extends ValueType> implements ITransactionC
 
   constructor(tree: BPlusTree<T, K>) {
     this.transactionId = TransactionContext.generateTransactionId();
-
-    // Create a deep copy of the tree for true snapshot isolation
-    const newTree = new BPlusTree<T, K>(tree.t, tree.unique, tree.comparator, tree.defaultEmpty, tree.keySerializer, tree.keyDeserializer);
-    newTree.next_node_id = tree.next_node_id;
-    newTree.nodes = new Map();
-    for (const [nodeId, node] of tree.nodes) {
-      newTree.nodes.set(nodeId, this._cloneNode(node, newTree));
-    }
-    newTree.root = tree.root;
-    this.treeSnapshot = newTree;
-
-    this.snapshotRootId = this.treeSnapshot.root;
-    this.workingRootId = this.treeSnapshot.root;
+    this.treeSnapshot = tree;
+    this.snapshotRootId = tree.root;
+    this.workingRootId = tree.root;
     this._workingNodes = new Map<number, Node<T, K>>();
     this._deletedNodes = new Set<number>();
 
@@ -115,20 +105,6 @@ export class TransactionContext<T, K extends ValueType> implements ITransactionC
         leaf: node.leaf
       });
     }
-  }
-
-  private _cloneNode(node: Node<T, K>, ownerTree: BPlusTree<T, K>): Node<T, K> {
-    const clonedNode = new (Node as any)(ownerTree, node.leaf, node.id);
-    clonedNode.keys = [...node.keys];
-    clonedNode.pointers = [...node.pointers];
-    clonedNode.children = [...node.children];
-    clonedNode._parent = node._parent;
-    clonedNode._left = node._left;
-    clonedNode._right = node._right;
-    clonedNode.min = node.min;
-    clonedNode.max = node.max;
-    clonedNode.key_num = node.key_num;
-    return clonedNode;
   }
 
   static generateTransactionId(): string {

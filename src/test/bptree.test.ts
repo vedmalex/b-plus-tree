@@ -409,12 +409,12 @@ describe('BPlusTree', () => {
 
              // Range with single element
              const singleResult = bpt.range(sortedKeys[1], sortedKeys[1]);
-             expect(singleResult).toHaveLength(1);
+              expect(singleResult).toHaveLength(1);
 
              if (singleResult.length === 1) {
                  expect(singleResult[0][0]).toBe(sortedKeys[1]);
                  expect(singleResult[0][1]).toBe(sortedKeys[1] * 10);
-             }
+              }
 
              // Range outside elements (low)
              const lowResult = bpt.range(sortedKeys[0] - 10, sortedKeys[0] - 5);
@@ -424,27 +424,27 @@ describe('BPlusTree', () => {
              const highResult = bpt.range(sortedKeys[sortedKeys.length - 1] + 5, sortedKeys[sortedKeys.length - 1] + 10);
              expect(highResult).toHaveLength(0); // Expect empty array
 
-             // Range starting before first element
+              // Range starting before first element
              const startBeforeResult = bpt.range(sortedKeys[0] - 5, sortedKeys[1]);
 
-             // Range should include first two keys
-             expect(startBeforeResult).toHaveLength(2);
+              // Range should include first two keys
+              expect(startBeforeResult).toHaveLength(2);
 
-             if (startBeforeResult.length === 2) {
+              if (startBeforeResult.length === 2) {
                  expect(startBeforeResult[0][0]).toBe(sortedKeys[0]);
                  expect(startBeforeResult[1][0]).toBe(sortedKeys[1]);
-             }
+              }
 
-             // Range ending after last element
+              // Range ending after last element
              const endAfterResult = bpt.range(sortedKeys[sortedKeys.length - 2], sortedKeys[sortedKeys.length - 1] + 5);
 
-             // Range should include last 2 keys
-             expect(endAfterResult).toHaveLength(2);
+              // Range should include last 2 keys
+               expect(endAfterResult).toHaveLength(2);
 
-             if (endAfterResult.length === 2) {
+               if (endAfterResult.length === 2) {
                  expect(endAfterResult[0][0]).toBe(sortedKeys[sortedKeys.length - 2]);
                  expect(endAfterResult[1][0]).toBe(sortedKeys[sortedKeys.length - 1]);
-             }
+               }
         });
 
          // Manual range finding requires significant changes due to find being direct array return

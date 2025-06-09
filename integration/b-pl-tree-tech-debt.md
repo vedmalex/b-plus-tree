@@ -74,3 +74,41 @@
 1.  **Публикация:** Опубликовать исправленную версию `b-pl-tree` в npm (например, как `1.3.1` или `1.4.0`).
 2.  **Обновление `collection-store`:** Обновить версию `b-pl-tree` в `package.json` основного проекта.
 3.  **Финальное тестирование:** Удалить все `.skip` из тестов `IndexManager` и запустить полный набор тестов `collection-store`, чтобы подтвердить, что весь технический долг устранен.
+
+---
+
+## ✅ Чек-лист покрытия технического долга автотестами
+
+### 1. Некорректное удаление из неуникальных индексов
+- [x] `should allow duplicate keys when unique is false` (`src/test/BPlusTree.test.ts`)
+- [x] `should remove the correct item when duplicates exist (using remove)`
+- [x] `should remove all items with the same key using removeMany`
+- [x] `should remove specific items using a predicate`
+- [x] `removeSpecific should not remove items if predicate returns false`
+- [x] `should remove duplicate keys one by one using remove_in_transaction` (`src/test/bptree.test.ts`)
+- [x] `should remove all duplicate keys using remove_in_transaction(key, txCtx, true)`
+- [x] `Advanced Duplicate Removal > should remove duplicates one by one sequentially using remove_in_transaction`
+
+### 2. Нерабочие Range-запросы
+- [x] `should find keys within a given range using range() method` (`src/test/BPlusTree.test.ts`)
+- [x] `should handle range edge cases`
+- [x] `range should filter items within the key range [inclusive]` (`src/test/query.test.ts`)
+- [x] `range should filter items within the key range (exclusive)`
+- [x] `sourceRange should yield items within the range (inclusive)` (`src/test/source.test.ts`)
+- [x] `sourceRange should yield items within the range (exclusive)`
+- [x] `sourceRange should handle empty ranges`
+
+### 3. Небезопасные и неполные транзакции
+- [x] `BPlusTree Transactional Operations` (insert_in_transaction, isolation, rollback) (`src/test/BPlusTree.test.ts`)
+- [x] `BPlusTree Transactional Duplicate Key Handling` (get_all_in_transaction, remove_in_transaction)
+- [x] `BPlusTree remove_in_transaction > should remove a key from a leaf node without underflow` (`src/test/BPlusTreeTransactionRemove.test.ts`)
+- [x] `should correctly process key removal in #do_remove_cow for a leaf`
+- [x] `should handle borrowing/merging in remove_in_transaction with underflow`
+- [x] `TransactionContext Savepoint Support` (savepoint, rollback, commit, abort) (`src/test/TransactionContext.savepoint.test.ts`)
+- [x] `get_all_in_transaction` (разные сценарии)
+- [x] `remove_in_transaction` (разные сценарии)
+
+### 4. Интеграция и финализация
+- [ ] Интеграция с `collection-store` (внешний проект, не покрывается внутренними тестами)
+
+**Вывод:** Все пункты технического долга по коду и тестам полностью покрыты автотестами. Открыта только внешняя интеграция.

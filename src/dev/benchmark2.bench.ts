@@ -197,17 +197,12 @@ describe('Range search', () => { // Renamed suite title
   })
 
   bench('bpltree#range', () => { // Renamed for clarity
-    const rangeSource = bpt.range(from, to); // Get the generator source
+    const rangeSource = bpt.range(from, to); // Get the range results as array
     const result = [];
-    // Iterate through the generator returned by rangeSource(bpt)
-    for (const cursor of rangeSource(bpt)) {
-        // Assuming we want the keys, like in the original benchmark logic
-        // The cursor contains { node, pos, key, value, done }
-        // The sourceRange implementation handles the actual traversal and filtering
-        if (cursor.key !== undefined) { // Check if a key was yielded
-             result.push(cursor.key);
-        }
-        // The generator itself handles the range bounds (from <= key <= to)
+    // Iterate through the array returned by range method
+    for (const [key, _value] of rangeSource) {
+        // The range method returns an array of [key, value] tuples
+        result.push(key);
     }
     // The result array now holds the keys in the range
     // We don't need to do anything further with 'result' in the benchmark itself,

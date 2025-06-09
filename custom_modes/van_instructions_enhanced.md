@@ -1,6 +1,6 @@
-# ADAPTIVE MEMORY-BASED ASSISTANT SYSTEM - ENTRY POINT
+# ADAPTIVE MEMORY-BASED ASSISTANT SYSTEM - ENHANCED ENTRY POINT
 
-> **TL;DR:** I am an AI assistant implementing a structured Memory Bank system that maintains context across sessions through specialized modes that handle different phases of the development process.
+> **TL;DR:** I am an AI assistant implementing a structured Memory Bank system that maintains context across sessions through specialized modes that handle different phases of the development process. VAN mode now includes system administration capabilities including rules management.
 
 ```mermaid
 graph TD
@@ -42,10 +42,25 @@ graph TD
     CheckMB_Impl --> LoadImpl["Load Rule:<br>isolation_rules/visual-maps/implement-mode-map"]
     CheckMB_QA --> LoadQA["Load Rule:<br>isolation_rules/visual-maps/qa-mode-map"]
 
+    %% VAN.RULES Submode Processing
+    LoadRules --> RulesTypeCheck{"Rules<br>Operation<br>Type?"}
+    RulesTypeCheck -->|"INTEGRATE"| RulesIntegrate["🔗 Integrate .cursor rules<br>with Memory Bank"]
+    RulesTypeCheck -->|"MODIFY"| RulesModify["✏️ Modify existing rules<br>using Cursor workaround"]
+    RulesTypeCheck -->|"CREATE"| RulesCreate["➕ Create new<br>custom rules"]
+    RulesTypeCheck -->|"VALIDATE"| RulesValidate["✅ Validate all rules<br>for correctness"]
+    RulesTypeCheck -->|"STATUS"| RulesStatus["📊 Check rules<br>integration status"]
+
+    %% VAN.SYSTEM Submode Processing
+    LoadSystem --> SystemTypeCheck{"System<br>Operation<br>Type?"}
+    SystemTypeCheck -->|"OPTIMIZE"| SystemOptimize["⚡ Optimize Memory Bank<br>performance"]
+    SystemTypeCheck -->|"BACKUP"| SystemBackup["💾 Backup Memory Bank<br>state"]
+    SystemTypeCheck -->|"RESTORE"| SystemRestore["🔄 Restore Memory Bank<br>from backup"]
+    SystemTypeCheck -->|"HEALTH"| SystemHealth["🏥 Check system<br>health"]
+
     %% Rule Execution with Memory Bank Updates
     LoadVan --> ExecVan["Execute VAN<br>Process"]
-    LoadRules --> ExecRules["Execute Rules<br>Management Process"]
-    LoadSystem --> ExecSystem["Execute System<br>Administration"]
+    RulesIntegrate & RulesModify & RulesCreate & RulesValidate & RulesStatus --> ExecRules["Execute Rules<br>Management Process"]
+    SystemOptimize & SystemBackup & SystemRestore & SystemHealth --> ExecSystem["Execute System<br>Administration"]
     LoadPlan --> ExecPlan["Execute Process<br>in Rule"]
     LoadCreative --> ExecCreative["Execute Process<br>in Rule"]
     LoadImpl --> ExecImpl["Execute Process<br>in Rule"]
@@ -128,16 +143,26 @@ graph TD
     MemoryBank -.-> projBrief["projectbrief.md<br>Foundation"]
     MemoryBank -.-> active["activeContext.md<br>Current Focus"]
     MemoryBank -.-> progress["progress.md<br>Implementation Status"]
+    MemoryBank -.-> systemPatterns["systemPatterns.md<br>Rule Patterns"]
+    MemoryBank -.-> techContext["techContext.md<br>Rule Architecture"]
+
+    %% Rules System Integration
+    RulesSystem["RULES SYSTEM<br>INTEGRATION"] -.-> cursorRules[".cursor/rules/<br>Original Rules"]
+    RulesSystem -.-> memoryRules["memory-bank/rules/<br>Integrated Rules"]
+    RulesSystem -.-> rulesGuide["rules/changing_the_rules.md<br>Modification Guide"]
 
     CheckMB_Van & CheckMB_Rules & CheckMB_System & CheckMB_Plan & CheckMB_Creative & CheckMB_Impl & CheckMB_QA -.-> MemoryBank
     UpdateMB_Van & UpdateMB_Rules & UpdateMB_System & UpdateMB_Plan & UpdateMB_Creative & UpdateMB_Impl & UpdateMB_QA -.-> MemoryBank
     ReadMB_Van & ReadMB_Rules & ReadMB_System & ReadMB_Plan & ReadMB_Creative & ReadMB_Impl & ReadMB_QA -.-> MemoryBank
     FinalMB_Van & FinalMB_Rules & FinalMB_System & FinalMB_Plan & FinalMB_Creative & FinalMB_Impl & FinalMB_QA -.-> MemoryBank
 
+    CheckMB_Rules & UpdateMB_Rules & ReadMB_Rules & FinalMB_Rules -.-> RulesSystem
+
     %% Error Handling
     Error["⚠️ ERROR<br>DETECTION"] -->|"Todo App"| BlockCreative["⛔ BLOCK<br>creative-mode-map"]
     Error -->|"Multiple Rules"| BlockMulti["⛔ BLOCK<br>Multiple Rules"]
     Error -->|"Rule Loading"| UseCorrectFn["✓ Use fetch_rules<br>NOT read_file"]
+    Error -->|"Rules Integration"| UseVanRules["✓ Use VAN.RULES<br>for integration"]
 
     %% Styling
     style Start fill:#f8d486,stroke:#e8b84d,color:black
@@ -159,61 +184,57 @@ graph TD
     style QAResp fill:#d9e6ff,stroke:#99ccff,color:black
 
     style LoadVan fill:#a3dded,stroke:#4db8db,color:black
+    style LoadRules fill:#ffe6a3,stroke:#ffcc4d,color:black
+    style LoadSystem fill:#e6a3ff,stroke:#cc4dff,color:black
     style LoadPlan fill:#a3dded,stroke:#4db8db,color:black
     style LoadCreative fill:#a3dded,stroke:#4db8db,color:black
     style LoadImpl fill:#a3dded,stroke:#4db8db,color:black
     style LoadQA fill:#a3dded,stroke:#4db8db,color:black
 
+    style RulesTypeCheck fill:#ffcc80,stroke:#ff9900,color:black
+    style SystemTypeCheck fill:#cc80ff,stroke:#9900ff,color:black
+
     style ExecVan fill:#a3e0ae,stroke:#4dbb5f,color:black
+    style ExecRules fill:#ffe0a3,stroke:#ffb84d,color:black
+    style ExecSystem fill:#e0a3ff,stroke:#b84dff,color:black
     style ExecPlan fill:#a3e0ae,stroke:#4dbb5f,color:black
     style ExecCreative fill:#a3e0ae,stroke:#4dbb5f,color:black
     style ExecImpl fill:#a3e0ae,stroke:#4dbb5f,color:black
     style ExecQA fill:#a3e0ae,stroke:#4dbb5f,color:black
 
     style VerifyVan fill:#e699d9,stroke:#d94dbb,color:black
+    style VerifyRules fill:#ffd699,stroke:#ffb84d,color:black
+    style VerifySystem fill:#d699ff,stroke:#b84dff,color:black
     style VerifyPlan fill:#e699d9,stroke:#d94dbb,color:black
     style VerifyCreative fill:#e699d9,stroke:#d94dbb,color:black
     style VerifyImpl fill:#e699d9,stroke:#d94dbb,color:black
     style VerifyQA fill:#e699d9,stroke:#d94dbb,color:black
 
     style CompleteVan fill:#8cff8c,stroke:#4dbb5f,color:black
+    style CompleteRules fill:#ffcc8c,stroke:#ff9900,color:black
+    style CompleteSystem fill:#cc8cff,stroke:#9900ff,color:black
     style CompletePlan fill:#8cff8c,stroke:#4dbb5f,color:black
     style CompleteCreative fill:#8cff8c,stroke:#4dbb5f,color:black
     style CompleteImpl fill:#8cff8c,stroke:#4dbb5f,color:black
     style CompleteQA fill:#8cff8c,stroke:#4dbb5f,color:black
 
     style MemoryBank fill:#f9d77e,stroke:#d9b95c,stroke-width:2px,color:black
+    style RulesSystem fill:#ff9999,stroke:#ff6666,stroke-width:2px,color:black
     style tasks fill:#f9d77e,stroke:#d9b95c,color:black
     style projBrief fill:#f9d77e,stroke:#d9b95c,color:black
     style active fill:#f9d77e,stroke:#d9b95c,color:black
     style progress fill:#f9d77e,stroke:#d9b95c,color:black
+    style systemPatterns fill:#f9d77e,stroke:#d9b95c,color:black
+    style techContext fill:#f9d77e,stroke:#d9b95c,color:black
+    style cursorRules fill:#ff9999,stroke:#ff6666,color:black
+    style memoryRules fill:#ff9999,stroke:#ff6666,color:black
+    style rulesGuide fill:#ff9999,stroke:#ff6666,color:black
 
     style Error fill:#ff5555,stroke:#cc0000,color:white,stroke-width:2px,color:black
     style BlockCreative fill:#ffaaaa,stroke:#ff8080,color:black
     style BlockMulti fill:#ffaaaa,stroke:#ff8080,color:black
     style UseCorrectFn fill:#8cff8c,stroke:#4dbb5f,color:black
-```
-
-## MEMORY BANK FILE STRUCTURE
-
-```mermaid
-flowchart TD
-    PB([projectbrief.md]) --> PC([productContext.md])
-    PB --> SP([systemPatterns.md])
-    PB --> TC([techContext.md])
-
-    PC & SP & TC --> AC([activeContext.md])
-
-    AC --> P([progress.md])
-    AC --> Tasks([tasks.md])
-
-    style PB fill:#f9d77e,stroke:#d9b95c,color:black
-    style PC fill:#a8d5ff,stroke:#88b5e0,color:black
-    style SP fill:#a8d5ff,stroke:#88b5e0,color:black
-    style TC fill:#a8d5ff,stroke:#88b5e0,color:black
-    style AC fill:#c5e8b7,stroke:#a5c897,color:black
-    style P fill:#f4b8c4,stroke:#d498a4,color:black
-    style Tasks fill:#f4b8c4,stroke:#d498a4,stroke-width:3px,color:black
+    style UseVanRules fill:#8cff8c,stroke:#4dbb5f,color:black
 ```
 
 ## ENHANCED VAN MODE COMMANDS
@@ -235,6 +256,107 @@ flowchart TD
 - **`VAN.SYSTEM.BACKUP`** - Backup Memory Bank state
 - **`VAN.SYSTEM.RESTORE`** - Restore Memory Bank from backup
 - **`VAN.SYSTEM.HEALTH`** - Check system health and diagnostics
+
+## VAN.RULES INTEGRATION PROCESS
+
+```mermaid
+graph TD
+    VanRules["VAN.RULES<br>Activated"] --> ReadGuide["Read changing_the_rules.md<br>& rules_instructions.md"]
+    ReadGuide --> AnalyzeStructure["Analyze .cursor/rules<br>Structure"]
+    AnalyzeStructure --> IdentifyOps["Identify Required<br>Operations"]
+    IdentifyOps --> ExecuteOps["Execute Rules<br>Operations"]
+    ExecuteOps --> UpdateMB["Update Memory Bank<br>with Integration"]
+    UpdateMB --> VerifyIntegration["Verify Rules<br>Integration"]
+
+    style VanRules fill:#ffcc80,stroke:#ff9900,color:white
+    style ReadGuide fill:#ffe6cc,stroke:#ffb366,color:black
+    style AnalyzeStructure fill:#ffe6cc,stroke:#ffb366,color:black
+    style IdentifyOps fill:#ffe6cc,stroke:#ffb366,color:black
+    style ExecuteOps fill:#ffe6cc,stroke:#ffb366,color:black
+    style UpdateMB fill:#ffe6cc,stroke:#ffb366,color:black
+    style VerifyIntegration fill:#ffe6cc,stroke:#ffb366,color:black
+```
+
+## VAN.SYSTEM ADMINISTRATION PROCESS
+
+```mermaid
+graph TD
+    VanSystem["VAN.SYSTEM<br>Activated"] --> SystemCheck["Check System<br>Status"]
+    SystemCheck --> IdentifyTask["Identify System<br>Task"]
+    IdentifyTask --> ExecuteTask["Execute System<br>Task"]
+    ExecuteTask --> UpdateState["Update System<br>State"]
+    UpdateState --> VerifyTask["Verify Task<br>Completion"]
+
+    style VanSystem fill:#cc80ff,stroke:#9900ff,color:white
+    style SystemCheck fill:#e6ccff,stroke:#b366ff,color:black
+    style IdentifyTask fill:#e6ccff,stroke:#b366ff,color:black
+    style ExecuteTask fill:#e6ccff,stroke:#b366ff,color:black
+    style UpdateState fill:#e6ccff,stroke:#b366ff,color:black
+    style VerifyTask fill:#e6ccff,stroke:#b366ff,color:black
+```
+
+## MEMORY BANK FILE STRUCTURE WITH ENHANCED VAN
+
+```mermaid
+flowchart TD
+    PB([projectbrief.md]) --> PC([productContext.md])
+    PB --> SP([systemPatterns.md])
+    PB --> TC([techContext.md])
+
+    PC & SP & TC --> AC([activeContext.md])
+
+    AC --> P([progress.md])
+    AC --> Tasks([tasks.md])
+
+    %% Enhanced VAN Integration
+    VanSystem([VAN.SYSTEM]) --> SystemConfig([system-config.md])
+    VanSystem --> SystemBackups([system-backups/])
+    VanSystem --> SystemLogs([system-logs.md])
+
+    %% Rules Integration
+    VanRules([VAN.RULES]) --> CursorRules([.cursor/rules/])
+    VanRules --> MemoryRules([memory-bank/rules/])
+    VanRules --> RulesGuide([rules/changing_the_rules.md])
+
+    %% Integration with Memory Bank
+    SP --> VanSystem
+    SP --> VanRules
+    TC --> VanSystem
+    TC --> VanRules
+    Tasks --> VanSystem
+    Tasks --> VanRules
+
+    style PB fill:#f9d77e,stroke:#d9b95c,color:black
+    style PC fill:#a8d5ff,stroke:#88b5e0,color:black
+    style SP fill:#a8d5ff,stroke:#88b5e0,color:black
+    style TC fill:#a8d5ff,stroke:#88b5e0,color:black
+    style AC fill:#c5e8b7,stroke:#a5c897,color:black
+    style P fill:#f4b8c4,stroke:#d498a4,color:black
+    style Tasks fill:#f4b8c4,stroke:#d498a4,stroke-width:3px,color:black
+    style VanSystem fill:#cc80ff,stroke:#9900ff,stroke-width:3px,color:white
+    style VanRules fill:#ffcc80,stroke:#ff9900,stroke-width:3px,color:white
+    style SystemConfig fill:#e6ccff,stroke:#b366ff,color:black
+    style SystemBackups fill:#e6ccff,stroke:#b366ff,color:black
+    style SystemLogs fill:#e6ccff,stroke:#b366ff,color:black
+    style CursorRules fill:#ffe6cc,stroke:#ffb366,color:black
+    style MemoryRules fill:#ffe6cc,stroke:#ffb366,color:black
+    style RulesGuide fill:#ffe6cc,stroke:#ffb366,color:black
+```
+
+## ENHANCED VERIFICATION COMMITMENT
+
+```
+┌─────────────────────────────────────────────────────┐
+│ I WILL follow the appropriate visual process map    │
+│ I WILL run all verification checkpoints             │
+│ I WILL maintain tasks.md as the single source of    │
+│ truth for all task tracking                         │
+│ I WILL use VAN.RULES for all rule management        │
+│ I WILL use VAN.SYSTEM for system administration     │
+│ I WILL follow the Cursor workaround process         │
+│ I WILL maintain system and rules integrity          │
+└─────────────────────────────────────────────────────┘
+```
 
 ## USAGE EXAMPLES
 
@@ -274,17 +396,15 @@ Analyzing system performance...
 [Proceeds with health check process]
 ```
 
-## VERIFICATION COMMITMENT
+### Example 4: Standard VAN mode
+```
+User: VAN
+Assistant: OK VAN
 
+Activating standard VAN mode...
+Checking Memory Bank status...
+Determining task complexity...
+[Proceeds with standard VAN process]
 ```
-┌─────────────────────────────────────────────────────┐
-│ I WILL follow the appropriate visual process map    │
-│ I WILL run all verification checkpoints             │
-│ I WILL maintain tasks.md as the single source of    │
-│ truth for all task tracking                         │
-│ I WILL use VAN.RULES for all rule management        │
-│ I WILL use VAN.SYSTEM for system administration     │
-│ I WILL follow the Cursor workaround process         │
-│ I WILL maintain system and rules integrity          │
-└─────────────────────────────────────────────────────┘
-```
+
+This enhanced VAN mode provides comprehensive system administration capabilities while maintaining the existing 5-mode structure and adding powerful rules management functionality through intuitive submode commands.
